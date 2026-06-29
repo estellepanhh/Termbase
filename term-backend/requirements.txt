@@ -1,0 +1,8 @@
+flask
+flask-cors
+pandas
+pymysql
+sqlalchemy
+openpyxl
+python-dotenv
+volcenginesdkarkruntime
