@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import hashlib
+import json
 import math
 import re
 import unicodedata
@@ -18,6 +19,10 @@ class ImportReport:
     sources_created: int = 0
     topic_items_created: int = 0
     skipped: int = 0
+
+
+class LegacyIdentityConflictError(ValueError):
+    """Raised when source rows cannot be distinguished by legacy identity."""
 
 
 def clean(value) -> str:
@@ -51,8 +56,9 @@ def import_legacy_knowledge(session) -> ImportReport:
 
 
 def _import_terms(session, table_name, report, topic=None):
-    for row in _legacy_rows(session, table_name):
-        legacy_id = clean(row.get("id"))
+    for legacy_id, row in _identified_rows(
+        table_name, _legacy_rows(session, table_name), "id"
+    ):
         term = session.query(Term).filter_by(
             legacy_table=table_name, legacy_id=legacy_id
         ).one_or_none()
@@ -81,8 +87,11 @@ def _import_terms(session, table_name, report, topic=None):
 
 def _import_topic_entries(session, table_name, entry_type, title_column, report):
     topic = _get_huaihe_topic(session)
-    for row in _legacy_rows(session, table_name):
-        legacy_id = clean(row.get("id") if "id" in row else row.get(title_column))
+    rows = _legacy_rows(session, table_name)
+    identity_column = "id" if rows and "id" in rows[0] else title_column
+    for legacy_id, row in _identified_rows(
+        table_name, rows, identity_column
+    ):
         _add_topic_item(
             session,
             topic,
@@ -98,6 +107,49 @@ def _import_topic_entries(session, table_name, entry_type, title_column, report)
 
 def _legacy_rows(session, table_name):
     return [dict(row._mapping) for row in session.execute(text(f"SELECT * FROM {table_name}"))]
+
+
+def _identified_rows(table_name, rows, identity_column):
+    identities = set()
+    identified_rows = []
+    for row in rows:
+        legacy_id = _legacy_identity(table_name, row, identity_column)
+        if legacy_id in identities:
+            raise LegacyIdentityConflictError(
+                f"Ambiguous legacy rows in {table_name}: duplicate identity {legacy_id!r}"
+            )
+        identities.add(legacy_id)
+        identified_rows.append((legacy_id, row))
+    return identified_rows
+
+
+def _legacy_identity(table_name, row, identity_column):
+    value = row.get(identity_column)
+    if value is not None:
+        return value if isinstance(value, str) else str(value)
+    serialized_row = json.dumps(
+        {"table": table_name, "row": _canonical_row(row)},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(serialized_row.encode("utf-8")).hexdigest()
+    return f"fingerprint:{digest}"
+
+
+def _canonical_row(row):
+    return {key: _canonical_value(value) for key, value in sorted(row.items())}
+
+
+def _canonical_value(value):
+    if value is None:
+        return {"type": "null", "value": None}
+    if isinstance(value, float) and math.isnan(value):
+        return {"type": "float", "value": "NaN"}
+    return {
+        "type": f"{type(value).__module__}.{type(value).__qualname__}",
+        "value": str(value),
+    }
 
 
 def _add_translations(session, term, row, report):
@@ -143,7 +195,7 @@ def _add_source(session, term, legacy_value, report):
 def _add_contexts(session, term, row):
     scene = clean(row.get("场景分类"))
     if scene:
-        context = _get_context(session, f"legacy-{_slug(scene)}", scene)
+        context = _get_context(session, _legacy_context_code(scene), scene)
         session.add(TermContext(term=term, context=context))
 
     child_explanation = clean(row.get("儿童解释"))
@@ -203,6 +255,8 @@ def _get_huaihe_topic(session):
         topic = Topic(slug="huaihe-culture", title="淮河文化", status="published")
         session.add(topic)
         session.flush()
+    else:
+        topic.status = "published"
     return topic
 
 
@@ -212,6 +266,13 @@ def _slug(value):
     if slug:
         return slug[:42]
     return f"scene-{hashlib.sha1(value.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _legacy_context_code(scene):
+    readable_slug = _slug(scene)
+    digest = hashlib.sha256(scene.encode("utf-8")).hexdigest()[:12]
+    readable_limit = 50 - len("legacy--") - len(digest)
+    return f"legacy-{readable_slug[:readable_limit]}-{digest}"
 
 
 def _payload_value(value):
