@@ -32,6 +32,7 @@ term-frontend/dist/
 # Local generated working files
 artifacts/
 tmp/
+.worktrees/
 docs/superpowers/
 tools/
 
