@@ -9,7 +9,7 @@
 | 前端 | React 19 + TypeScript + Vite + Ant Design 6 |
 | 后端 | Flask + SQLAlchemy ORM + pandas |
 | 数据库 | MySQL |
-| AI | 火山方舟 Ark API（豆包大模型）流式对话 |
+| AI | DeepSeek API 流式对话 |
 | 国际化 | i18next（中文 / English） |
 
 ## 项目结构
@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 # 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入数据库密码和豆包 API Key
+# 编辑 .env，填入数据库密码和 DeepSeek API Key
 
 # 启动
 python app.py                  # 默认 http://127.0.0.1:5000
@@ -105,7 +105,7 @@ venv\Scripts\python scripts\import_child_explain.py
 
 - 🔍 术语名称模糊搜索，多条件组合筛选（文化分类 / 场景分类 / 术语层级）
 - 📖 术语详情弹窗，含中英文官方译法、文化内涵、来源
-- 🤖 AI 智能助手（右下角悬浮按钮），豆包大模型流式对话
+- 🤖 AI 智能助手（右下角悬浮按钮），DeepSeek 大模型流式对话
 - 🌾 淮河文化专区，垂落式名人图谱
 - 👶 儿童模式（一键切换儿童友好解释）
 - 🌐 中英文国际化界面切换
@@ -119,8 +119,9 @@ venv\Scripts\python scripts\import_child_explain.py
 | `DB_PASSWORD` | MySQL 密码 | — |
 | `DB_HOST` | MySQL 主机 | localhost |
 | `DB_NAME` | 数据库名 | term_database |
-| `DOUBAO_API_KEY` | 豆包 API Key | — |
-| `DOUBAO_ENDPOINT_ID` | 豆包 Endpoint ID | — |
+| `DEEPSEEK_API_KEY` | DeepSeek API Key | — |
+| `DEEPSEEK_BASE_URL` | DeepSeek API 地址 | https://api.deepseek.com |
+| `DEEPSEEK_MODEL` | DeepSeek 模型名称 | deepseek-flash |
 | `FLASK_HOST` | Flask 监听地址 | 127.0.0.1 |
 | `FLASK_PORT` | Flask 端口 | 5000 |
 | `FLASK_DEBUG` | 调试模式 | true |

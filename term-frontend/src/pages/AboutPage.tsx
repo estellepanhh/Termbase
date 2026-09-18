@@ -15,7 +15,7 @@ const AboutPage: React.FC = () => {
                 </Paragraph>
                 <Title level={4}>技术栈</Title>
                 <Paragraph>前端：React + TypeScript + Vite + Ant Design + i18next</Paragraph>
-                <Paragraph>后端：Flask + MySQL + 豆包大模型（火山方舟）</Paragraph>
+                <Paragraph>后端：Flask + MySQL + DeepSeek 大模型</Paragraph>
                 
             </Card>
         </div>

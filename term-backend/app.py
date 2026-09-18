@@ -10,6 +10,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, Response, stream_with_context
 from flask_cors import CORS
 import pandas as pd
+from openai import OpenAI
 from sqlalchemy import select, func, and_, or_
 
 from models import Term, HuaiheTerm, HuaiheFigure, HuaiheHerb, get_session
@@ -21,16 +22,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── 豆包 AI ─────────────────────────────────────────────────
-DOUBAO_API_KEY = os.environ.get('DOUBAO_API_KEY', '')
-DOUBAO_ENDPOINT_ID = os.environ.get('DOUBAO_ENDPOINT_ID', '')
+# ── DeepSeek AI ─────────────────────────────────────────────
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+DEEPSEEK_BASE_URL = os.environ.get(
+    'DEEPSEEK_BASE_URL',
+    'https://api.deepseek.com',
+)
+DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-flash')
 
-doubao_client = None
-if DOUBAO_API_KEY and DOUBAO_ENDPOINT_ID:
-    from volcenginesdkarkruntime import Ark
-    doubao_client = Ark(api_key=DOUBAO_API_KEY)
+deepseek_client = None
+if DEEPSEEK_API_KEY:
+    deepseek_client = OpenAI(
+        api_key=DEEPSEEK_API_KEY,
+        base_url=DEEPSEEK_BASE_URL,
+    )
 else:
-    logger.warning("豆包 AI 未配置，/api/chat/stream 将不可用")
+    logger.warning("DeepSeek AI 未配置，/api/chat/stream 将不可用")
 
 # ── Flask ───────────────────────────────────────────────────
 app = Flask(__name__)
@@ -285,8 +292,8 @@ def delete_term(term_id):
 
 @app.route('/api/chat/stream', methods=['POST'])
 def chat_stream():
-    """豆包 AI 流式对话"""
-    if doubao_client is None:
+    """DeepSeek AI 流式对话"""
+    if deepseek_client is None:
         return fail("AI 服务未配置", 503)
 
     data = request.json or {}
@@ -296,8 +303,8 @@ def chat_stream():
 
     def generate():
         try:
-            completion = doubao_client.chat.completions.create(
-                model=DOUBAO_ENDPOINT_ID,
+            completion = deepseek_client.chat.completions.create(
+                model=DEEPSEEK_MODEL,
                 messages=[
                     {
                         "role": "system",
@@ -315,9 +322,9 @@ def chat_stream():
                 if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     yield f"data: {json.dumps({'content': content})}\n\n"
-        except Exception as e:
+        except Exception:
             logger.exception("AI 流式对话出错")
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {json.dumps({'error': 'AI 服务暂时不可用'})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
 

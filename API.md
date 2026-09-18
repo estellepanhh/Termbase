@@ -172,7 +172,7 @@ POST /api/import-excel
 
 ### POST /api/chat/stream
 
-豆包大模型流式对话（SSE）。
+DeepSeek 大模型流式对话（SSE）。
 
 请求体 JSON：
 

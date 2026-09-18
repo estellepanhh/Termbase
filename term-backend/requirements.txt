@@ -5,4 +5,4 @@ pymysql
 sqlalchemy
 openpyxl
 python-dotenv
-volcenginesdkarkruntime
+openai
