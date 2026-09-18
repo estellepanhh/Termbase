@@ -51,7 +51,9 @@ class KnowledgeModelTests(unittest.TestCase):
             data_quality="legacy_unreviewed",
         )
         language = Language(code="en", name_zh="英语", name_en="English")
+        second_language = Language(code="fr", name_zh="法语", name_en="French")
         source = Source(title="中华思想文化术语", source_type="book")
+        second_source = Source(title="中国哲学关键词", source_type="book")
         translation = Translation(
             term=term,
             language=language,
@@ -59,13 +61,39 @@ class KnowledgeModelTests(unittest.TestCase):
             translation_type="recommended",
             review_status="unreviewed",
         )
-        term.sources.append(source)
-        db.session.add_all([term, language, translation])
+        second_translation = Translation(
+            term=term,
+            language=second_language,
+            text="harmonie dans la diversite",
+            translation_type="recommended",
+            review_status="unreviewed",
+        )
+        term.sources.extend([source, second_source])
+        db.session.add_all(
+            [term, language, second_language, translation, second_translation]
+        )
         db.session.commit()
 
         saved = db.session.get(Term, term.id)
-        self.assertEqual(saved.translations[0].text, "harmony in diversity")
-        self.assertEqual(saved.sources[0].title, "中华思想文化术语")
+        self.assertEqual(
+            {item.text for item in saved.translations},
+            {"harmony in diversity", "harmonie dans la diversite"},
+        )
+        self.assertEqual(
+            {item.title for item in saved.sources},
+            {"中华思想文化术语", "中国哲学关键词"},
+        )
+        self.assertEqual(
+            [item.preferred_name_zh for item in db.session.get(Source, source.id).terms],
+            ["和而不同"],
+        )
+        self.assertEqual(
+            [
+                item.preferred_name_zh
+                for item in db.session.get(Source, second_source.id).terms
+            ],
+            ["和而不同"],
+        )
 
     def test_source_exposes_reverse_terms(self):
         term = Term(preferred_name_zh="和而不同")
