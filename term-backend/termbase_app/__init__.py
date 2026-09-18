@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from .config import Config
 from .extensions import db, migrate
+from . import models  # noqa: F401
 from .routes.health import bp as health_bp
 
 
