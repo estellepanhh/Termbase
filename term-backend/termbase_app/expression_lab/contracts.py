@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -139,6 +140,25 @@ class ValidatedExpressionReport(StrictModel):
     limitations: list[str]
     review_priority: RiskLevel
     warnings: list[str] = Field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class KnowledgeSummary:
+    term_count: int
+    translation_count: int
+    source_count: int
+    context_count: int
+    truncated: bool
+
+
+@dataclass(frozen=True)
+class KnowledgePack:
+    prompt_text: str
+    summary: KnowledgeSummary
+    allowed_term_ids: set[int]
+    allowed_translation_ids: set[int]
+    allowed_source_ids: set[int]
+    source_details: dict[int, dict]
 
 
 class ExpressionLabError(Exception):

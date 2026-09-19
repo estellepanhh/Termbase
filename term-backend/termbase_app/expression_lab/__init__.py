@@ -10,6 +10,7 @@ from .contracts import (
     ProviderUnavailable,
     ValidatedExpressionReport,
 )
+from .knowledge import build_knowledge_pack
 
 __all__ = [
     "ExpressionLabError",
@@ -20,4 +21,5 @@ __all__ = [
     "ProviderBadResponse",
     "ProviderUnavailable",
     "ValidatedExpressionReport",
+    "build_knowledge_pack",
 ]
