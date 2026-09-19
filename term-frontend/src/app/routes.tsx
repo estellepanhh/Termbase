@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './AppShell'
+import HomePage from '../features/home/HomePage'
 
 type PlaceholderPageProps = {
   title: string
@@ -13,15 +14,6 @@ function PlaceholderPage({ title, description }: PlaceholderPageProps) {
       <h1 id="route-title">{title}</h1>
       <p>{description}</p>
     </section>
-  )
-}
-
-function HomePage() {
-  return (
-    <PlaceholderPage
-      description="面向中国特色话语的术语、表达与文化研究，支持多语知识的系统化发现与阐释。"
-      title="研究的共同语言"
-    />
   )
 }
 
