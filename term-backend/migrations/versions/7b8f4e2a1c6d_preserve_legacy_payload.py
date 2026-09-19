@@ -29,8 +29,25 @@ def upgrade():
 
 
 def downgrade():
+    _ensure_legacy_ids_fit()
     with op.batch_alter_table("kb_topic_items") as batch:
         batch.alter_column("legacy_id", existing_type=sa.String(length=255), type_=sa.String(length=100))
     with op.batch_alter_table("kb_terms") as batch:
         batch.alter_column("legacy_id", existing_type=sa.String(length=255), type_=sa.String(length=100))
         batch.drop_column("legacy_payload")
+
+
+def _ensure_legacy_ids_fit(max_length=100):
+    """Reject downgrade before any schema change that could truncate IDs."""
+    connection = op.get_bind()
+    for table_name in ("kb_terms", "kb_topic_items"):
+        rows = connection.execute(
+            sa.text(f"SELECT legacy_id FROM {table_name} WHERE legacy_id IS NOT NULL")
+        )
+        for (legacy_id,) in rows:
+            if len(legacy_id) > max_length:
+                raise RuntimeError(
+                    f"Cannot downgrade: {table_name}.legacy_id contains a value "
+                    f"longer than {max_length} characters. Shorten or archive the "
+                    "legacy identity before retrying the downgrade."
+                )

@@ -338,6 +338,24 @@ class KnowledgeModelTests(unittest.TestCase):
             payload = connection.execute(sa.text("SELECT legacy_payload FROM kb_terms")).scalar_one()
             self.assertEqual(json.loads(payload) if isinstance(payload, str) else payload, {})
 
+            long_id = "x" * 101
+            connection.execute(sa.text("UPDATE kb_terms SET legacy_id = :legacy_id"), {"legacy_id": long_id})
+            connection.commit()
+            context = MigrationContext.configure(connection)
+            with Operations.context(context):
+                with self.assertRaisesRegex(RuntimeError, "kb_terms.legacy_id.*longer than 100"):
+                    successor.downgrade()
+            head_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_terms")}
+            self.assertIn("legacy_payload", head_columns)
+            self.assertEqual(head_columns["legacy_id"]["type"].length, 255)
+            self.assertEqual(connection.execute(sa.text("SELECT legacy_id FROM kb_terms")).scalar_one(), long_id)
+            self.assertEqual(
+                json.loads(connection.execute(sa.text("SELECT legacy_payload FROM kb_terms")).scalar_one()),
+                {},
+            )
+            connection.execute(sa.text("UPDATE kb_terms SET legacy_id = NULL"))
+            connection.commit()
+
             context = MigrationContext.configure(connection)
             with Operations.context(context):
                 successor.downgrade()
