@@ -5,6 +5,7 @@ from .config import Config
 from .extensions import db, migrate
 from . import models  # noqa: F401
 from .routes.health import bp as health_bp
+from .routes.public_terms import bp as public_terms_bp
 
 
 def create_app(config_overrides=None):
@@ -18,4 +19,5 @@ def create_app(config_overrides=None):
         "CORS_ORIGINS", ["http://localhost:5173"]
     )}})
     app.register_blueprint(health_bp)
+    app.register_blueprint(public_terms_bp)
     return app
