@@ -180,6 +180,78 @@ GET /api/filter?culture=中华优秀传统文化&level=本源层&page=1&pageSize
 
 ---
 
+## 跨文化表达实验室
+
+### POST /api/v1/expression-lab/analyze
+
+基于1—5个已发布术语及其英语译法、来源和文化提示，生成一次不落库的结构化表达报告。中文原文长度为10—1000字；当前目标语言固定为英语。
+
+```json
+{
+  "term_ids": [7],
+  "source_text": "和而不同强调在差异中寻求和谐共处。",
+  "target_language": "en",
+  "audience": "overseas_youth",
+  "scenario": "cultural_exhibition",
+  "style": "explanatory",
+  "locale": "general_english"
+}
+```
+
+成功响应（节选）：
+
+```json
+{
+  "code": 200,
+  "message": "分析完成",
+  "data": {
+    "request_id": "不透明请求编号",
+    "input_summary": {
+      "source_text": "和而不同强调在差异中寻求和谐共处。",
+      "target_language": "en",
+      "audience": "overseas_youth",
+      "scenario": "cultural_exhibition",
+      "style": "explanatory",
+      "locale": "general_english"
+    },
+    "knowledge_summary": {
+      "term_count": 1,
+      "translation_count": 2,
+      "source_count": 1,
+      "context_count": 1,
+      "truncated": false
+    },
+    "report": {
+      "recommended": {"text": "Harmony in diversity", "rationale": "...", "strategy": ["..."]},
+      "alternatives": [{"text": "...", "best_for": "...", "tradeoff": "..."}],
+      "term_usage": [{"term_id": 7, "translation_id": 11, "adopted_translation": "...", "explanation": "..."}],
+      "cultural_risks": [{"level": "medium", "issue": "...", "recommendation": "..."}],
+      "references": [{"source_id": 13, "title": "...", "organization": "...", "url": "https://...", "citation": "...", "usage": "..."}],
+      "limitations": ["..."],
+      "review_priority": "medium"
+    },
+    "generated_at": "2026-09-19T12:00:00+00:00",
+    "review_status": "ai_unreviewed",
+    "warnings": []
+  }
+}
+```
+
+`ai_unreviewed` 表示结果由 AI 生成、尚未经过人工语言与学术审核，不能作为权威定稿。服务端只接受知识包中真实存在的术语、译名和来源 ID，并由数据库回填来源元数据。
+
+| HTTP | 场景 |
+|---|---|
+| 400 | 缺字段、非法枚举或术语数量/文本长度不合法 |
+| 404 | 术语不存在或未发布 |
+| 413 | 请求体超过配置上限 |
+| 415 | 请求不是 JSON |
+| 422 | AI 返回内容经一次修复后仍不符合结构 |
+| 429 | 同一客户端 IP 超过限流 |
+| 502 | AI 服务返回不可用响应 |
+| 503 | AI 服务未配置、超时或暂时不可达 |
+
+所有错误使用 `{"code": 状态码, "message": "公开错误说明", "data": null}` 信封，不返回供应商诊断或内部提示词。
+
 ## AI 对话
 
 ### POST /api/chat/stream
@@ -248,5 +320,10 @@ data: [DONE]
 | 200 | 成功 |
 | 400 | 请求参数有误 |
 | 404 | 资源不存在 |
+| 413 | 请求体过大 |
+| 415 | 请求格式不支持 |
+| 422 | AI结构化输出无效 |
+| 429 | 请求过于频繁 |
+| 502 | AI供应商响应不可用 |
 | 500 | 服务器内部错误 |
 | 503 | AI 服务未配置 |
