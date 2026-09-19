@@ -121,7 +121,7 @@ venv\Scripts\python scripts\import_child_explain.py
 - `GET /api/v1/terms`：分页搜索和筛选已发布术语。
 - `GET /api/v1/terms/{id}`：术语详情，含多译法、来源、证据、场景和文化提示。
 - `POST /api/chat/stream`：DeepSeek SSE 对话。
-- `/api/term-list`、`/api/search`、`/api/filter`、`/api/huaihe/*`：旧版兼容读取/管理路由。
+- `/api/term-list`、`/api/search`、`/api/filter`、`/api/huaihe/*`：旧版兼容读取路由；旧版写入/Excel 导入端点已移除。
 
 请求参数和完整 JSON 示例见 [API.md](API.md)。
 
@@ -133,7 +133,7 @@ venv\Scripts\python scripts\import_child_explain.py
 - 🌾 淮河文化专区，垂落式名人图谱
 - 👶 儿童模式（一键切换儿童友好解释）
 - 🌐 中英文国际化界面切换
-- ✏️ 术语增删改（管理员功能）
+- 🔒 旧版写入/Excel 导入端点已移除，避免匿名修改遗留数据
 
 ## 环境变量
 

@@ -287,6 +287,10 @@ class KnowledgeModelTests(unittest.TestCase):
             self.assertTrue(
                 all(name.startswith("kb_") for name in sa.inspect(connection).get_table_names())
             )
+            columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_terms")}
+            self.assertIn("legacy_payload", columns)
+            topic_item_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_topic_items")}
+            self.assertEqual(topic_item_columns["legacy_id"]["type"].length, 255)
 
             context = MigrationContext.configure(connection)
             with Operations.context(context):

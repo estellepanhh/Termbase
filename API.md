@@ -17,7 +17,7 @@ Base URL: `http://127.0.0.1:5000`
 
 ---
 
-## 术语 CRUD
+## 旧版兼容读取 API
 
 ## v1 公共术语 API
 
@@ -176,81 +176,7 @@ GET /api/filter?culture=中华优秀传统文化&level=本源层&page=1&pageSize
 
 ---
 
-### POST /api/terms
-
-新增术语。请求体 JSON：
-
-```json
-{
-  "术语名称": "一带一路",
-  "术语层级": "核心层",
-  "文化分类": "社会主义先进文化",
-  "场景分类": "国际交流",
-  "筛选标签": "经济,合作",
-  "官方译法（英文）": "Belt and Road Initiative",
-  "官方译法（小语种）": "",
-  "文化内涵": "丝绸之路经济带和21世纪海上丝绸之路的简称",
-  "来源": "2013年习近平主席出访中亚和东南亚时提出"
-}
-```
-
-**响应**
-
-```json
-{ "code": 200, "msg": "添加成功" }
-```
-
----
-
-### PUT /api/terms/{id}
-
-更新术语。请求体格式同新增，字段可选（只传要更新的字段）。
-
-```
-PUT /api/terms/1
-```
-
-**响应**
-
-```json
-{ "code": 200, "msg": "更新成功" }
-```
-
-若 id 不存在返回 `{ "code": 404, "msg": "术语不存在" }`。
-
----
-
-### DELETE /api/terms/{id}
-
-删除术语。
-
-```
-DELETE /api/terms/1
-```
-
-**响应**
-
-```json
-{ "code": 200, "msg": "删除成功" }
-```
-
----
-
-### POST /api/import-excel
-
-从 `data/terms.xlsx` 全量导入术语表（无需请求体）。
-
-```
-POST /api/import-excel
-```
-
-**响应**
-
-```json
-{ "code": 200, "data": { "count": 731 } }
-```
-
-> 文件不存在时返回 `{ "code": 400, "msg": "文件不存在: ..." }`。
+旧版接口仅保留 `GET /api/term-list`、`GET /api/search`、`GET /api/filter` 和 `/api/huaihe/*` 读取路由，用于平滑过渡。旧版 `POST /api/terms`、`PUT /api/terms/{id}`、`DELETE /api/terms/{id}` 和 `POST /api/import-excel` 已有意移除，不应由匿名客户端调用；服务端会返回 404。
 
 ---
 

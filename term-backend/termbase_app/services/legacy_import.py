@@ -6,6 +6,7 @@ import json
 import math
 import re
 import unicodedata
+from datetime import date, datetime
 
 from sqlalchemy import inspect, text
 
@@ -70,6 +71,7 @@ def _import_terms(session, table_name, report, topic=None):
                 cultural_connotation=clean(row.get("文化内涵")),
                 status="published",
                 data_quality="legacy_unreviewed",
+                legacy_payload=_json_safe(row),
                 legacy_table=table_name,
                 legacy_id=legacy_id,
             )
@@ -139,6 +141,21 @@ def _legacy_identity(table_name, row, identity_column):
 
 def _canonical_row(row):
     return {key: _canonical_value(value) for key, value in sorted(row.items())}
+
+
+def _json_safe(value):
+    """Return a portable JSON value while retaining every legacy field."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        if isinstance(value, float) and math.isnan(value):
+            return None
+        return value
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return str(value)
 
 
 def _canonical_value(value):

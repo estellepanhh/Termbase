@@ -181,6 +181,12 @@ class PublicTermsApiTests(unittest.TestCase):
         self.assertEqual(payload["data"][0]["language_count"], 2)
         self.assertEqual(payload["data"][0]["source_count"], 2)
 
+    def test_list_searches_name_or_definition(self):
+        response = self.client.get("/api/v1/terms?q=差异")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["preferred_name_zh"] for item in response.get_json()["data"]], ["和而不同"])
+
     def test_list_filters_by_level_culture_and_translation_language(self):
         response = self.client.get(
             "/api/v1/terms?level=本源层&culture=中华优秀传统文化&language=fr"

@@ -1,3 +1,4 @@
+from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
 from ..extensions import db
@@ -25,7 +26,8 @@ def list_published_terms(*, q="", level="", culture="", language="", page=1, pag
         )
     )
     if q:
-        stmt = stmt.where(Term.preferred_name_zh.like(f"%{q}%"))
+        pattern = f"%{q}%"
+        stmt = stmt.where(or_(Term.preferred_name_zh.like(pattern), Term.definition_zh.like(pattern)))
     if level:
         stmt = stmt.where(Term.term_level == level)
     if culture:

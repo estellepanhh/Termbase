@@ -40,6 +40,7 @@ class LegacyImportTests(unittest.TestCase):
                     "场景分类" TEXT,
                     "官方译法（英文）" TEXT,
                     "官方译法（小语种）" TEXT,
+                    "筛选标签" TEXT,
                     "文化内涵" TEXT,
                     "来源" TEXT,
                     "儿童解释" TEXT
@@ -95,7 +96,7 @@ class LegacyImportTests(unittest.TestCase):
                 '''
                 INSERT INTO terms VALUES
                 (1, '和而不同', '本源层', '中华优秀传统文化', 'International Exchange',
-                 'harmony in diversity', 'harmonie dans la diversite',
+                 'harmony in diversity', 'harmonie dans la diversite', '外交,全球治理',
                  '尊重差异、追求和谐', '论语', '大家可以不一样')
                 '''
             )
@@ -170,6 +171,8 @@ class LegacyImportTests(unittest.TestCase):
         term = db.session.query(Term).filter_by(legacy_table="terms", legacy_id="1").one()
         self.assertEqual(term.status, "published")
         self.assertEqual(term.data_quality, "legacy_unreviewed")
+        self.assertEqual(term.legacy_payload["筛选标签"], "外交,全球治理")
+        self.assertEqual(term.legacy_payload["id"], 1)
         self.assertEqual(
             {(item.language.code, item.text) for item in term.translations},
             {("en", "harmony in diversity"), ("und", "harmonie dans la diversite")},
@@ -193,6 +196,7 @@ class LegacyImportTests(unittest.TestCase):
         self.assertEqual(items["herb"].payload["法语译法"], "chevrefeuille")
         self.assertEqual(db.session.query(TopicItem).count(), 3)
         self.assertEqual(db.session.query(Source).count(), 2)
+
 
     def test_clean_normalizes_missing_and_nan_values(self):
         self.assertEqual(clean(None), "")

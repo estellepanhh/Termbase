@@ -40,3 +40,22 @@ cd D:\Termbase\.worktrees\knowledge-core-rebuild\term-backend
 ## 工作树注意事项
 
 `term-frontend/.npm-task5-cache/` 是已有未跟踪生成目录，未读取、删除或提交。
+
+## Final-review 修正
+
+- `Term.legacy_payload` 使用数据库 JSON 类型保存完整 JSON-safe 的 `terms`/`huaihe_terms` 原始行，因此 `筛选标签`、未映射列和原生数值 ID 不再静默丢失；导入仍按 legacy identity 幂等跳过既有记录。
+- `TopicItem.legacy_id` 及初始迁移列统一扩大到 255，并由迁移测试断言。
+- v1 搜索现在按已发布术语的 `preferred_name_zh OR definition_zh` 匹配；新增 API 回归测试。
+- README/API 删除了匿名 CRUD/Excel 导入的过时示例，明确旧写入端点已移除，仅保留兼容读取路由。
+- 按批准范围未恢复旧版 ChatAI/FloatingTools UI；DeepSeek SSE 后端兼容能力属于前序任务并继续保留/测试，AI UI 不在本子项目。
+
+Final-review focused command:
+
+```powershell
+cd D:\Termbase\.worktrees\knowledge-core-rebuild\term-backend
+.\venv\Scripts\python.exe -m unittest tests.test_legacy_import tests.test_public_terms_api tests.test_knowledge_models -v
+```
+
+结果：24 tests，0 failures。
+
+Final-review full acceptance results: backend `30 tests ... OK`; frontend `npm test` `5 files / 43 tests passed`; `npm run build` exit 0; `npm run lint` exit 0 with 0 errors and the same 4 pre-existing React Hook warnings; `git diff --check` passed; secret scan returned no results. Documentation inspection confirms CRUD/import examples are removed and only the explicit “removed/404” compatibility note remains.

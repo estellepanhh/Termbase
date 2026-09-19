@@ -22,8 +22,10 @@ class Term(db.Model):
     culture_category = db.Column(db.String(100), nullable=False, default="")
     status = db.Column(db.String(30), nullable=False, default="draft", index=True)
     data_quality = db.Column(db.String(30), nullable=False, default="curated")
+    # Lossless source-row archive for fields not yet promoted to the core model.
+    legacy_payload = db.Column(db.JSON, nullable=False, default=dict)
     legacy_table = db.Column(db.String(50))
-    legacy_id = db.Column(db.String(100))
+    legacy_id = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
     updated_at = db.Column(
         db.DateTime,
@@ -249,7 +251,7 @@ class TopicItem(db.Model):
     title = db.Column(db.String(255), nullable=False, default="")
     payload = db.Column(db.JSON, nullable=False, default=dict)
     legacy_table = db.Column(db.String(50))
-    legacy_id = db.Column(db.String(100))
+    legacy_id = db.Column(db.String(255))
 
     topic = db.relationship("Topic", back_populates="items")
     term = db.relationship("Term", back_populates="topic_items")
