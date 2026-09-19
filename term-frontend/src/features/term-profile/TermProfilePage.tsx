@@ -206,8 +206,10 @@ function TermProfileLoader({ termId }: { termId: number }) {
 
 export default function TermProfilePage() {
   const { id } = useParams()
-  const termId = Number(id)
-  const isValidId = Number.isInteger(termId) && termId > 0
+  const rawId = id ?? ''
+  const isCanonicalId = /^[1-9]\d*$/.test(rawId)
+  const termId = isCanonicalId ? Number(rawId) : Number.NaN
+  const isValidId = Number.isSafeInteger(termId) && termId > 0
 
   return (
     <div className="term-profile-page">

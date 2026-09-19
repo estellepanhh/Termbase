@@ -59,14 +59,14 @@ const profile: TermProfile = {
     citation: '《子路》',
     authority_level: 'research',
     summary: null,
-    legacy_value: null,
+    legacy_value: '旧版来源标注',
     evidence: [{
       id: 1,
       translation_id: null,
       original_excerpt: '君子和而不同。',
       translated_excerpt: 'The superior man is harmonious but not conformist.',
       locator: '第十三篇',
-      note: null,
+      note: '译文用于说明跨文化表达。',
     }],
   }],
   contexts: [{
@@ -136,7 +136,14 @@ describe('TermProfilePage', () => {
     expect(screen.getByRole('heading', { name: '来源与依据' })).toBeInTheDocument()
     expect(screen.getByText('论语')).toBeInTheDocument()
     expect(screen.getByText('君子和而不同。')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '访问来源：论语' })).toHaveAttribute('rel', 'noreferrer noopener')
+    expect(screen.getByText('来源类型：典籍')).toBeInTheDocument()
+    expect(screen.getByText('语种：zh')).toBeInTheDocument()
+    expect(screen.getByText('权威级别：research')).toBeInTheDocument()
+    expect(screen.getByText('历史来源值：旧版来源标注')).toBeInTheDocument()
+    expect(screen.getByText('证据说明：译文用于说明跨文化表达。')).toBeInTheDocument()
+    const sourceLink = screen.getByRole('link', { name: '访问来源：论语' })
+    expect(sourceLink).toHaveAttribute('target', '_blank')
+    expect(sourceLink).toHaveAttribute('rel', 'noreferrer noopener')
     expect(screen.getByRole('heading', { name: '适用场景' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '跨文化理解提示' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '协和万邦' })).toHaveAttribute('href', '/terms/2')
@@ -146,7 +153,22 @@ describe('TermProfilePage', () => {
   it('omits optional panels and offers a retry after a network failure', async () => {
     getTerm
       .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce({ ...profile, contexts: [], cultural_notes: [], relations: [], topics: [], names: [] })
+      .mockResolvedValueOnce({
+        ...profile,
+        contexts: [],
+        cultural_notes: [],
+        relations: [],
+        topics: [],
+        names: [],
+        sources: [{
+          ...profile.sources[0],
+          source_type: '',
+          language_code: null,
+          authority_level: null,
+          legacy_value: null,
+          evidence: [{ ...profile.sources[0].evidence[0], note: null }],
+        }],
+      })
     const user = userEvent.setup()
     renderProfile()
 
@@ -156,6 +178,8 @@ describe('TermProfilePage', () => {
     expect(screen.queryByRole('heading', { name: '适用场景' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '跨文化理解提示' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '相关概念与专题' })).not.toBeInTheDocument()
+    expect(screen.queryByText('来源类型：')).not.toBeInTheDocument()
+    expect(screen.queryByText('证据说明：')).not.toBeInTheDocument()
     expect(getTerm).toHaveBeenCalledTimes(2)
   })
 
@@ -167,10 +191,18 @@ describe('TermProfilePage', () => {
     expect(screen.getByRole('link', { name: '返回术语探索' })).toHaveAttribute('href', '/discover')
   })
 
-  it('does not request an invalid route identifier', async () => {
-    renderProfile('/terms/not-a-number')
+  it.each(['not-a-number', '0', '-1', '01', '1.0', '1e2', '0x10'])('does not request noncanonical route identifier %s', async (id) => {
+    renderProfile(`/terms/${id}`)
 
     expect(await screen.findByRole('heading', { name: '未找到该术语' })).toBeInTheDocument()
     await waitFor(() => expect(getTerm).not.toHaveBeenCalled())
+  })
+
+  it.each(['javascript:alert(1)', 'ftp://example.com/lunyu', 'data:text/plain,unsafe'])('does not render an external source link for unsafe URL %s', async (url) => {
+    getTerm.mockResolvedValueOnce({ ...profile, sources: [{ ...profile.sources[0], url }] })
+    renderProfile()
+
+    expect(await screen.findByRole('heading', { name: '和而不同' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '访问来源：论语' })).not.toBeInTheDocument()
   })
 })

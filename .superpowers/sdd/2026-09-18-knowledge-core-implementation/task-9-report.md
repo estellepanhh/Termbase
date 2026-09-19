@@ -26,3 +26,11 @@
 - 页面仅依赖 Task 5 提供的 `TermProfile` 字段，并避免对缺失可选内容输出“暂无”。
 - 证据外链仅接受 HTTP(S) URL，且具备安全的新窗口属性。
 - 未修改或纳入已有的 `term-frontend/.npm-task5-cache/` 未跟踪目录。
+
+## 补充修正（Task 9 follow-up）
+
+- 路由 ID 先按 `^[1-9]\d*$` 校验，再转换为数字；`0`、负数、前导零、小数、科学计数法和十六进制形式均直接进入未找到状态，且不会请求 API。
+- EvidencePanel 现按有值时显示来源类型、语种、权威级别、历史来源值与证据说明，并在字段为空时省略对应内容。
+- 外部来源链接测试覆盖 `target="_blank"`、`rel="noreferrer noopener"`，以及 `javascript:`、`ftp:`、`data:` URL 不渲染为链接。
+- 回归红灯：新增测试先以 5 个预期失败结束（缺少资质展示、4 个非规范 ID 被加载）。
+- 回归绿灯及最终验证：`npm test -- src/features/term-profile/TermProfilePage.test.tsx` 为 13/13；`npm test` 为 41/41；`npm run build` 通过；`npm run lint` 退出码 0（仅保留既有的 4 条无关 warning）。

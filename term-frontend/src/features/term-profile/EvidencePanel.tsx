@@ -15,6 +15,15 @@ function safeExternalUrl(value: string | null) {
   }
 }
 
+function provenanceItems(source: SourceDetail) {
+  return [
+    ['来源类型', source.source_type],
+    ['语种', source.language_code],
+    ['权威级别', source.authority_level],
+    ['历史来源值', source.legacy_value],
+  ].filter(([, value]) => Boolean(value?.trim())) as Array<[string, string]>
+}
+
 export default function EvidencePanel({ sources }: EvidencePanelProps) {
   if (!sources.length) return null
 
@@ -27,6 +36,7 @@ export default function EvidencePanel({ sources }: EvidencePanelProps) {
       <ol className="evidence-panel__list">
         {sources.map((source) => {
           const externalUrl = safeExternalUrl(source.url)
+          const qualifiers = provenanceItems(source)
           return (
             <li className="evidence-panel__source" key={source.id}>
               <div className="evidence-panel__source-heading">
@@ -40,6 +50,11 @@ export default function EvidencePanel({ sources }: EvidencePanelProps) {
               <p className="evidence-panel__metadata">
                 {[source.organization, source.citation, source.published_at].filter(Boolean).join(' · ')}
               </p>
+              {qualifiers.length ? (
+                <ul aria-label={`${source.title} 的来源资质信息`} className="evidence-panel__provenance">
+                  {qualifiers.map(([label, value]) => <li key={label}>{`${label}：${value}`}</li>)}
+                </ul>
+              ) : null}
               {source.summary ? <p className="evidence-panel__summary">{source.summary}</p> : null}
               {source.evidence.length ? (
                 <ul className="evidence-panel__excerpt-list">
@@ -48,6 +63,7 @@ export default function EvidencePanel({ sources }: EvidencePanelProps) {
                       {evidence.original_excerpt ? <blockquote>{evidence.original_excerpt}</blockquote> : null}
                       {evidence.translated_excerpt ? <p>{evidence.translated_excerpt}</p> : null}
                       {evidence.locator ? <p className="evidence-panel__locator">{evidence.locator}</p> : null}
+                      {evidence.note ? <p className="evidence-panel__note">证据说明：{evidence.note}</p> : null}
                     </li>
                   ))}
                 </ul>
