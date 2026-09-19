@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './AppShell'
 import HomePage from '../features/home/HomePage'
+import DiscoveryPage from '../features/discovery/DiscoveryPage'
 
 type PlaceholderPageProps = {
   title: string
@@ -15,10 +16,6 @@ function PlaceholderPage({ title, description }: PlaceholderPageProps) {
       <p>{description}</p>
     </section>
   )
-}
-
-function DiscoveryPage() {
-  return <PlaceholderPage description="术语探索功能正在建设中。" title="术语探索" />
 }
 
 function TermProfilePage() {
