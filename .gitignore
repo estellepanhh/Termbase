@@ -28,6 +28,7 @@ Thumbs.db
 node_modules/
 term-frontend/node_modules/
 term-frontend/dist/
+term-frontend/.npm-task*-cache/
 
 # Local generated working files
 artifacts/
