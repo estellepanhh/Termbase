@@ -23,6 +23,7 @@ class Config:
     EXPRESSION_LAB_RATE_LIMIT = os.environ.get(
         "EXPRESSION_LAB_RATE_LIMIT", "5 per minute"
     )
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
     EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS = int(
         os.environ.get("EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS", "18000")
     )
