@@ -1,0 +1,2 @@
+import type { AlternativeExpression } from '../../types/expressionLab'
+export default function AlternativeComparison({ alternatives }: { alternatives: AlternativeExpression[] }) { return <div className="alternative-grid">{alternatives.map((item, index) => <article key={`${item.text}-${index}`}><span>方案 {String(index + 1).padStart(2, '0')}</span><h3>{item.text}</h3><p><b>适用：</b>{item.best_for}</p><p><b>取舍：</b>{item.tradeoff}</p></article>)}</div> }

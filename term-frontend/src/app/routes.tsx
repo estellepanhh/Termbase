@@ -3,6 +3,7 @@ import AppShell from './AppShell'
 import HomePage from '../features/home/HomePage'
 import DiscoveryPage from '../features/discovery/DiscoveryPage'
 import TermProfilePage from '../features/term-profile/TermProfilePage'
+import ExpressionLabPage from '../features/expression-lab/ExpressionLabPage'
 
 type PlaceholderPageProps = {
   title: string
@@ -35,7 +36,7 @@ export default function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="discover" element={<DiscoveryPage />} />
         <Route path="terms/:id" element={<TermProfilePage />} />
-        <Route path="lab" element={<StagedPage title="表达实验室" />} />
+        <Route path="lab" element={<ExpressionLabPage />} />
         <Route path="topics" element={<StagedPage title="文化专题" />} />
         <Route path="workspace" element={<StagedPage title="研究工作台" />} />
         <Route path="search" element={<Navigate replace to="/discover" />} />
