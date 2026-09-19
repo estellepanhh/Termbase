@@ -1,60 +1,174 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import request from '../utils/request'
+import type { PaginatedTerms, TermProfile } from '../types/knowledge'
 import { getTerm, listTerms } from './knowledgeApi'
 
-vi.mock('../utils/request', () => ({
-  default: { get: vi.fn() },
-}))
+const termSummary = {
+  id: 7,
+  preferred_name_zh: '和而不同',
+  definition_zh: '承认差异并追求和谐共处',
+  term_level: '本源层',
+  culture_category: '中华优秀传统文化',
+  data_quality: 'legacy_unreviewed',
+  recommended_translation: {
+    language_code: 'en',
+    language_name_zh: '英语',
+    text: 'harmony in diversity',
+    translation_type: 'recommended',
+    authority_level: 'official',
+    review_status: 'approved',
+  },
+  language_count: 2,
+  source_count: 1,
+} as const
+
+const paginatedTerms: PaginatedTerms = {
+  data: [termSummary],
+  meta: { page: 2, page_size: 10, total: 11 },
+}
+
+const termProfile: TermProfile = {
+  ...termSummary,
+  cultural_connotation: '和谐不是同一',
+  names: [{ name: '和而不同', name_type: 'preferred' }],
+  translations: [{
+    ...termSummary.recommended_translation,
+    region: null,
+    note: null,
+    contexts: [{
+      context_code: 'diplomacy',
+      context_name_zh: '外交',
+      audience: 'international',
+      style: 'formal',
+      description: '外交交流中的表述',
+      recommendation_level: 'recommended',
+      example: '各国应和而不同。',
+      note: null,
+    }],
+  }],
+  sources: [{
+    id: 3,
+    title: '论语',
+    organization: null,
+    published_at: null,
+    language_code: 'zh',
+    source_type: 'classical',
+    url: null,
+    citation: null,
+    authority_level: null,
+    summary: null,
+    legacy_value: null,
+    evidence: [{
+      id: 4,
+      translation_id: null,
+      original_excerpt: '君子和而不同',
+      translated_excerpt: 'The superior person seeks harmony.',
+      locator: '子路篇',
+      note: null,
+    }],
+  }],
+  contexts: [{
+    context_code: 'education',
+    context_name_zh: '教育',
+    audience: 'students',
+    style: 'plain',
+    description: '课堂中的解释',
+    explanation: '尊重差异。',
+    example: '同学之间应和而不同。',
+    note: null,
+  }],
+  cultural_notes: [{
+    target_culture: '英语文化',
+    difference_summary: '强调包容差异',
+    literal_risk: '误解为妥协',
+    misconception: '认为没有原则',
+    recommendation: '说明其价值取向',
+  }],
+  relations: [{
+    direction: 'outgoing',
+    relation_type: 'related',
+    source_term_id: 7,
+    source_term_name_zh: '和而不同',
+    target_term_id: 8,
+    target_term_name_zh: '和谐',
+  }],
+  topics: [{
+    slug: 'harmony',
+    title: '和合文化',
+    summary: null,
+    entry_type: 'term',
+    item_title: '和而不同',
+    payload: { featured: true },
+  }],
+}
+
+function successAdapter(payload: unknown): AxiosAdapter {
+  return async (config) => ({
+    data: payload,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config,
+  })
+}
 
 describe('knowledgeApi', () => {
-  beforeEach(() => vi.clearAllMocks())
+  let originalAdapter: typeof request.defaults.adapter
 
-  it('sends stable discovery query parameters without manually encoding Unicode', async () => {
-    vi.mocked(request.get).mockResolvedValue({
-      data: [],
-      meta: { page: 1, page_size: 20, total: 0 },
-    })
-
-    await listTerms({ q: '和', level: '本源层', page: 1, pageSize: 20 })
-
-    expect(request.get).toHaveBeenCalledWith('/api/v1/terms', {
-      params: { q: '和', level: '本源层', page: 1, page_size: 20 },
-    })
+  beforeEach(() => {
+    originalAdapter = request.defaults.adapter
   })
 
-  it('omits optional discovery parameters that are not provided', async () => {
-    vi.mocked(request.get).mockResolvedValue({
-      data: [],
-      meta: { page: 1, page_size: 20, total: 0 },
-    })
-
-    await listTerms({})
-
-    expect(request.get).toHaveBeenCalledWith('/api/v1/terms', { params: {} })
+  afterEach(() => {
+    request.defaults.adapter = originalAdapter
   })
 
-  it('returns paginated term data from the unwrapped API response', async () => {
-    const response = {
-      data: [{ id: 7, preferred_name_zh: '和' }],
-      meta: { page: 2, page_size: 10, total: 11 },
+  it('serializes Unicode discovery parameters and omits absent parameters', async () => {
+    const adapter = vi.fn(successAdapter({ code: 200, ...paginatedTerms }))
+    request.defaults.adapter = adapter
+
+    await expect(listTerms({ q: '和', level: '本源层', page: 1, pageSize: 20 }))
+      .resolves.toEqual(paginatedTerms)
+    await expect(listTerms({})).resolves.toEqual(paginatedTerms)
+
+    const firstConfig = adapter.mock.calls[0][0] as InternalAxiosRequestConfig
+    const secondConfig = adapter.mock.calls[1][0] as InternalAxiosRequestConfig
+    expect(request.getUri(firstConfig)).toBe(
+      '/api/v1/terms?q=%E5%92%8C&level=%E6%9C%AC%E6%BA%90%E5%B1%82&page=1&page_size=20',
+    )
+    expect(request.getUri(secondConfig)).toBe('/api/v1/terms')
+  })
+
+  it('returns the complete paginated list payload after interceptor unwrapping', async () => {
+    request.defaults.adapter = successAdapter({ code: 200, ...paginatedTerms })
+
+    await expect(listTerms({ page: 2, pageSize: 10 })).resolves.toEqual(paginatedTerms)
+  })
+
+  it('returns a contract-shaped term profile after interceptor unwrapping', async () => {
+    const adapter = vi.fn(successAdapter({ code: 200, data: termProfile }))
+    request.defaults.adapter = adapter
+
+    await expect(getTerm(7)).resolves.toEqual(termProfile)
+    expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/v1/terms/7')
+  })
+
+  it('propagates a non-2xx Axios response through the real request interceptor', async () => {
+    request.defaults.adapter = async (config) => {
+      const response = {
+        data: { code: 404, message: '术语不存在或尚未发布' },
+        status: 404,
+        statusText: 'Not Found',
+        headers: {},
+        config,
+      }
+      throw new AxiosError('Request failed with status code 404', 'ERR_BAD_REQUEST', config, undefined, response)
     }
-    vi.mocked(request.get).mockResolvedValue(response)
 
-    await expect(listTerms({ page: 2, pageSize: 10 })).resolves.toEqual(response)
-  })
-
-  it('requests a term profile by id and returns the unwrapped profile', async () => {
-    const response = { data: { id: 7, preferred_name_zh: '和' } }
-    vi.mocked(request.get).mockResolvedValue(response)
-
-    await expect(getTerm(7)).resolves.toEqual(response.data)
-    expect(request.get).toHaveBeenCalledWith('/api/v1/terms/7')
-  })
-
-  it('propagates request failures', async () => {
-    const error = new Error('network unavailable')
-    vi.mocked(request.get).mockRejectedValue(error)
-
-    await expect(listTerms({ q: '和' })).rejects.toThrow('network unavailable')
+    await expect(listTerms({ q: 'missing' })).rejects.toMatchObject({
+      code: 'ERR_BAD_REQUEST',
+      response: { status: 404 },
+    })
   })
 })
