@@ -20,3 +20,15 @@ class Config:
     SQLALCHEMY_DATABASE_URI = database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False
+    EXPRESSION_LAB_RATE_LIMIT = os.environ.get(
+        "EXPRESSION_LAB_RATE_LIMIT", "5 per minute"
+    )
+    EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS = int(
+        os.environ.get("EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS", "18000")
+    )
+    EXPRESSION_LAB_PROVIDER_TIMEOUT = float(
+        os.environ.get("EXPRESSION_LAB_PROVIDER_TIMEOUT", "45")
+    )
+    EXPRESSION_LAB_MAX_BODY_BYTES = int(
+        os.environ.get("EXPRESSION_LAB_MAX_BODY_BYTES", "16384")
+    )
