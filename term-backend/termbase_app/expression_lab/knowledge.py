@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy.orm import selectinload
 
@@ -23,12 +23,63 @@ class _Block:
     priority: int
     required: bool = False
     translation_id: int | None = None
+    term_id: int | None = None
     source_id: int | None = None
     context_count: int = 0
 
 
 def _json_line(label: str, payload: dict) -> str:
     return f"{label} {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}"
+
+
+def _fit_required_blocks(
+    blocks: list[_Block], max_chars: int
+) -> tuple[list[_Block], bool]:
+    """Shrink unbounded text fields while preserving valid labeled JSON lines."""
+    parsed = []
+    for block in blocks:
+        label, raw = block.text.split(" ", 1)
+        parsed.append([block, label, json.loads(raw)])
+
+    def render_all() -> list[str]:
+        return [_json_line(label, payload) for _, label, payload in parsed]
+
+    def string_slots(value):
+        slots = []
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if isinstance(child, str):
+                    slots.append((len(child), value, key))
+                else:
+                    slots.extend(string_slots(child))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                if isinstance(child, str):
+                    slots.append((len(child), value, index))
+                else:
+                    slots.extend(string_slots(child))
+        return slots
+
+    texts = render_all()
+    changed = False
+    while sum(map(len, texts)) + max(0, len(texts) - 1) > max_chars:
+        slots = []
+        for _, _, payload in parsed:
+            slots.extend(string_slots(payload))
+        shrinkable = [slot for slot in slots if slot[0] > 1]
+        if not shrinkable:
+            raise ValueError("required knowledge cannot fit configured character limit")
+        length, container, key = max(shrinkable, key=lambda item: item[0])
+        value = container[key]
+        next_length = max(1, length // 2)
+        container[key] = value[:next_length] + ("…" if next_length < length else "")
+        changed = True
+        texts = render_all()
+
+    return (
+        [replace(block, text=text) for (block, _, _), text in zip(parsed, texts)],
+        changed,
+    )
 
 
 def _term_statement(term: Term, number: int) -> _Block:
@@ -74,6 +125,7 @@ def _translation_blocks(term: Term, start: int) -> tuple[list[_Block], int]:
             required=required,
             priority=1 if required else 2,
             translation_id=translation.id,
+            term_id=term.id,
             context_count=len(contexts),
             text=_json_line(f"TRANSLATION-{number}", {
                 "translation_id": translation.id,
@@ -229,10 +281,17 @@ def build_knowledge_pack(term_ids: list[int], max_chars: int) -> KnowledgePack:
         blocks.extend(note_blocks)
         blocks.extend(_relation_blocks(term))
 
+    required = [block for block in blocks if block.required]
+    fitted_required, required_truncated = _fit_required_blocks(required, max_chars)
+    fitted_by_identity = {
+        id(original): fitted for original, fitted in zip(required, fitted_required)
+    }
+    blocks = [fitted_by_identity.get(id(block), block) for block in blocks]
+
     ordered = sorted(enumerate(blocks), key=lambda pair: (pair[1].priority, pair[0]))
     included: list[_Block] = []
     current_length = 0
-    truncated = False
+    truncated = required_truncated
     for _, block in ordered:
         added_length = len(block.text) + (1 if included else 0)
         if block.required or current_length + added_length <= max_chars:
@@ -243,6 +302,11 @@ def build_knowledge_pack(term_ids: list[int], max_chars: int) -> KnowledgePack:
 
     allowed_translation_ids = {
         block.translation_id for block in included if block.translation_id is not None
+    }
+    translation_term_ids = {
+        block.translation_id: block.term_id
+        for block in included
+        if block.translation_id is not None and block.term_id is not None
     }
     allowed_source_ids = {
         block.source_id for block in included if block.source_id is not None
@@ -263,4 +327,5 @@ def build_knowledge_pack(term_ids: list[int], max_chars: int) -> KnowledgePack:
         allowed_translation_ids=allowed_translation_ids,
         allowed_source_ids=allowed_source_ids,
         source_details=included_source_details,
+        translation_term_ids=translation_term_ids,
     )

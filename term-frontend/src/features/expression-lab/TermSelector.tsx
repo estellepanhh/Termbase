@@ -16,7 +16,7 @@ export default function TermSelector({ selected, onAdd, onRemove }: Props) {
   const search = async () => {
     setStatus('loading')
     try {
-      const response = await listTerms({ q: query.trim() || undefined, language: 'en', page: 1, pageSize: 8 })
+      const response = await listTerms({ q: query.trim() || undefined, page: 1, pageSize: 8 })
       setResults(response.data)
       setStatus('idle')
     } catch {

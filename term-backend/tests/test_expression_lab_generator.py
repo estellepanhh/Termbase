@@ -157,6 +157,47 @@ class ExpressionLabGeneratorTests(unittest.TestCase):
         self.assertIn("invalid_source_reference_removed", report.warnings)
         self.assertIn("no_valid_references", report.warnings)
 
+    def test_filters_translation_that_belongs_to_another_selected_term(self):
+        payload = valid_payload(term_usage=[{
+            "term_id": 7,
+            "translation_id": 22,
+            "adopted_translation": "wrong pair",
+            "explanation": "cross-term mismatch",
+        }])
+        pack = KnowledgePack(
+            prompt_text=self.pack.prompt_text,
+            summary=self.pack.summary,
+            allowed_term_ids={7, 8},
+            allowed_translation_ids={11, 22},
+            translation_term_ids={11: 7, 22: 8},
+            allowed_source_ids={13},
+            source_details=self.pack.source_details,
+        )
+        app, _ = self.make_app([json.dumps(payload)])
+
+        with app.app_context():
+            report = generate_expression_report(self.task, pack)
+
+        self.assertEqual(report.term_usage, [])
+        self.assertIn("translation_term_mismatch_removed", report.warnings)
+
+    def test_retries_when_alternatives_duplicate_recommendation(self):
+        invalid = valid_payload(alternatives=[{
+            "text": "Harmony in diversity",
+            "best_for": "Any",
+            "tradeoff": "Duplicate",
+        }])
+        app, completions = self.make_app([
+            json.dumps(invalid),
+            json.dumps(valid_payload()),
+        ])
+
+        with app.app_context():
+            report = generate_expression_report(self.task, self.pack)
+
+        self.assertEqual(len(completions.calls), 2)
+        self.assertEqual(len(report.alternatives), 1)
+
     def test_maps_timeout_without_exposing_provider_detail(self):
         app, _ = self.make_app([TimeoutError("secret provider diagnostic")])
 

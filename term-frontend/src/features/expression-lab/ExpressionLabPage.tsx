@@ -40,15 +40,19 @@ export default function ExpressionLabPage() {
   }
 
   const termNames = Object.fromEntries(selected.map((term) => [term.id, term.preferred_name_zh]))
+  const cancelWaiting = () => {
+    requestSequence.current += 1
+    setState('editing')
+  }
   return <div className="expression-lab-page">
     <header className="lab-hero"><div><p className="lab-eyebrow">CROSS-CULTURAL EXPRESSION LAB</p><h1>跨文化表达实验室</h1><p>把术语知识、受众场景与文化风险组织成一份可比较、可追溯、可复核的英语表达方案。</p></div><aside><strong>研究型生成</strong><span>术语依据 → 场景适配 → 引用校验</span></aside></header>
     <div className="lab-workspace"><div className="lab-input-column">
-      <TermSelector selected={selected} onAdd={(term) => { setSelected((items) => [...items, term]); setErrors((current) => ({ ...current, terms: undefined })) }} onRemove={(id) => setSelected((items) => items.filter((term) => term.id !== id))} />
+      <TermSelector selected={selected} onAdd={(term) => { setSelected((items) => items.length >= 5 || items.some((item) => item.id === term.id) ? items : [...items, term]); setErrors((current) => ({ ...current, terms: undefined })) }} onRemove={(id) => setSelected((items) => items.filter((term) => term.id !== id))} />
       <section className="lab-panel"><div className="lab-section-heading lab-section-heading--small"><span>依据</span><div><p>SELECTED KNOWLEDGE</p><h2>当前知识包</h2></div></div><KnowledgePack terms={selected} /></section>
       <CommunicationTaskForm errors={errors} loading={state === 'generating'} onChange={setValues} onSubmit={() => void submit()} values={values} />
     </div><aside className="lab-output-column">
       {state === 'editing' ? <section className="lab-output-empty"><span>03</span><h2>等待生成</h2><p>完成术语选择和传播任务后，这里将呈现首选表达、备选对照、文化风险和可追溯来源。</p></section> : null}
-      {state === 'generating' ? <GenerationStatus /> : null}
+      {state === 'generating' ? <GenerationStatus onCancel={cancelWaiting} /> : null}
       {state === 'error' ? <section className="lab-error" role="alert"><h2>本次分析未完成</h2><p>{errorMessage}</p><button onClick={() => void submit()} type="button">按原任务重试</button></section> : null}
       {state === 'success' && analysis ? <><div className="knowledge-summary"><b>本次知识依据</b><span>{analysis.knowledge_summary.term_count} 个术语 · {analysis.knowledge_summary.translation_count} 个译法 · {analysis.knowledge_summary.source_count} 个来源</span></div><ExpressionReport analysis={analysis} termNames={termNames} /></> : null}
     </aside></div>

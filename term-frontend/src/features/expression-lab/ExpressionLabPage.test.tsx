@@ -17,18 +17,19 @@ const summary = {
   language_count: 1, source_count: 1,
 }
 const profile = { ...summary, cultural_connotation: '尊重差异', names: [], translations: [], sources: [{ id: 13, title: '中华思想文化术语', organization: '术语项目', source_type: 'book', url: null, citation: null, authority_level: 'verified', summary: null, language_code: null, published_at: null, legacy_value: null, evidence: [] }], contexts: [], cultural_notes: [], relations: [], topics: [] }
+const analysis = {
+  request_id: 'req-1', input_summary: { source_text: '和而不同强调在差异中寻求和谐共处。', target_language: 'en' as const, audience: 'overseas_youth' as const, scenario: 'cultural_exhibition' as const, style: 'explanatory' as const, locale: 'general_english' as const },
+  knowledge_summary: { term_count: 1, translation_count: 1, source_count: 1, context_count: 0, truncated: false },
+  report: { recommended: { text: 'Harmony in diversity', rationale: '保留差异', strategy: ['解释性翻译'] }, alternatives: [{ text: 'Harmony without uniformity', best_for: '学术', tradeoff: '书面' }], term_usage: [], cultural_risks: [], references: [], limitations: ['需复核'], review_priority: 'medium' as const },
+  generated_at: '2026-09-19T12:00:00Z', review_status: 'ai_unreviewed' as const, warnings: [],
+}
 
 describe('ExpressionLabPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(knowledgeApi.listTerms).mockResolvedValue({ data: [summary], meta: { page: 1, page_size: 8, total: 1 } })
     vi.mocked(knowledgeApi.getTerm).mockResolvedValue(profile)
-    vi.mocked(expressionApi.analyzeExpression).mockResolvedValue({
-      request_id: 'req-1', input_summary: { source_text: '和而不同强调在差异中寻求和谐共处。', target_language: 'en', audience: 'overseas_youth', scenario: 'cultural_exhibition', style: 'explanatory', locale: 'general_english' },
-      knowledge_summary: { term_count: 1, translation_count: 1, source_count: 1, context_count: 0, truncated: false },
-      report: { recommended: { text: 'Harmony in diversity', rationale: '保留差异', strategy: ['解释性翻译'] }, alternatives: [{ text: 'Harmony without uniformity', best_for: '学术', tradeoff: '书面' }], term_usage: [], cultural_risks: [], references: [], limitations: ['需复核'], review_priority: 'medium' },
-      generated_at: '2026-09-19T12:00:00Z', review_status: 'ai_unreviewed', warnings: [],
-    })
+    vi.mocked(expressionApi.analyzeExpression).mockResolvedValue(analysis)
   })
 
   it('mounts the real route, selects knowledge and submits the fixed task contract', async () => {
@@ -39,6 +40,7 @@ describe('ExpressionLabPage', () => {
 
     await user.type(screen.getByRole('searchbox', { name: '搜索已发布术语' }), '和而')
     await user.click(screen.getByRole('button', { name: '搜索术语' }))
+    expect(knowledgeApi.listTerms).toHaveBeenCalledWith({ q: '和而', page: 1, pageSize: 8 })
     await user.click(await screen.findByRole('button', { name: '添加 和而不同' }))
     expect(await screen.findByText('harmony in diversity')).toBeInTheDocument()
     expect(screen.getByText('中华思想文化术语')).toBeInTheDocument()
@@ -56,5 +58,23 @@ describe('ExpressionLabPage', () => {
     expect(screen.getByText('请至少选择一个术语')).toBeInTheDocument()
     expect(screen.getByText('请输入10至1000字中文文本')).toBeInTheDocument()
     expect(expressionApi.analyzeExpression).not.toHaveBeenCalled()
+  })
+
+  it('cancels the local wait and ignores a late response without losing input', async () => {
+    let resolveRequest: ((value: typeof analysis) => void) | undefined
+    vi.mocked(expressionApi.analyzeExpression).mockImplementation(() => new Promise((resolve) => { resolveRequest = resolve }))
+    const user = userEvent.setup()
+    render(<MemoryRouter initialEntries={['/lab']}><AppRoutes /></MemoryRouter>)
+    await user.click(screen.getByRole('button', { name: '搜索术语' }))
+    await user.click(await screen.findByRole('button', { name: '添加 和而不同' }))
+    const source = '和而不同强调在差异中寻求和谐共处。'
+    await user.type(screen.getByLabelText('中文待表达文本'), source)
+    await user.click(screen.getByRole('button', { name: '生成跨文化表达报告' }))
+    await user.click(await screen.findByRole('button', { name: '取消等待' }))
+    expect(screen.getByLabelText('中文待表达文本')).toHaveValue(source)
+    expect(screen.getByText('等待生成')).toBeInTheDocument()
+    resolveRequest?.(analysis)
+    await Promise.resolve()
+    expect(screen.queryByText('Harmony in diversity')).not.toBeInTheDocument()
   })
 })

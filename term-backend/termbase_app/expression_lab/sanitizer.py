@@ -30,6 +30,13 @@ def sanitize_report(
         ):
             warn("invalid_translation_reference_removed")
             continue
+        if (
+            item.translation_id is not None
+            and pack.translation_term_ids
+            and pack.translation_term_ids.get(item.translation_id) != item.term_id
+        ):
+            warn("translation_term_mismatch_removed")
+            continue
         term_usage.append(item)
 
     references = []

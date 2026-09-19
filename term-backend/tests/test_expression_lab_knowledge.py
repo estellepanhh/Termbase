@@ -165,7 +165,17 @@ class ExpressionLabKnowledgeTests(unittest.TestCase):
         self.assertIn("harmony in diversity", pack.prompt_text)
         self.assertTrue(pack.summary.truncated)
         self.assertIn(self.recommended_id, pack.allowed_translation_ids)
-        self.assertLessEqual(len(pack.prompt_text), 650)
+        self.assertLessEqual(len(pack.prompt_text), 450)
+
+    def test_pack_caps_oversized_required_database_fields(self):
+        self.term.definition_zh = "极长定义" * 5000
+        db.session.commit()
+
+        pack = build_knowledge_pack([self.term.id], max_chars=600)
+
+        self.assertLessEqual(len(pack.prompt_text), 600)
+        self.assertIn("和而不同", pack.prompt_text)
+        self.assertIn(self.recommended_id, pack.allowed_translation_ids)
 
 
 if __name__ == "__main__":

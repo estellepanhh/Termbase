@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class StringEnum(str, Enum):
@@ -69,7 +69,7 @@ class ExpressionTask(BaseModel):
             raise ValueError("term_ids must contain positive ids")
         return value
 
-    @field_validator("source_text")
+    @field_validator("source_text", mode="before")
     @classmethod
     def normalize_source_text(cls, value):
         value = value.strip()
@@ -121,6 +121,16 @@ class ModelExpressionReport(StrictModel):
     limitations: list[str] = Field(min_length=1, max_length=8)
     review_priority: RiskLevel
 
+    @model_validator(mode="after")
+    def validate_distinct_alternatives(self):
+        seen = {self.recommended.text.strip().casefold()}
+        for alternative in self.alternatives:
+            key = alternative.text.strip().casefold()
+            if key in seen:
+                raise ValueError("alternatives must be distinct from recommendation")
+            seen.add(key)
+        return self
+
 
 class ReferenceDetail(StrictModel):
     source_id: int = Field(gt=0)
@@ -159,6 +169,7 @@ class KnowledgePack:
     allowed_translation_ids: set[int]
     allowed_source_ids: set[int]
     source_details: dict[int, dict]
+    translation_term_ids: dict[int, int] = field(default_factory=dict)
 
 
 class ExpressionLabError(Exception):

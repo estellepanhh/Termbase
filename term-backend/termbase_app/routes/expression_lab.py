@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import asdict
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -54,7 +55,15 @@ def analyze_expression():
         return _response(415, "请求必须使用JSON格式", None)
 
     try:
-        task = ExpressionTask.model_validate(request.get_json(silent=False))
+        raw_body = request.input_stream.read(max_bytes + 1)
+        if len(raw_body) > max_bytes:
+            return _response(413, "请求内容过大", None)
+        payload = json.loads(raw_body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return _response(400, "请求JSON格式不正确", None)
+
+    try:
+        task = ExpressionTask.model_validate(payload)
     except (ValidationError, TypeError) as exc:
         fields = _validation_fields(exc) if isinstance(exc, ValidationError) else {}
         return _response(400, "请求参数不正确", {"fields": fields})

@@ -1,4 +1,6 @@
 import unittest
+from io import BytesIO
+import json
 from unittest.mock import Mock
 
 from termbase_app import create_app
@@ -121,6 +123,31 @@ class ExpressionLabApiTests(unittest.TestCase):
         response = self.client.post("/api/v1/expression-lab/analyze", json=invalid)
         self.assertEqual(response.status_code, 400)
         self.assertIn("audience", response.get_json()["data"]["fields"])
+
+        malformed = self.client.post(
+            "/api/v1/expression-lab/analyze",
+            data='{"term_ids":',
+            content_type="application/json",
+        )
+        self.assertEqual(malformed.status_code, 400)
+        self.assertEqual(malformed.content_type, "application/json")
+        self.assertEqual(malformed.get_json()["message"], "请求JSON格式不正确")
+
+    def test_rejects_large_chunked_body_without_content_length(self):
+        self.app.config["EXPRESSION_LAB_MAX_BODY_BYTES"] = 64
+        raw = json.dumps(task_payload(self.term.id)).encode()
+        response = self.client.open(
+            "/api/v1/expression-lab/analyze",
+            method="POST",
+            content_type="application/json",
+            environ_overrides={
+                "CONTENT_LENGTH": "",
+                "wsgi.input": BytesIO(raw),
+                "wsgi.input_terminated": True,
+            },
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(response.content_type, "application/json")
 
     def test_maps_unpublished_and_provider_errors(self):
         missing = self.client.post(
