@@ -59,3 +59,7 @@ cd D:\Termbase\.worktrees\knowledge-core-rebuild\term-backend
 结果：24 tests，0 failures。
 
 Final-review full acceptance results: backend `30 tests ... OK`; frontend `npm test` `5 files / 43 tests passed`; `npm run build` exit 0; `npm run lint` exit 0 with 0 errors and the same 4 pre-existing React Hook warnings; `git diff --check` passed; secret scan returned no results. Documentation inspection confirms CRUD/import examples are removed and only the explicit “removed/404” compatibility note remains.
+
+## Migration-history correction
+
+The shipped base revision `3d256e5c3d75` was restored unchanged (no payload column; both legacy IDs remain length 100). Successor revision `7b8f4e2a1c6d` adds nullable JSON, backfills existing rows to `{}`, batch-enforces non-null, widens both IDs to 255, and downgrades safely. The executable SQLite migration test upgrades base → successor, verifies an existing row survives with an empty payload, then downgrades successor → base and removes all tables. Focused migration/model/import/API checks pass; full backend suite passes with 31 tests, and `compileall` passes.

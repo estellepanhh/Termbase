@@ -1,3 +1,4 @@
+import json
 import unittest
 import importlib.util
 from pathlib import Path
@@ -288,11 +289,65 @@ class KnowledgeModelTests(unittest.TestCase):
                 all(name.startswith("kb_") for name in sa.inspect(connection).get_table_names())
             )
             columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_terms")}
-            self.assertIn("legacy_payload", columns)
+            self.assertNotIn("legacy_payload", columns)
+            self.assertEqual(columns["legacy_id"]["type"].length, 100)
             topic_item_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_topic_items")}
-            self.assertEqual(topic_item_columns["legacy_id"]["type"].length, 255)
+            self.assertEqual(topic_item_columns["legacy_id"]["type"].length, 100)
 
             context = MigrationContext.configure(connection)
             with Operations.context(context):
                 migration.downgrade()
+            self.assertEqual(sa.inspect(connection).get_table_names(), [])
+
+    def test_successor_migration_backfills_payload_and_widens_ids(self):
+        migration_dir = Path(__file__).resolve().parents[1] / "migrations" / "versions"
+        base_spec = importlib.util.spec_from_file_location(
+            "knowledge_migration", migration_dir / "3d256e5c3d75_add_knowledge_core_tables.py"
+        )
+        successor_spec = importlib.util.spec_from_file_location(
+            "legacy_payload_migration", migration_dir / "7b8f4e2a1c6d_preserve_legacy_payload.py"
+        )
+        base = importlib.util.module_from_spec(base_spec)
+        successor = importlib.util.module_from_spec(successor_spec)
+        base_spec.loader.exec_module(base)
+        successor_spec.loader.exec_module(successor)
+        engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+
+        with engine.connect() as connection:
+            context = MigrationContext.configure(connection)
+            with Operations.context(context):
+                base.upgrade()
+            connection.execute(sa.text(
+                "INSERT INTO kb_terms "
+                "(preferred_name_zh, definition_zh, cultural_connotation, term_level, culture_category, status, data_quality) "
+                "VALUES ('旧术语', '', '', '', '', 'published', 'legacy_unreviewed')"
+            ))
+            connection.commit()
+            base_columns = {column["name"] for column in sa.inspect(connection).get_columns("kb_terms")}
+            self.assertNotIn("legacy_payload", base_columns)
+
+            context = MigrationContext.configure(connection)
+            with Operations.context(context):
+                successor.upgrade()
+            upgraded_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_terms")}
+            self.assertEqual(upgraded_columns["legacy_payload"]["type"].__class__.__name__, "JSON")
+            self.assertFalse(upgraded_columns["legacy_payload"]["nullable"])
+            self.assertEqual(upgraded_columns["legacy_id"]["type"].length, 255)
+            topic_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_topic_items")}
+            self.assertEqual(topic_columns["legacy_id"]["type"].length, 255)
+            payload = connection.execute(sa.text("SELECT legacy_payload FROM kb_terms")).scalar_one()
+            self.assertEqual(json.loads(payload) if isinstance(payload, str) else payload, {})
+
+            context = MigrationContext.configure(connection)
+            with Operations.context(context):
+                successor.downgrade()
+            downgraded_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_terms")}
+            self.assertNotIn("legacy_payload", downgraded_columns)
+            self.assertEqual(downgraded_columns["legacy_id"]["type"].length, 100)
+            downgraded_topic_columns = {column["name"]: column for column in sa.inspect(connection).get_columns("kb_topic_items")}
+            self.assertEqual(downgraded_topic_columns["legacy_id"]["type"].length, 100)
+
+            context = MigrationContext.configure(connection)
+            with Operations.context(context):
+                base.downgrade()
             self.assertEqual(sa.inspect(connection).get_table_names(), [])
