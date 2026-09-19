@@ -1,6 +1,8 @@
 # 中国特色话语多语术语库
 
-面向中华文化术语的知识管理平台，提供术语检索、分类筛选、多语翻译、AI 智能问答等功能。
+面向中华文化术语的知识管理平台，提供可追溯术语检索、分类筛选、多语翻译、来源证据和 AI 智能问答。
+
+当前系统同时保留旧版管理/淮河兼容路由，并以 `kb_` 规范化知识核心承载新的公共只读体验。迁移只读旧表，不删除或改写旧数据；旧路由用于兼容，公共用户界面和 `/api/v1` 使用新模型。
 
 ## 技术栈
 
@@ -18,13 +20,13 @@
 Termbase/
 ├── term-backend/
 │   ├── app.py              # Flask 主应用
-│   ├── models.py           # SQLAlchemy ORM 模型（Term / HuaiheTerm / HuaiheFigure）
+│   ├── termbase_app/       # Flask 应用、知识模型、服务和路由
 │   ├── requirements.txt    # Python 依赖
 │   ├── data/               # Excel 数据文件
 │   │   ├── terms.xlsx
 │   │   ├── huaihe_terms.xlsx
 │   │   └── huaihe_figures.xlsx
-│   ├── scripts/            # 数据导入脚本
+│   ├── scripts/            # 数据导入和知识迁移脚本
 │   │   ├── import_terms.py
 │   │   ├── import_huaihe_terms.py
 │   │   ├── import_figures.py
@@ -75,8 +77,12 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env，填入数据库密码和 DeepSeek API Key
 
+# 创建/升级规范化知识表（迁移前先完成备份，详见 docs/migration-guide.md）
+$env:FLASK_APP='termbase_app:create_app'
+venv\Scripts\flask.exe db upgrade
+
 # 启动
-python app.py                  # 默认 http://127.0.0.1:5000
+venv\Scripts\python.exe app.py # 默认 http://127.0.0.1:5000
 ```
 
 ### 3. 前端
@@ -89,7 +95,16 @@ npm run dev                    # 默认 http://localhost:5173
 
 前端已配置 Vite 代理，`/api/*` 请求自动转发至后端。浏览器打开 `http://localhost:5173` 即可使用。
 
-### 4. 导入数据
+### 4. 迁移旧数据
+
+```powershell
+cd term-backend
+venv\Scripts\python.exe scripts\migrate_legacy_knowledge.py
+```
+
+脚本可重复执行；第二次执行不会重复创建术语、译法、来源或专题条目。完整备份、核对和回滚流程见 [docs/migration-guide.md](docs/migration-guide.md)。
+
+### 5. 导入旧版 Excel 数据（兼容维护流程）
 
 ```bash
 cd term-backend
@@ -100,6 +115,15 @@ venv\Scripts\python scripts\import_child_explain.py
 ```
 
 导入为全量替换。修改 Excel 文件后重新执行脚本即可更新数据库。
+
+## 公共路由
+
+- `GET /api/v1/terms`：分页搜索和筛选已发布术语。
+- `GET /api/v1/terms/{id}`：术语详情，含多译法、来源、证据、场景和文化提示。
+- `POST /api/chat/stream`：DeepSeek SSE 对话。
+- `/api/term-list`、`/api/search`、`/api/filter`、`/api/huaihe/*`：旧版兼容读取/管理路由。
+
+请求参数和完整 JSON 示例见 [API.md](API.md)。
 
 ## 功能特性
 
@@ -128,7 +152,7 @@ venv\Scripts\python scripts\import_child_explain.py
 
 ## 接口文档
 
-详见 [API.md](API.md)。
+详见 [API.md](API.md)；知识实体关系见 [docs/knowledge-model.md](docs/knowledge-model.md)。
 
 ## 许可证
 

@@ -171,4 +171,19 @@ describe('knowledgeApi', () => {
       response: { status: 404 },
     })
   })
+
+  it('accepts the v1 message field when unwrapping errors', async () => {
+    request.defaults.adapter = async (config) => {
+      const response = {
+        data: { code: 404, message: '术语不存在或尚未发布' },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      }
+      return response
+    }
+
+    await expect(getTerm(999)).rejects.toThrow('术语不存在或尚未发布')
+  })
 })

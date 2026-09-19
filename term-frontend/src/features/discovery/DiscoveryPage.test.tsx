@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -80,6 +80,16 @@ describe('DiscoveryPage', () => {
     expect(screen.getByText('2 种语言')).toBeInTheDocument()
     expect(screen.getByText('历史数据待复核')).toBeInTheDocument()
     expect(screen.queryByText('权威审定')).not.toBeInTheDocument()
+  })
+
+  it('canonicalizes malformed and non-positive URL pages to page one', async () => {
+    for (const page of ['0', '-2', 'not-a-number', '1.5']) {
+      listTerms.mockClear()
+      const rendered = renderDiscovery(`/discover?q=%E5%92%8C&page=${page}`)
+      await waitFor(() => expect(listTerms).toHaveBeenCalledWith({ q: '和', page: 1, pageSize: 20 }))
+      rendered.unmount()
+      cleanup()
+    }
   })
 
   it('writes submitted searches, filters, and page changes back to the URL', async () => {
