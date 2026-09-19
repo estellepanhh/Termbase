@@ -1,0 +1,13 @@
+:root {
+  --color-ink: #132238;
+  --color-navy: #17365d;
+  --color-vermilion: #a63d32;
+  --color-paper: #fbfaf7;
+  --color-surface: #ffffff;
+  --color-muted: #667085;
+  --color-border: #d9dde5;
+  --shadow-soft: 0 16px 40px rgba(19, 34, 56, 0.08);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --content-width: 1200px;
+}
