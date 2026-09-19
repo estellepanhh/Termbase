@@ -1,30 +1,75 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { act } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
-import AppShell from './AppShell'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import i18n from '../locales'
+import AppRoutes from './routes'
 
-describe('AppShell', () => {
-  it('presents the public research navigation and platform identity', () => {
-    render(
-      <MemoryRouter>
-        <AppShell />
-      </MemoryRouter>,
-    )
+function renderRoute(path = '/discover') {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AppRoutes />
+    </MemoryRouter>,
+  )
+}
 
-    expect(screen.getByRole('link', { name: '术语探索' })).toHaveAttribute('href', '/discover')
-    expect(screen.getByRole('link', { name: '表达实验室' })).toHaveAttribute('href', '/lab')
-    expect(screen.getByRole('link', { name: '文化专题' })).toHaveAttribute('href', '/topics')
-    expect(screen.getByText('中国特色话语多语知识平台')).toBeInTheDocument()
+describe('research platform application shell', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh')
   })
 
-  it('makes the mobile navigation available from an accessible menu control', async () => {
-    const user = (await import('@testing-library/user-event')).default.setup()
+  afterEach(async () => {
+    await i18n.changeLanguage('zh')
+  })
 
-    render(
-      <MemoryRouter>
-        <AppShell />
-      </MemoryRouter>,
+  it('renders canonical content inside semantic landmarks and marks its navigation link current', () => {
+    renderRoute()
+
+    expect(screen.getByRole('banner')).toBeInTheDocument()
+    expect(screen.getByRole('main')).toHaveTextContent('术语探索')
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+    expect(screen.getByText('中国特色话语多语术语库')).toBeInTheDocument()
+
+    const navigation = screen.getByRole('navigation', { name: '主导航' })
+    expect(within(navigation).getByRole('link', { name: '术语检索' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
+  })
+
+  it('switches the visible shell labels between Chinese and English', async () => {
+    const user = userEvent.setup()
+    renderRoute()
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: '切换至英文' }))
+    })
+
+    expect(await screen.findByRole('link', { name: 'Term Search' })).toHaveAttribute(
+      'href',
+      '/discover',
+    )
+    expect(screen.getByText('Chinese Cultural Terminology Database')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Expression Lab' })).toHaveAttribute('href', '/lab')
+    expect(screen.getByRole('button', { name: 'Switch to Chinese' })).toBeInTheDocument()
+  })
+
+  it.each([
+    ['/search', '术语探索'],
+    ['/browse', '术语探索'],
+    ['/guide', '术语探索'],
+    ['/huaihe', '文化专题'],
+    ['/about', '文化专题'],
+  ])('redirects legacy URL %s to the supported public route', (legacyPath, expectedHeading) => {
+    renderRoute(legacyPath)
+
+    expect(screen.getByRole('main')).toHaveTextContent(expectedHeading)
+  })
+
+  it('makes mobile navigation available from an accessible menu control', async () => {
+    const user = userEvent.setup()
+    renderRoute()
 
     await user.click(screen.getByRole('button', { name: '打开导航菜单' }))
 

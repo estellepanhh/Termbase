@@ -8,6 +8,7 @@
 .app-brand__title { font-family: Georgia, 'Songti SC', 'SimSun', serif; font-weight: 700; letter-spacing: 0.03em; }
 .app-brand__subtitle { color: var(--color-muted); font-size: 0.75rem; line-height: 1.4; margin-top: 0.125rem; }
 .app-navigation { display: flex; align-items: center; gap: 0.25rem; }
+.app-header__actions { display: flex; align-items: center; gap: 0.25rem; }
 .app-navigation__link { color: var(--color-ink); padding: 0.5rem 0.625rem; text-decoration: none; border-radius: var(--radius-sm); font-size: 0.9375rem; }
 .app-navigation__link:hover, .app-navigation__link[aria-current='page'] { color: var(--color-navy); background: color-mix(in srgb, var(--color-navy) 8%, transparent); }
 .app-navigation__link[aria-current='page'] { font-weight: 700; }
