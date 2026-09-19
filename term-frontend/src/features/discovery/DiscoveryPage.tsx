@@ -43,6 +43,10 @@ function pageNumbers(currentPage: number, totalPages: number) {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index)
 }
 
+function maximumPage(response: PaginatedTerms) {
+  return Math.max(1, Math.ceil(response.meta.total / response.meta.page_size))
+}
+
 export default function DiscoveryPage() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -60,6 +64,13 @@ export default function DiscoveryPage() {
     void listTerms(query)
       .then((nextResponse) => {
         if (active) {
+          const maxPage = maximumPage(nextResponse)
+          if ((query.page ?? 1) > maxPage) {
+            const params = new URLSearchParams(location.search)
+            params.set('page', String(maxPage))
+            navigate(`/discover?${params.toString()}`, { replace: true })
+            return
+          }
           hasResults.current = true
           setResponse(nextResponse)
           setStatus('ready')
@@ -74,7 +85,7 @@ export default function DiscoveryPage() {
     return () => {
       active = false
     }
-  }, [query, retryKey])
+  }, [location.search, navigate, query, retryKey])
 
   const updateUrl = (updates: Record<string, string | undefined>, resetPage = true) => {
     const params = new URLSearchParams(location.search)
@@ -92,7 +103,7 @@ export default function DiscoveryPage() {
     navigate(nextSearch ? `/discover?${nextSearch}` : '/discover')
   }
 
-  const totalPages = response ? Math.max(1, Math.ceil(response.meta.total / response.meta.page_size)) : 1
+  const totalPages = response ? maximumPage(response) : 1
   const currentPage = query.page ?? response?.meta.page ?? 1
 
   return (

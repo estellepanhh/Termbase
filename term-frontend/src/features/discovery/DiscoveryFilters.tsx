@@ -15,7 +15,13 @@ type DiscoveryFiltersProps = {
 
 const levels = ['核心层', '拓展层', '本源层']
 const cultures = ['中华优秀传统文化', '革命文化', '社会主义先进文化']
-const languages = ['英语', '法语', '西班牙语', '阿拉伯语', '俄语']
+const languages = [
+  { code: 'en', label: '英语' },
+  { code: 'fr', label: '法语' },
+  { code: 'es', label: '西班牙语' },
+  { code: 'ar', label: '阿拉伯语' },
+  { code: 'ru', label: '俄语' },
+]
 
 export default function DiscoveryFilters({ values, onSearch, onFilterChange }: DiscoveryFiltersProps) {
   const [query, setQuery] = useState(values.q)
@@ -60,7 +66,7 @@ export default function DiscoveryFilters({ values, onSearch, onFilterChange }: D
           语种
           <select onChange={(event) => onFilterChange('language', event.target.value)} value={values.language}>
             <option value="">全部语种</option>
-            {languages.map((language) => <option key={language} value={language}>{language}</option>)}
+            {languages.map((language) => <option key={language.code} value={language.code}>{language.label}</option>)}
           </select>
         </label>
       </div>
