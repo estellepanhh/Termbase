@@ -1,9 +1,8 @@
 import json
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
 
-import app as app_module
+from termbase_app import create_app
 
 
 class FakeCompletions:
@@ -35,21 +34,19 @@ class ChatStreamTests(unittest.TestCase):
         self.client = SimpleNamespace(
             chat=SimpleNamespace(completions=self.completions)
         )
-        self.http = app_module.app.test_client()
+        self.app = create_app({
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+            "DEEPSEEK_CLIENT": self.client,
+            "DEEPSEEK_MODEL": "configured-model",
+        })
+        self.http = self.app.test_client()
 
     def test_stream_uses_configured_deepseek_model_and_preserves_sse_contract(self):
-        with (
-            patch.object(
-                app_module, "deepseek_client", self.client, create=True
-            ),
-            patch.object(
-                app_module, "DEEPSEEK_MODEL", "configured-model", create=True
-            ),
-        ):
-            response = self.http.post(
-                "/api/chat/stream",
-                json={"message": "如何翻译和而不同？"},
-            )
+        response = self.http.post(
+            "/api/chat/stream",
+            json={"message": "如何翻译和而不同？"},
+        )
 
         self.assertEqual(response.status_code, 200)
         events = [
@@ -69,12 +66,16 @@ class ChatStreamTests(unittest.TestCase):
         client = SimpleNamespace(
             chat=SimpleNamespace(completions=FailingCompletions())
         )
-        with self.assertLogs(app_module.logger, level="ERROR"):
-            with patch.object(app_module, "deepseek_client", client):
-                response = self.http.post(
-                    "/api/chat/stream",
-                    json={"message": "测试异常"},
-                )
+        app = create_app({
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+            "DEEPSEEK_CLIENT": client,
+        })
+        with self.assertLogs("termbase_app.routes.ai", level="ERROR"):
+            response = app.test_client().post(
+                "/api/chat/stream",
+                json={"message": "测试异常"},
+            )
 
         body = response.get_data(as_text=True)
         self.assertNotIn("provider-internal-details", body)
