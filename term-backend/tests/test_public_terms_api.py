@@ -208,6 +208,11 @@ class PublicTermsApiTests(unittest.TestCase):
             sorted([self.term_id, self.related_term_id]),
         )
 
+    def test_list_exposes_existing_child_explanation_for_reading_mode(self):
+        response = self.client.get("/api/v1/terms?q=和而不同")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["data"][0]["child_explanation"], "大家可以不一样")
+
     def test_list_rejects_non_integer_pagination_parameters(self):
         response = self.client.get("/api/v1/terms?page=one&page_size=20")
 

@@ -11,6 +11,7 @@ export interface TermSummary {
   id: number
   preferred_name_zh: string
   definition_zh: string
+  child_explanation?: string | null
   term_level: string
   culture_category: string
   data_quality: string

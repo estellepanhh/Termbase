@@ -17,6 +17,11 @@
 .term-profile-status h1 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 0.75rem; }
 .term-profile-status p { line-height: 1.8; margin: 0; }
 .term-profile-status a, .term-profile-status button { background: var(--color-navy); border: 1px solid var(--color-navy); border-radius: var(--radius-sm); color: white; display: inline-block; font: inherit; font-weight: 700; margin-top: 1rem; padding: 0.7rem 1rem; text-decoration: none; }
+.child-explanation-panel { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start; margin-top: 1.25rem; padding: clamp(1.25rem, 4vw, 2rem); border: 2px solid #efd37c; border-radius: 1.25rem; background: linear-gradient(135deg, #fff8d9, #edf8ed); }
+.child-explanation-panel > span { font-size: 2.25rem; }
+.child-explanation-panel h2 { margin: .15rem 0 .65rem; color: #285f56; font: 700 clamp(1.35rem, 3vw, 1.8rem) Georgia, 'Songti SC', serif; }
+.child-explanation-panel p { margin: 0; line-height: 1.8; }
+.child-explanation-panel div > p:first-child { color: #9b6430; font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
 .term-profile-status button { cursor: pointer; }
 .translation-panel__group { display: grid; gap: 0.75rem; }
 .translation-panel__group + .translation-panel__group { margin-top: 0.5rem; }

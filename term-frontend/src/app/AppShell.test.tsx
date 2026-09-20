@@ -5,17 +5,17 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../locales'
 import AppRoutes from './routes'
+import { ChildModeProvider } from '../context/ChildModeContext'
 
 function renderRoute(path = '/discover') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <AppRoutes />
-    </MemoryRouter>,
+    <ChildModeProvider><MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter></ChildModeProvider>,
   )
 }
 
 describe('research platform application shell', () => {
   beforeEach(async () => {
+    localStorage.clear()
     await i18n.changeLanguage('zh')
   })
 
@@ -78,5 +78,15 @@ describe('research platform application shell', () => {
       'href',
       '/workspace',
     )
+  })
+
+  it('applies child and large-text modes to the full application shell', async () => {
+    const user = userEvent.setup()
+    renderRoute()
+    const shell = document.querySelector('.app-shell')
+    await user.click(screen.getByRole('button', { name: '开启儿童模式' }))
+    await user.click(screen.getByRole('button', { name: '开启大字模式' }))
+    expect(shell).toHaveAttribute('data-child-mode', 'true')
+    expect(shell).toHaveAttribute('data-large-text', 'true')
   })
 })

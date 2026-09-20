@@ -1,31 +1,36 @@
-// src/context/ChildModeContext.tsx
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 
-interface ChildModeContextType {
-  isChildMode: boolean;
-  toggleChildMode: () => void;
+const STORAGE_KEY = 'termbase-reading-preferences'
+type ReadingPreferences = { childMode: boolean; largeTextMode: boolean }
+type ChildModeContextType = { isChildMode: boolean; isLargeTextMode: boolean; toggleChildMode: () => void; toggleLargeTextMode: () => void }
+const defaults: ReadingPreferences = { childMode: false, largeTextMode: false }
+
+const ChildModeContext = createContext<ChildModeContextType>({ isChildMode: false, isLargeTextMode: false, toggleChildMode: () => undefined, toggleLargeTextMode: () => undefined })
+
+function readPreferences(): ReadingPreferences {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Partial<ReadingPreferences>
+    return { childMode: saved.childMode === true, largeTextMode: saved.largeTextMode === true }
+  } catch { return defaults }
 }
 
-const ChildModeContext = createContext<ChildModeContextType | undefined>(undefined);
-
-export const ChildModeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isChildMode, setIsChildMode] = useState(false);
-
-  const toggleChildMode = () => setIsChildMode(prev => !prev);
-
-  return (
-    <ChildModeContext.Provider value={{ isChildMode, toggleChildMode }}>
-      {children}
-    </ChildModeContext.Provider>
-  );
-};
-
-export const useChildMode = () => {
-  const context = useContext(ChildModeContext);
-  if (context === undefined) {
-    throw new Error('useChildMode must be used within a ChildModeProvider');
+export function ChildModeProvider({ children }: { children: ReactNode }) {
+  const [preferences, setPreferences] = useState(readPreferences)
+  function update(key: keyof ReadingPreferences) {
+    setPreferences((current) => {
+      const next = { ...current, [key]: !current[key] }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* storage may be unavailable */ }
+      return next
+    })
   }
-  return context;
-};
+  const value = useMemo(() => ({
+    isChildMode: preferences.childMode, isLargeTextMode: preferences.largeTextMode,
+    toggleChildMode: () => update('childMode'), toggleLargeTextMode: () => update('largeTextMode'),
+  }), [preferences])
+
+  return <ChildModeContext.Provider value={value}>{children}</ChildModeContext.Provider>
+}
+
+export const useChildMode = () => useContext(ChildModeContext)

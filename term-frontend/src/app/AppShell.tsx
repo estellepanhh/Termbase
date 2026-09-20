@@ -3,6 +3,8 @@ import { Button, Drawer } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet } from 'react-router-dom'
+import ReadingPreferenceControls from '../components/ReadingPreferenceControls'
+import { useChildMode } from '../context/ChildModeContext'
 
 type ShellLabels = {
   lab: string
@@ -78,6 +80,7 @@ export default function AppShell() {
   const { i18n, t } = useTranslation()
   const isChinese = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh')
   const labels = newConceptLabels[isChinese ? 'zh' : 'en']
+  const { isChildMode, isLargeTextMode } = useChildMode()
   const brandTitle = t('site_title')
   const navigationItems: NavigationItem[] = [
     { to: '/', label: t('home'), end: true },
@@ -92,7 +95,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-child-mode={isChildMode || undefined} data-large-text={isLargeTextMode || undefined}>
       <header className="app-header">
         <div className="app-header__content">
           <NavLink aria-label={`${brandTitle} ${t('home')}`} className="app-brand" to="/">
@@ -112,6 +115,7 @@ export default function AppShell() {
           </nav>
 
           <div className="app-header__actions">
+            <ReadingPreferenceControls />
             <Button aria-label={labels.switchLanguage} onClick={toggleLanguage} type="text">
               {labels.languageControl}
             </Button>

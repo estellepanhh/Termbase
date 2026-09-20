@@ -5,6 +5,7 @@ import type { TermProfile } from '../../types/knowledge'
 import EvidencePanel from './EvidencePanel'
 import TranslationPanel from './TranslationPanel'
 import './term-profile.css'
+import { useChildMode } from '../../context/ChildModeContext'
 
 type LoadStatus = 'loading' | 'ready' | 'error' | 'not-found'
 
@@ -47,8 +48,9 @@ function ProfileStatus({ status, onRetry }: { status: LoadStatus; onRetry: () =>
   return null
 }
 
-function ContextPanel({ profile }: { profile: TermProfile }) {
-  if (!profile.contexts.length) return null
+function ContextPanel({ profile, hideChildContext = false }: { profile: TermProfile; hideChildContext?: boolean }) {
+  const contexts = hideChildContext ? profile.contexts.filter((item) => item.context_code !== 'children') : profile.contexts
+  if (!contexts.length) return null
 
   return (
     <section aria-labelledby="contexts-title" className="term-profile-panel">
@@ -57,7 +59,7 @@ function ContextPanel({ profile }: { profile: TermProfile }) {
         <h2 id="contexts-title">适用场景</h2>
       </div>
       <div className="term-profile-card-list">
-        {profile.contexts.map((context) => (
+        {contexts.map((context) => (
           <article className="term-profile-card" key={context.context_code}>
             <div className="term-profile-card__title-row">
               <h3>{context.context_name_zh}</h3>
@@ -133,6 +135,8 @@ function ConnectionsPanel({ profile }: { profile: TermProfile }) {
 }
 
 function ProfileContent({ profile }: { profile: TermProfile }) {
+  const { isChildMode } = useChildMode()
+  const childContext = profile.contexts.find((item) => item.context_code === 'children' && hasText(item.explanation))
   return (
     <article className="term-profile-content">
       <header className="term-profile-hero">
@@ -146,6 +150,10 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
         {profile.names.length ? <p className="term-profile-hero__names">异名：{profile.names.map((name) => name.name).join('、')}</p> : null}
       </header>
 
+      {isChildMode ? <section aria-labelledby="child-explanation-title" className="child-explanation-panel">
+        <span aria-hidden="true">🌱</span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
+      </section> : null}
+
       <TranslationPanel translations={profile.translations} />
 
       {hasText(profile.cultural_connotation) ? (
@@ -158,7 +166,7 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
         </section>
       ) : null}
 
-      <ContextPanel profile={profile} />
+      <ContextPanel hideChildContext={isChildMode} profile={profile} />
       <CulturalNotesPanel profile={profile} />
       <EvidencePanel sources={profile.sources} />
       <ConnectionsPanel profile={profile} />

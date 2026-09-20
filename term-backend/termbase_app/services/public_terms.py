@@ -23,6 +23,7 @@ def list_published_terms(*, q="", level="", culture="", language="", page=1, pag
         .options(
             selectinload(Term.translations).selectinload(Translation.language),
             selectinload(Term.sources),
+            selectinload(Term.contexts).selectinload(TermContext.context),
         )
     )
     if q:
@@ -69,10 +70,12 @@ def serialize_term_summary(term):
     recommended = next(
         (item for item in translations if item.translation_type == "recommended"), None
     )
+    child_context = next((item for item in term.contexts if item.context.code == "children"), None)
     return {
         "id": term.id,
         "preferred_name_zh": term.preferred_name_zh,
         "definition_zh": term.definition_zh,
+        "child_explanation": child_context.explanation if child_context else None,
         "term_level": term.term_level,
         "culture_category": term.culture_category,
         "data_quality": term.data_quality,

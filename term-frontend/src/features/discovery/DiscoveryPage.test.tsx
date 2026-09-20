@@ -7,6 +7,7 @@ import * as api from '../../services/knowledgeApi'
 import AppRoutes from '../../app/routes'
 import i18n from '../../locales'
 import DiscoveryPage from './DiscoveryPage'
+import { ChildModeProvider } from '../../context/ChildModeContext'
 
 vi.mock('../../services/knowledgeApi', () => ({
   listTerms: vi.fn(),
@@ -19,6 +20,7 @@ const response: PaginatedTerms = {
     id: 1,
     preferred_name_zh: '和而不同',
     definition_zh: '承认差异并追求和谐共处。',
+    child_explanation: '大家可以不一样，也可以友好相处。',
     term_level: '本源层',
     culture_category: '中华优秀传统文化',
     data_quality: 'legacy_unreviewed',
@@ -51,15 +53,16 @@ function LocationProbe() {
 
 function renderDiscovery(initialEntry = '/discover') {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <ChildModeProvider><MemoryRouter initialEntries={[initialEntry]}>
       <DiscoveryPage />
       <LocationProbe />
-    </MemoryRouter>,
+    </MemoryRouter></ChildModeProvider>,
   )
 }
 
 describe('DiscoveryPage', () => {
   beforeEach(async () => {
+    localStorage.clear()
     await i18n.changeLanguage('zh')
     listTerms.mockResolvedValue(response)
   })
@@ -80,6 +83,14 @@ describe('DiscoveryPage', () => {
     expect(screen.getByText('2 种语言')).toBeInTheDocument()
     expect(screen.getByText('历史数据待复核')).toBeInTheDocument()
     expect(screen.queryByText('权威审定')).not.toBeInTheDocument()
+  })
+
+  it('uses the child explanation in child mode without losing the term link', async () => {
+    localStorage.setItem('termbase-reading-preferences', JSON.stringify({ childMode: true, largeTextMode: false }))
+    renderDiscovery()
+    expect(await screen.findByText('大家可以不一样，也可以友好相处。')).toBeInTheDocument()
+    expect(screen.queryByText('承认差异并追求和谐共处。')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '和而不同' })).toHaveAttribute('href', '/terms/1')
   })
 
   it('canonicalizes malformed and non-positive URL pages to page one', async () => {

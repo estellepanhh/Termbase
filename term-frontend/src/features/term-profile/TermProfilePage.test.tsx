@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TermProfile } from '../../types/knowledge'
 import * as api from '../../services/knowledgeApi'
 import TermProfilePage from './TermProfilePage'
+import { ChildModeProvider } from '../../context/ChildModeContext'
 
 vi.mock('../../services/knowledgeApi', () => ({
   getTerm: vi.fn(),
@@ -78,6 +79,9 @@ const profile: TermProfile = {
     explanation: '先说明尊重差异，再强调共同合作。',
     example: '文明交流互鉴应坚持和而不同。',
     note: null,
+  }, {
+    context_code: 'children', context_name_zh: '儿童', audience: 'children', style: '通俗',
+    description: '', explanation: '每个人可以不一样，也可以友好地一起做事。', example: '', note: null,
   }],
   cultural_notes: [{
     target_culture: '英语文化语境',
@@ -106,17 +110,15 @@ const profile: TermProfile = {
 
 function renderProfile(initialEntry = '/terms/1') {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/terms/:id" element={<TermProfilePage />} />
-        <Route path="/discover" element={<h1>术语探索</h1>} />
-      </Routes>
-    </MemoryRouter>,
+    <ChildModeProvider><MemoryRouter initialEntries={[initialEntry]}>
+      <Routes><Route path="/terms/:id" element={<TermProfilePage />} /><Route path="/discover" element={<h1>术语探索</h1>} /></Routes>
+    </MemoryRouter></ChildModeProvider>,
   )
 }
 
 describe('TermProfilePage', () => {
   beforeEach(() => {
+    localStorage.clear()
     getTerm.mockResolvedValue(profile)
   })
 
@@ -148,6 +150,13 @@ describe('TermProfilePage', () => {
     expect(screen.getByRole('heading', { name: '跨文化理解提示' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '协和万邦' })).toHaveAttribute('href', '/terms/2')
     expect(screen.getByRole('link', { name: '文明交流互鉴' })).toHaveAttribute('href', '/topics?topic=civilization-dialogue')
+  })
+
+  it('puts the child explanation first when child mode is saved', async () => {
+    localStorage.setItem('termbase-reading-preferences', JSON.stringify({ childMode: true, largeTextMode: false }))
+    renderProfile()
+    expect(await screen.findByRole('heading', { name: '给小朋友的话' })).toBeInTheDocument()
+    expect(screen.getByText('每个人可以不一样，也可以友好地一起做事。')).toBeInTheDocument()
   })
 
   it('omits optional panels and offers a retry after a network failure', async () => {
