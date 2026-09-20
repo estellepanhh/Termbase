@@ -33,3 +33,6 @@ class Config:
     EXPRESSION_LAB_MAX_BODY_BYTES = int(
         os.environ.get("EXPRESSION_LAB_MAX_BODY_BYTES", "16384")
     )
+    REVIEW_WORKSPACE_MAX_BODY_BYTES = int(
+        os.environ.get("REVIEW_WORKSPACE_MAX_BODY_BYTES", "131072")
+    )
