@@ -6,6 +6,7 @@ import EvidencePanel from './EvidencePanel'
 import TranslationPanel from './TranslationPanel'
 import './term-profile.css'
 import { useChildMode } from '../../context/ChildModeContext'
+import ProfileSectionNav from './ProfileSectionNav'
 
 type LoadStatus = 'loading' | 'ready' | 'error' | 'not-found'
 
@@ -53,7 +54,7 @@ function ContextPanel({ profile, hideChildContext = false }: { profile: TermProf
   if (!contexts.length) return null
 
   return (
-    <section aria-labelledby="contexts-title" className="term-profile-panel">
+    <section aria-labelledby="contexts-title" className="term-profile-panel" id="contexts">
       <div className="term-profile-panel__heading">
         <p className="term-profile-panel__eyebrow">USAGE CONTEXTS</p>
         <h2 id="contexts-title">适用场景</h2>
@@ -80,7 +81,7 @@ function CulturalNotesPanel({ profile }: { profile: TermProfile }) {
   if (!profile.cultural_notes.length) return null
 
   return (
-    <section aria-labelledby="cultural-notes-title" className="term-profile-panel cultural-notes-panel">
+    <section aria-labelledby="cultural-notes-title" className="term-profile-panel cultural-notes-panel" id="cultural-notes">
       <div className="term-profile-panel__heading">
         <p className="term-profile-panel__eyebrow">CROSS-CULTURAL NOTES</p>
         <h2 id="cultural-notes-title">跨文化理解提示</h2>
@@ -137,6 +138,13 @@ function ConnectionsPanel({ profile }: { profile: TermProfile }) {
 function ProfileContent({ profile }: { profile: TermProfile }) {
   const { isChildMode } = useChildMode()
   const childContext = profile.contexts.find((item) => item.context_code === 'children' && hasText(item.explanation))
+  const sections = [
+    ...(profile.translations.length ? [{ id: 'translations', label: '多语译法' }] : []),
+    ...(hasText(profile.cultural_connotation) ? [{ id: 'connotation', label: '文化内涵' }] : []),
+    ...(profile.contexts.length ? [{ id: 'contexts', label: '适用场景' }] : []),
+    ...(profile.cultural_notes.length ? [{ id: 'cultural-notes', label: '跨文化提示' }] : []),
+    ...(profile.sources.length ? [{ id: 'evidence', label: '来源证据' }] : []),
+  ]
   return (
     <article className="term-profile-content">
       <header className="term-profile-hero">
@@ -149,6 +157,7 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
         <p className="term-profile-hero__definition">{profile.definition_zh}</p>
         {profile.names.length ? <p className="term-profile-hero__names">异名：{profile.names.map((name) => name.name).join('、')}</p> : null}
       </header>
+      <ProfileSectionNav sections={sections} />
 
       {isChildMode ? <section aria-labelledby="child-explanation-title" className="child-explanation-panel">
         <span aria-hidden="true">🌱</span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
@@ -157,7 +166,7 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
       <TranslationPanel translations={profile.translations} />
 
       {hasText(profile.cultural_connotation) ? (
-        <section aria-labelledby="connotation-title" className="term-profile-panel">
+        <section aria-labelledby="connotation-title" className="term-profile-panel" id="connotation">
           <div className="term-profile-panel__heading">
             <p className="term-profile-panel__eyebrow">CULTURAL CONNOTATION</p>
             <h2 id="connotation-title">文化内涵</h2>

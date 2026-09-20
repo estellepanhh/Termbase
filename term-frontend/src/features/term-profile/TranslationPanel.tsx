@@ -47,7 +47,7 @@ export default function TranslationPanel({ translations }: TranslationPanelProps
   const alternatives = translations.filter((translation) => translation.translation_type !== 'recommended')
 
   return (
-    <section aria-labelledby="translations-title" className="term-profile-panel translation-panel">
+    <section aria-labelledby="translations-title" className="term-profile-panel translation-panel" id="translations">
       <div className="term-profile-panel__heading">
         <p className="term-profile-panel__eyebrow">TRANSLATIONS</p>
         <h2 id="translations-title">多语译法</h2>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { listTerms } from '../../services/knowledgeApi'
 import type { PaginatedTerms, TermSummary } from '../../types/knowledge'
 import './home.css'
+import ResearchFlow from './ResearchFlow'
 
 type HomeLabels = {
   eyebrow: string
@@ -186,6 +187,8 @@ export default function HomePage() {
           </div>
         </form>
       </section>
+
+      <section className="home-section home-section--flow" aria-labelledby="research-flow-title"><p className="home-eyebrow">RESEARCH WORKFLOW</p><h2 id="research-flow-title">从术语知识到人工评审</h2><ResearchFlow /></section>
 
       <section className="home-section" aria-labelledby="home-framework-title">
         <p className="home-eyebrow">Research framework</p>

@@ -8,6 +8,7 @@ import GenerationStatus from './GenerationStatus'
 import KnowledgePack from './KnowledgePack'
 import TermSelector from './TermSelector'
 import './expression-lab.css'
+import LabProgress from './LabProgress'
 
 type LabState = 'editing' | 'generating' | 'success' | 'error'
 const initialValues: FormValues = { sourceText: '', audience: 'overseas_youth', scenario: 'cultural_exhibition', style: 'explanatory', locale: 'general_english' }
@@ -46,6 +47,7 @@ export default function ExpressionLabPage() {
   }
   return <div className="expression-lab-page">
     <header className="lab-hero"><div><p className="lab-eyebrow">CROSS-CULTURAL EXPRESSION LAB</p><h1>跨文化表达实验室</h1><p>把术语知识、受众场景与文化风险组织成一份可比较、可追溯、可复核的英语表达方案。</p></div><aside><strong>研究型生成</strong><span>术语依据 → 场景适配 → 引用校验</span></aside></header>
+    <LabProgress active={state==='success'?'report':selected.length?'knowledge':'task'} />
     <div className="lab-workspace"><div className="lab-input-column">
       <TermSelector selected={selected} onAdd={(term) => { setSelected((items) => items.length >= 5 || items.some((item) => item.id === term.id) ? items : [...items, term]); setErrors((current) => ({ ...current, terms: undefined })) }} onRemove={(id) => setSelected((items) => items.filter((term) => term.id !== id))} />
       <section className="lab-panel"><div className="lab-section-heading lab-section-heading--small"><span>依据</span><div><p>SELECTED KNOWLEDGE</p><h2>当前知识包</h2></div></div><KnowledgePack terms={selected} /></section>

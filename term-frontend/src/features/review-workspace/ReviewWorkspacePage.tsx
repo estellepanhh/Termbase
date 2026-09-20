@@ -8,6 +8,7 @@ import CaseReviewPanel from './CaseReviewPanel'
 import WorkspaceOverview from './WorkspaceOverview'
 import WorkspaceExportActions from './WorkspaceExportActions'
 import './review-workspace.css'
+import MobileCaseNavigation from './MobileCaseNavigation'
 
 const emptyStats: WorkspaceStats = { draft: 0, pending_review: 0, approved: 0, archived: 0, total: 0, average_revision_count: 0 }
 
@@ -46,6 +47,7 @@ export default function ReviewWorkspacePage() {
     <header className="review-workspace__hero"><div><span className="review-eyebrow">HUMAN REVIEW / CASE REPOSITORY</span><h1>人工评审与案例工作台</h1><p>将 AI 初稿转化为可追溯、可复核、可沉淀的人工评审案例。</p></div><div className="hero-seal">审<span>REVIEW</span></div></header>
     <WorkspaceOverview stats={stats} /><CaseFilters query={query} onChange={updateUrl} /><WorkspaceExportActions query={query} />
     {error && <div className="review-error" role="alert">{error}</div>}
+    {selectedId && detail ? <MobileCaseNavigation onBack={() => updateUrl({ case: undefined })} title={detail.title} /> : null}
     <div className="review-workspace__content"><CaseQueue cases={cases} loading={loading} onSelect={(caseId) => updateUrl({ case: caseId })} selectedId={selectedId} />
       <main className="review-detail">{detail && detail.public_id === selectedId ? <CaseReviewPanel detail={detail} key={`${detail.public_id}:${detail.current_revision_number}`} onChanged={(changed) => void refresh(changed)} /> : <div className="review-detail__empty"><span>⌁</span><h2>选择一个案例开始评审</h2><p>AI 结果、人工定稿、问题标注和版本历史将在这里并列呈现。</p></div>}</main>
     </div>

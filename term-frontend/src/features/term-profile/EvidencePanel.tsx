@@ -28,7 +28,7 @@ export default function EvidencePanel({ sources }: EvidencePanelProps) {
   if (!sources.length) return null
 
   return (
-    <section aria-labelledby="evidence-title" className="term-profile-panel evidence-panel">
+    <section aria-labelledby="evidence-title" className="term-profile-panel evidence-panel" id="evidence">
       <div className="term-profile-panel__heading">
         <p className="term-profile-panel__eyebrow">SOURCES &amp; EVIDENCE</p>
         <h2 id="evidence-title">来源与依据</h2>

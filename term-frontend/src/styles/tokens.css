@@ -1,13 +1,8 @@
 :root {
-  --color-ink: #132238;
-  --color-navy: #17365d;
-  --color-vermilion: #a63d32;
-  --color-paper: #fbfaf7;
-  --color-surface: #ffffff;
-  --color-muted: #667085;
-  --color-border: #d9dde5;
-  --shadow-soft: 0 16px 40px rgba(19, 34, 56, 0.08);
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --content-width: 1200px;
+  --ink-950:#17211f;--ink-700:#46534f;--indigo-800:#173d46;--indigo-700:#285866;
+  --vermilion-600:#a64a38;--paper-50:#f8f5ec;--paper-100:#f1ecdf;--paper-200:#ddd4c4;--jade-600:#397461;
+  --color-ink:var(--ink-950);--color-navy:var(--indigo-800);--color-vermilion:var(--vermilion-600);
+  --color-paper:var(--paper-50);--color-surface:#fffdf8;--color-muted:#66726d;--color-border:var(--paper-200);
+  --shadow-soft:0 18px 50px rgba(23,61,70,.07);--radius-sm:6px;--radius-md:10px;
+  --reading-width:760px;--content-width:1240px;--workspace-width:1480px;
 }
