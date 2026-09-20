@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createReviewRevision } from '../../services/reviewWorkspaceApi'
 import type { IssueTag, ReviewCaseDetail } from '../../types/reviewWorkspace'
 import { issueLabels, statusLabels } from './reviewWorkspaceLabels'
@@ -12,7 +12,6 @@ export default function CaseReviewPanel({ detail, onChanged }: { detail: ReviewC
   const [reviewer, setReviewer] = useState(current.reviewer_name)
   const [tags, setTags] = useState<IssueTag[]>(current.issue_tags)
   const [saving, setSaving] = useState(false); const [error, setError] = useState('')
-  useEffect(() => { setFinalExpression(current.final_expression); setNotes(current.review_notes); setReviewer(current.reviewer_name); setTags(current.issue_tags); setError('') }, [detail.public_id, detail.current_revision_number])
   const locked = detail.status === 'archived'
   function toggleTag(tag: IssueTag) { setTags((value) => value.includes(tag) ? value.filter((item) => item !== tag) : [...value, tag]) }
   async function save() {
