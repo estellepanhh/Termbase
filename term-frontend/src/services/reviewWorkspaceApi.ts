@@ -43,3 +43,20 @@ export async function transitionReviewCase(publicId: string, input: TransitionCa
   const response = await request.post<Envelope<ReviewCaseDetail>>(`/api/v1/review-cases/${publicId}/transitions`, input)
   return (response as unknown as Envelope<ReviewCaseDetail>).data
 }
+
+export async function downloadReviewCases(format: 'json' | 'csv', query: ReviewCaseQuery): Promise<{ blob: Blob; filename?: string }> {
+  const response = await request.get('/api/v1/review-cases/export', {
+    params: {
+      format,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.termId === undefined ? {} : { term_id: query.termId }),
+      ...(query.reviewer ? { reviewer: query.reviewer } : {}),
+      ...(query.issueTag ? { issue_tag: query.issueTag } : {}),
+      ...(query.q ? { q: query.q } : {}),
+    },
+    responseType: 'blob',
+  }) as unknown as { data: Blob; headers?: Record<string, string> }
+  const disposition = response.headers?.['content-disposition'] || ''
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1]
+  return { blob: response.data, filename }
+}

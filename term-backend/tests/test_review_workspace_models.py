@@ -1,4 +1,5 @@
 import importlib.util
+import io
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -14,6 +15,17 @@ from termbase_app.models import (
     ReviewRevision,
     Term,
 )
+
+
+def load_review_migration():
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "migrations" / "versions" / "9f4c2a7b1d30_add_review_workspace.py"
+    )
+    spec = importlib.util.spec_from_file_location("review_migration", migration_path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    return migration
 
 
 def make_app():
@@ -94,13 +106,7 @@ def test_review_case_unique_keys_are_enforced():
 
 
 def test_review_workspace_migration_preserves_knowledge_tables():
-    migration_path = (
-        Path(__file__).resolve().parents[1]
-        / "migrations" / "versions" / "9f4c2a7b1d30_add_review_workspace.py"
-    )
-    spec = importlib.util.spec_from_file_location("review_migration", migration_path)
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
+    migration = load_review_migration()
     engine = sa.create_engine("sqlite+pysqlite:///:memory:")
     metadata = sa.MetaData()
     sa.Table("kb_terms", metadata, sa.Column("id", sa.Integer, primary_key=True))
@@ -120,3 +126,17 @@ def test_review_workspace_migration_preserves_knowledge_tables():
         with Operations.context(context):
             migration.downgrade()
         assert sa.inspect(connection).get_table_names() == ["kb_terms"]
+
+
+def test_review_workspace_migration_is_valid_for_mysql_text_columns():
+    migration = load_review_migration()
+    output = io.StringIO()
+    context = MigrationContext.configure(
+        dialect_name="mysql",
+        opts={"as_sql": True, "output_buffer": output},
+    )
+    with Operations.context(context):
+        migration.upgrade()
+    sql = output.getvalue().lower()
+    assert "review_notes text not null default" not in sql
+    assert "note text not null default" not in sql

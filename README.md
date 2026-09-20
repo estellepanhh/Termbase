@@ -1,6 +1,6 @@
 # 中国特色话语多语术语库
 
-面向中华文化术语的知识管理平台，提供可追溯术语检索、分类筛选、多语翻译、来源证据、AI 智能问答和跨文化表达实验室。
+面向中华文化术语的知识管理平台，提供可追溯术语检索、分类筛选、多语翻译、来源证据、AI 智能问答、跨文化表达实验室和人工评审案例工作台。
 
 当前系统同时保留旧版管理/淮河兼容路由，并以 `kb_` 规范化知识核心承载新的公共只读体验。迁移只读旧表，不删除或改写旧数据；旧路由用于兼容，公共用户界面和 `/api/v1` 使用新模型。
 
@@ -122,6 +122,7 @@ venv\Scripts\python scripts\import_child_explain.py
 - `GET /api/v1/terms/{id}`：术语详情，含多译法、来源、证据、场景和文化提示。
 - `POST /api/chat/stream`：DeepSeek SSE 对话。
 - `POST /api/v1/expression-lab/analyze`：基于1—5个已发布术语生成英语跨文化表达研究报告。
+- `/api/v1/review-cases`：保存表达报告、追加人工修订、执行审核流转并导出研究案例。
 - `/api/term-list`、`/api/search`、`/api/filter`、`/api/huaihe/*`：旧版兼容读取路由；旧版写入/Excel 导入端点已移除。
 
 请求参数和完整 JSON 示例见 [API.md](API.md)。
@@ -132,6 +133,7 @@ venv\Scripts\python scripts\import_child_explain.py
 - 📖 术语详情弹窗，含中英文官方译法、文化内涵、来源
 - 🤖 AI 智能助手（右下角悬浮按钮），DeepSeek 大模型流式对话
 - 🧭 跨文化表达实验室：组合术语知识、受众、场景与风格，输出首选/备选表达、文化风险和可追溯引用
+- 📝 人工评审工作台：固化 AI 原始快照，沉淀人工定稿、问题标签、版本历史和审核状态
 - 🌾 淮河文化专区，垂落式名人图谱
 - 👶 儿童模式（一键切换儿童友好解释）
 - 🌐 中英文国际化界面切换
@@ -152,6 +154,7 @@ venv\Scripts\python scripts\import_child_explain.py
 | `EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS` | 知识包字符上限 | 18000 |
 | `EXPRESSION_LAB_PROVIDER_TIMEOUT` | AI 请求超时（秒） | 45 |
 | `EXPRESSION_LAB_MAX_BODY_BYTES` | 分析请求体上限 | 16384 |
+| `REVIEW_WORKSPACE_MAX_BODY_BYTES` | 评审案例写请求体上限 | 131072 |
 | `RATELIMIT_STORAGE_URI` | 限流存储；多实例须换共享存储 | memory:// |
 | `FLASK_HOST` | Flask 监听地址 | 127.0.0.1 |
 | `FLASK_PORT` | Flask 端口 | 5000 |
@@ -159,7 +162,7 @@ venv\Scripts\python scripts\import_child_explain.py
 
 ## 接口文档
 
-详见 [API.md](API.md)；表达实验室使用与复核规则见 [docs/expression-lab-guide.md](docs/expression-lab-guide.md)；知识实体关系见 [docs/knowledge-model.md](docs/knowledge-model.md)。
+详见 [API.md](API.md)；表达实验室使用与复核规则见 [docs/expression-lab-guide.md](docs/expression-lab-guide.md)；人工评审流程见 [docs/review-workspace-guide.md](docs/review-workspace-guide.md)；知识实体关系见 [docs/knowledge-model.md](docs/knowledge-model.md)。
 
 ## 许可证
 

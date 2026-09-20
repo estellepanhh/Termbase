@@ -55,7 +55,7 @@ def upgrade():
         sa.Column("case_id", sa.Integer(), nullable=False),
         sa.Column("revision_number", sa.Integer(), nullable=False),
         sa.Column("final_expression", sa.Text(), nullable=False),
-        sa.Column("review_notes", sa.Text(), nullable=False, server_default=""),
+        sa.Column("review_notes", sa.Text(), nullable=False),
         sa.Column("reviewer_name", sa.String(100), nullable=False, server_default=""),
         sa.Column("issue_tags", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
@@ -71,7 +71,7 @@ def upgrade():
         sa.Column("from_status", sa.String(30)),
         sa.Column("to_status", sa.String(30), nullable=False),
         sa.Column("reviewer_name", sa.String(100), nullable=False, server_default=""),
-        sa.Column("note", sa.Text(), nullable=False, server_default=""),
+        sa.Column("note", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["case_id"], ["review_cases.id"], ondelete="CASCADE"),
     )

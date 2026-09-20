@@ -252,6 +252,48 @@ GET /api/filter?culture=中华优秀传统文化&level=本源层&page=1&pageSize
 
 所有错误使用 `{"code": 状态码, "message": "公开错误说明", "data": null}` 信封，不返回供应商诊断或内部提示词。
 
+## 人工评审案例工作台
+
+该接口把表达实验室结果保存为不可变 AI 快照，并以追加方式记录人工修订和状态事件。当前版本没有登录与权限系统，仅应部署在受控的校内/研究网络；`reviewer_name` 是研究记录字段，不构成身份认证。
+
+### POST /api/v1/review-cases
+
+请求包含 `title`、`term_ids` 和表达实验室返回的完整 `analysis`。同一 `analysis.request_id` 重复提交时返回既有案例（200），首次创建返回 201。客户端不能指定状态、修订号或时间戳。
+
+### GET /api/v1/review-cases
+
+支持 `page`、`page_size`、`status`、`term_id`、`reviewer`、`issue_tag` 和 `q`。响应 `meta.stats` 同时提供各状态案例数、总数和平均修订数。
+
+### GET /api/v1/review-cases/{public_id}
+
+返回 AI 快照、当前修订、全部修订、关联术语和状态事件。`public_id` 是不透明公开编号。
+
+### POST /api/v1/review-cases/{public_id}/revisions
+
+追加人工修订，不覆盖旧版本：
+
+```json
+{
+  "expected_revision_number": 1,
+  "final_expression": "Human-reviewed expression",
+  "review_notes": "Adjusted register for the target audience.",
+  "reviewer_name": "Reviewer A",
+  "issue_tags": ["register_mismatch"]
+}
+```
+
+`expected_revision_number` 必须与服务端当前版本一致，否则返回 409，客户端应保留尚未保存的输入并刷新案例。已归档案例不可修订。
+
+### POST /api/v1/review-cases/{public_id}/transitions
+
+状态机只允许以下流转：`draft → pending_review`（submit）、`pending_review → approved`（approve）、`pending_review → draft`（return）、`approved → draft`（reopen）、`approved → archived`（archive）、`archived → approved`（restore）。非法流转或并发版本冲突返回 409。
+
+### GET /api/v1/review-cases/export
+
+`format=json` 或 `format=csv`，并支持与列表相同的筛选参数。CSV 使用 UTF-8 BOM，且会中和以 `= + - @` 开头的单元格，避免电子表格公式注入。导出是只读操作。
+
+所有写请求必须为 JSON，最大请求体由 `REVIEW_WORKSPACE_MAX_BODY_BYTES` 控制。工作台没有删除 API；AI 快照、人工修订和事件均保留审计历史。
+
 ## AI 对话
 
 ### POST /api/chat/stream
