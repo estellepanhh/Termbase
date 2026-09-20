@@ -54,7 +54,7 @@ export default function ExpressionLabPage() {
       {state === 'editing' ? <section className="lab-output-empty"><span>03</span><h2>等待生成</h2><p>完成术语选择和传播任务后，这里将呈现首选表达、备选对照、文化风险和可追溯来源。</p></section> : null}
       {state === 'generating' ? <GenerationStatus onCancel={cancelWaiting} /> : null}
       {state === 'error' ? <section className="lab-error" role="alert"><h2>本次分析未完成</h2><p>{errorMessage}</p><button onClick={() => void submit()} type="button">按原任务重试</button></section> : null}
-      {state === 'success' && analysis ? <><div className="knowledge-summary"><b>本次知识依据</b><span>{analysis.knowledge_summary.term_count} 个术语 · {analysis.knowledge_summary.translation_count} 个译法 · {analysis.knowledge_summary.source_count} 个来源</span></div><ExpressionReport analysis={analysis} termNames={termNames} /></> : null}
+      {state === 'success' && analysis ? <><div className="knowledge-summary"><b>本次知识依据</b><span>{analysis.knowledge_summary.term_count} 个术语 · {analysis.knowledge_summary.translation_count} 个译法 · {analysis.knowledge_summary.source_count} 个来源</span></div><ExpressionReport analysis={analysis} termIds={selected.map((term) => term.id)} termNames={termNames} /></> : null}
     </aside></div>
   </div>
 }
