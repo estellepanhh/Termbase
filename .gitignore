@@ -17,6 +17,7 @@ env/
 
 # Environment variables
 .env
+backups/
 .env.local
 .env.*.local
 
