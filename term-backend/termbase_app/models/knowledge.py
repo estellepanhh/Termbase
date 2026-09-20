@@ -62,6 +62,7 @@ class Term(db.Model):
     )
     sources = db.relationship("Source", secondary=term_sources, back_populates="terms")
     topic_items = db.relationship("TopicItem", back_populates="term")
+    review_case_links = db.relationship("ReviewCaseTerm", back_populates="term")
 
 
 class TermName(db.Model):

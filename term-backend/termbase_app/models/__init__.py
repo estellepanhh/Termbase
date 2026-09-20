@@ -13,6 +13,7 @@ from .knowledge import (
     Translation,
     TranslationContext,
 )
+from .review import ReviewCase, ReviewCaseTerm, ReviewEvent, ReviewRevision
 
 __all__ = [
     "Context",
@@ -28,4 +29,8 @@ __all__ = [
     "TopicItem",
     "Translation",
     "TranslationContext",
+    "ReviewCase",
+    "ReviewCaseTerm",
+    "ReviewEvent",
+    "ReviewRevision",
 ]
