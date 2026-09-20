@@ -4,6 +4,7 @@ import HomePage from '../features/home/HomePage'
 import DiscoveryPage from '../features/discovery/DiscoveryPage'
 import TermProfilePage from '../features/term-profile/TermProfilePage'
 import ExpressionLabPage from '../features/expression-lab/ExpressionLabPage'
+import ReviewWorkspacePage from '../features/review-workspace/ReviewWorkspacePage'
 
 type PlaceholderPageProps = {
   title: string
@@ -38,7 +39,7 @@ export default function AppRoutes() {
         <Route path="terms/:id" element={<TermProfilePage />} />
         <Route path="lab" element={<ExpressionLabPage />} />
         <Route path="topics" element={<StagedPage title="文化专题" />} />
-        <Route path="workspace" element={<StagedPage title="研究工作台" />} />
+        <Route path="workspace" element={<ReviewWorkspacePage />} />
         <Route path="search" element={<Navigate replace to="/discover" />} />
         <Route path="browse" element={<Navigate replace to="/discover" />} />
         <Route path="guide" element={<Navigate replace to="/discover" />} />
