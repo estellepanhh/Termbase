@@ -310,6 +310,29 @@ class LegacyImportTests(unittest.TestCase):
             "published",
         )
 
+    def test_import_adds_huaihe_summary_when_missing(self):
+        import_legacy_knowledge(db.session)
+
+        topic = db.session.query(Topic).filter_by(slug="huaihe-culture").one()
+        self.assertEqual(
+            topic.summary,
+            "以淮河流域术语、历史人物与本草知识为线索，呈现地域文化的多语表达与传播语境。",
+        )
+
+    def test_import_preserves_existing_huaihe_summary(self):
+        db.session.add(Topic(
+            slug="huaihe-culture",
+            title="淮河文化",
+            summary="人工撰写简介",
+            status="draft",
+        ))
+        db.session.commit()
+
+        import_legacy_knowledge(db.session)
+
+        topic = db.session.query(Topic).filter_by(slug="huaihe-culture").one()
+        self.assertEqual(topic.summary, "人工撰写简介")
+
     def test_import_skips_legacy_tables_that_are_not_present(self):
         db.session.execute(text("DROP TABLE huaihe_terms"))
         db.session.execute(text("DROP TABLE huaihe_figures"))

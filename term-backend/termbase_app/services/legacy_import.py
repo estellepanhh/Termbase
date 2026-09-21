@@ -13,6 +13,12 @@ from sqlalchemy import inspect, text
 from ..models import Context, Language, Source, Term, TermContext, Topic, TopicItem, Translation
 
 
+HUAIHE_TOPIC_SUMMARY = (
+    "以淮河流域术语、历史人物与本草知识为线索，"
+    "呈现地域文化的多语表达与传播语境。"
+)
+
+
 @dataclass
 class ImportReport:
     terms_created: int = 0
@@ -269,11 +275,18 @@ def _get_context(session, code, name_zh):
 def _get_huaihe_topic(session):
     topic = session.query(Topic).filter_by(slug="huaihe-culture").one_or_none()
     if topic is None:
-        topic = Topic(slug="huaihe-culture", title="淮河文化", status="published")
+        topic = Topic(
+            slug="huaihe-culture",
+            title="淮河文化",
+            summary=HUAIHE_TOPIC_SUMMARY,
+            status="published",
+        )
         session.add(topic)
         session.flush()
     else:
         topic.status = "published"
+        if not topic.summary:
+            topic.summary = HUAIHE_TOPIC_SUMMARY
     return topic
 
 
