@@ -95,7 +95,7 @@ describe('HomePage', () => {
 
     expect(await screen.findByText('精选术语将在资料整理完成后呈现。')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '进入表达实验室' })).toHaveAttribute('href', '/lab')
-    expect(screen.getByRole('link', { name: '查看淮河文化专题' })).toHaveAttribute('href', '/topics')
+    expect(screen.getByRole('link', { name: '查看淮河文化专题' })).toHaveAttribute('href', '/topics/huaihe-culture')
   })
 
   it('allows a failed featured request to be retried without hiding the page', async () => {

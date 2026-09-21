@@ -228,7 +228,7 @@ export default function HomePage() {
         <p className="home-eyebrow">{copy.topicEyebrow}</p>
         <h2 id="home-topic-title">{copy.topicTitle}</h2>
         <p>{copy.topicDescription}</p>
-        <Link className="home-text-link" to="/topics">{copy.topicLink}</Link>
+        <Link className="home-text-link" to="/topics/huaihe-culture">{copy.topicLink}</Link>
       </section>
 
       <section className="home-results" aria-labelledby="home-results-title">
