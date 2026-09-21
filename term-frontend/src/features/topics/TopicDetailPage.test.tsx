@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChildModeProvider } from '../../context/ChildModeContext'
+import i18n from '../../locales'
 import * as api from '../../services/knowledgeApi'
 import type { PublicTopicDetail } from '../../types/knowledge'
 import TopicDetailPage from './TopicDetailPage'
@@ -64,13 +65,16 @@ function renderTopic(initialEntry = '/topics/huaihe-culture') {
 }
 
 describe('TopicDetailPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear()
+    await i18n.changeLanguage('zh')
     getTopic.mockResolvedValue(topic)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.clearAllMocks()
+    cleanup()
+    await i18n.changeLanguage('zh')
   })
 
   it('groups topic entries and links core terms to their profiles', async () => {
@@ -121,6 +125,18 @@ describe('TopicDetailPage', () => {
 
     expect(await screen.findByText('先认识这些词')).toBeInTheDocument()
     expect(screen.getByText('再看看相关人物和事物')).toBeInTheDocument()
+    expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
+  })
+
+  it('switches topic interface labels to English without translating stored data', async () => {
+    await i18n.changeLanguage('en')
+    renderTopic()
+
+    expect(await screen.findByRole('heading', { name: 'Core terms' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cultural figures' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Topic contents' })).toBeInTheDocument()
+    expect(screen.getByText('core term')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View term record: 淮河文化' })).toHaveAttribute('href', '/terms/8')
     expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
   })
 })

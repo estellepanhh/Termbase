@@ -104,7 +104,6 @@ const profile: TermProfile = {
     summary: '跨文化交流专题。',
     entry_type: 'term',
     item_title: '和而不同',
-    payload: {},
   }],
 }
 

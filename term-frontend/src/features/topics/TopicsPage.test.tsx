@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChildModeProvider } from '../../context/ChildModeContext'
+import i18n from '../../locales'
 import * as api from '../../services/knowledgeApi'
 import type { TopicSummary } from '../../types/knowledge'
 import TopicsPage from './TopicsPage'
@@ -32,13 +33,16 @@ function renderTopics() {
 }
 
 describe('TopicsPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear()
+    await i18n.changeLanguage('zh')
     listTopics.mockResolvedValue([topic])
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.clearAllMocks()
+    cleanup()
+    await i18n.changeLanguage('zh')
   })
 
   it('renders published topics with research counts and canonical links', async () => {
@@ -76,6 +80,17 @@ describe('TopicsPage', () => {
     renderTopics()
 
     expect(await screen.findByText('和孩子一起看专题')).toBeInTheDocument()
+    expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
+  })
+
+  it('switches interface copy to English while preserving research data', async () => {
+    await i18n.changeLanguage('en')
+    renderTopics()
+
+    expect(await screen.findByRole('heading', { name: 'Cultural Topics' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open 淮河文化 topic' })).toHaveAttribute('href', '/topics/huaihe-culture')
+    expect(screen.getByText('3 records')).toBeInTheDocument()
+    expect(screen.getByText('1 core term')).toBeInTheDocument()
     expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
   })
 })

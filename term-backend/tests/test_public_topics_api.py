@@ -46,6 +46,7 @@ class PublicTopicsApiTests(unittest.TestCase):
             payload={
                 "分类": "人物",
                 "百度链接": "https://example.test/person",
+                "简介": "尚未逐字段审定的内容",
                 "internal_note": "不得公开",
             },
         )
@@ -95,6 +96,7 @@ class PublicTopicsApiTests(unittest.TestCase):
             "百度链接": "https://example.test/person",
         })
         self.assertNotIn("internal_note", detail["items"][1]["fields"])
+        self.assertNotIn("简介", detail["items"][1]["fields"])
 
     def test_detail_excludes_unpublished_linked_terms_from_counts_and_items(self):
         detail = self.client.get("/api/topics/huaihe-culture").get_json()["data"]
@@ -102,6 +104,22 @@ class PublicTopicsApiTests(unittest.TestCase):
         self.assertEqual(detail["item_count"], 2)
         self.assertEqual(detail["term_count"], 1)
         self.assertNotIn("未发布术语", str(detail))
+
+    def test_term_count_counts_unique_linked_terms(self):
+        topic = db.session.query(Topic).filter_by(slug="huaihe-culture").one()
+        term = db.session.query(Term).filter_by(preferred_name_zh="淮河文化").one()
+        db.session.add(TopicItem(
+            topic=topic,
+            term=term,
+            entry_type="term",
+            title="淮河文化补充材料",
+        ))
+        db.session.commit()
+
+        detail = self.client.get("/api/topics/huaihe-culture").get_json()["data"]
+
+        self.assertEqual(detail["item_count"], 3)
+        self.assertEqual(detail["term_count"], 1)
 
     def test_detail_returns_not_found_for_missing_or_draft_topic(self):
         for slug in ("draft-topic", "missing"):

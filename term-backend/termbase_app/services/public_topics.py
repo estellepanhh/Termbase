@@ -7,10 +7,8 @@ from ..models import Term, Topic, TopicItem, Translation
 
 
 PUBLIC_PAYLOAD_FIELDS = {
-    "person": ("分类", "百度链接", "简介", "生平", "代表事迹"),
-    "place": ("分类", "地点", "简介", "地理位置", "文化价值"),
-    "culture": ("分类", "简介", "文化内涵", "来源"),
-    "herb": ("中文品名", "官方译法（英文）", "法语译法", "简介", "功效"),
+    "person": ("分类", "百度链接"),
+    "herb": ("中文品名", "官方译法（英文）", "法语译法"),
 }
 ENTRY_TYPE_ORDER = {"term": 0, "person": 1, "place": 2, "culture": 3, "herb": 4}
 
@@ -63,7 +61,7 @@ def serialize_topic_summary(topic):
         "title": topic.title,
         "summary": topic.summary,
         "item_count": len(items),
-        "term_count": sum(item.term is not None for item in items),
+        "term_count": len({item.term.id for item in items if item.term is not None}),
         "entry_type_counts": dict(sorted(type_counts.items())),
     }
 

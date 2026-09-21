@@ -2,10 +2,23 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../locales'
+import * as api from '../services/knowledgeApi'
 import AppRoutes from './routes'
 import { ChildModeProvider } from '../context/ChildModeContext'
+
+vi.mock('../services/knowledgeApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/knowledgeApi')>()
+  return { ...actual, listTopics: vi.fn(), getTopic: vi.fn() }
+})
+
+const listTopics = vi.mocked(api.listTopics)
+const getTopic = vi.mocked(api.getTopic)
+const topicSummary = {
+  slug: 'huaihe-culture', title: '淮河文化', summary: '淮河流域文化专题',
+  item_count: 0, term_count: 0, entry_type_counts: {},
+}
 
 function renderRoute(path = '/discover') {
   return render(
@@ -22,6 +35,8 @@ describe('research platform application shell', () => {
   beforeEach(async () => {
     localStorage.clear()
     await i18n.changeLanguage('zh')
+    listTopics.mockResolvedValue([topicSummary])
+    getTopic.mockResolvedValue({ ...topicSummary, items: [] })
   })
 
   afterEach(async () => {
@@ -70,6 +85,20 @@ describe('research platform application shell', () => {
     renderRoute(legacyPath)
 
     await waitFor(() => expect(screen.getByTestId('app-location')).toHaveTextContent(expectedPath))
+  })
+
+  it('renders the topic index through the application route tree', async () => {
+    renderRoute('/topics')
+
+    expect(await screen.findByRole('heading', { name: '文化专题', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '淮河文化', level: 2 })).toBeInTheDocument()
+  })
+
+  it('renders topic detail through the application route tree', async () => {
+    renderRoute('/topics/huaihe-culture')
+
+    expect(await screen.findByRole('heading', { name: '淮河文化', level: 1 })).toBeInTheDocument()
+    expect(getTopic).toHaveBeenCalledWith('huaihe-culture')
   })
 
   it('makes mobile navigation available from an accessible menu control', async () => {

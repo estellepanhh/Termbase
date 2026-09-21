@@ -99,7 +99,6 @@ const termProfile: TermProfile = {
     summary: null,
     entry_type: 'term',
     item_title: '和而不同',
-    payload: { featured: true },
   }],
 }
 

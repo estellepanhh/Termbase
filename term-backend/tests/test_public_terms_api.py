@@ -250,8 +250,8 @@ class PublicTermsApiTests(unittest.TestCase):
             "summary": "理解和谐",
             "entry_type": "term",
             "item_title": "和而不同",
-            "payload": {"weight": 1},
         }])
+        self.assertNotIn("payload", detail["topics"][0])
 
     def test_detail_returns_not_found_for_missing_or_unpublished_terms(self):
         for term_id in (self.hidden_term_id, 99999):

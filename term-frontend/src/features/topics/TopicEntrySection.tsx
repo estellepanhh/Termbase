@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { TopicEntry } from '../../types/knowledge'
 
 function TopicEntryCard({ entry }: { entry: TopicEntry }) {
+  const { i18n } = useTranslation()
+  const isChinese = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh')
+  const copy = isChinese ? {
+    viewTerm: '查看术语档案', viewSource: '查看资料', empty: '该条目的公开资料正在整理中。',
+  } : {
+    viewTerm: 'View term record', viewSource: 'View source', empty: 'Public material for this entry is being prepared.',
+  }
   if (entry.term) {
     return (
       <article className="topic-entry topic-entry--term">
@@ -12,8 +20,8 @@ function TopicEntryCard({ entry }: { entry: TopicEntry }) {
         <h3>{entry.term.preferred_name_zh}</h3>
         {entry.term.recommended_translation ? <p className="topic-entry__translation">{entry.term.recommended_translation}</p> : null}
         {entry.term.definition_zh ? <p>{entry.term.definition_zh}</p> : null}
-        <Link aria-label={`查看术语档案：${entry.term.preferred_name_zh}`} to={`/terms/${entry.term.id}`}>
-          查看术语档案 <span aria-hidden="true">→</span>
+        <Link aria-label={`${copy.viewTerm}${isChinese ? '：' : ': '}${entry.term.preferred_name_zh}`} to={`/terms/${entry.term.id}`}>
+          {copy.viewTerm} <span aria-hidden="true">→</span>
         </Link>
       </article>
     )
@@ -29,13 +37,13 @@ function TopicEntryCard({ entry }: { entry: TopicEntry }) {
               <dt>{label}</dt>
               <dd>
                 {typeof value === 'string' && /^https?:\/\//.test(value)
-                  ? <a href={value} rel="noreferrer" target="_blank">查看资料</a>
+                  ? <a href={value} rel="noreferrer" target="_blank">{copy.viewSource}</a>
                   : String(value)}
               </dd>
             </div>
           ))}
         </dl>
-      ) : <p>该条目的公开资料正在整理中。</p>}
+      ) : <p>{copy.empty}</p>}
     </article>
   )
 }

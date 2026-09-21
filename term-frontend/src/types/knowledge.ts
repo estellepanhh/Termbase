@@ -120,7 +120,6 @@ export interface TopicDetail {
   summary: string | null
   entry_type: string
   item_title: string
-  payload: Record<string, unknown>
 }
 
 export interface TopicSummary {

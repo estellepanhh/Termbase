@@ -92,7 +92,6 @@ class TopicDetail(TypedDict):
     summary: str | None
     entry_type: str
     item_title: str
-    payload: dict
 
 
 class TermDetail(TermSummary):

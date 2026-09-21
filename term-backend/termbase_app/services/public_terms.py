@@ -249,5 +249,4 @@ def serialize_topic(item):
         "summary": item.topic.summary,
         "entry_type": item.entry_type,
         "item_title": item.title,
-        "payload": item.payload,
     }

@@ -54,6 +54,8 @@
 .topic-card__types li { padding: .35rem .55rem; color: var(--ink-700); background: var(--paper-100); border-radius: 999px; font-size: .82rem; }
 .topic-card__types span { color: var(--vermilion-600); font-weight: 800; }
 .topic-card__link { width: fit-content; color: var(--indigo-800); font-weight: 800; text-underline-offset: .3em; }
+.topic-card__link::after { content: ''; position: absolute; inset: 0; }
+.topic-card:focus-within { outline: 3px solid color-mix(in srgb, var(--vermilion-600) 45%, transparent); outline-offset: 4px; }
 .topic-card__link:focus-visible { outline: 3px solid color-mix(in srgb, var(--vermilion-600) 45%, transparent); outline-offset: 4px; }
 
 .topics-status { padding: 2rem; color: var(--ink-700); background: var(--paper-100); border: 1px dashed var(--color-border); text-align: center; }
