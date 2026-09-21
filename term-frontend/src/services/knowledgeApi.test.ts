@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import request from '../utils/request'
 import type { PaginatedTerms, TermProfile } from '../types/knowledge'
-import { getTerm, listTerms } from './knowledgeApi'
+import { getTerm, getTopic, listTerms, listTopics } from './knowledgeApi'
 
 const termSummary = {
   id: 7,
@@ -103,6 +103,33 @@ const termProfile: TermProfile = {
   }],
 }
 
+const topicSummary = {
+  slug: 'huaihe-culture',
+  title: '淮河文化',
+  summary: '淮河流域文化专题',
+  item_count: 2,
+  term_count: 1,
+  entry_type_counts: { person: 1, term: 1 },
+}
+
+const topicDetail = {
+  ...topicSummary,
+  items: [{
+    id: 12,
+    entry_type: 'term',
+    title: '淮河文化',
+    fields: {},
+    term: {
+      id: 8,
+      preferred_name_zh: '淮河文化',
+      definition_zh: '淮河流域形成的地域文化传统。',
+      term_level: '地域层',
+      culture_category: '地方文化',
+      recommended_translation: 'Huaihe culture',
+    },
+  }],
+}
+
 function successAdapter(payload: unknown): AxiosAdapter {
   return async (config) => ({
     data: payload,
@@ -152,6 +179,22 @@ describe('knowledgeApi', () => {
 
     await expect(getTerm(7)).resolves.toEqual(termProfile)
     expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/v1/terms/7')
+  })
+
+  it('loads published cultural topic summaries', async () => {
+    const adapter = vi.fn(successAdapter({ code: 200, data: [topicSummary] }))
+    request.defaults.adapter = adapter
+
+    await expect(listTopics()).resolves.toEqual([topicSummary])
+    expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/topics')
+  })
+
+  it('encodes a cultural topic slug when loading its detail', async () => {
+    const adapter = vi.fn(successAdapter({ code: 200, data: topicDetail }))
+    request.defaults.adapter = adapter
+
+    await expect(getTopic('huaihe culture')).resolves.toEqual(topicDetail)
+    expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/topics/huaihe%20culture')
   })
 
   it('propagates a non-2xx Axios response through the real request interceptor', async () => {

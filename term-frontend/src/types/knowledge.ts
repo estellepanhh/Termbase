@@ -123,6 +123,46 @@ export interface TopicDetail {
   payload: Record<string, unknown>
 }
 
+export interface TopicSummary {
+  slug: string
+  title: string
+  summary: string | null
+  item_count: number
+  term_count: number
+  entry_type_counts: Record<string, number>
+}
+
+export interface TopicTermData {
+  id: number
+  preferred_name_zh: string
+  definition_zh: string | null
+  term_level: string | null
+  culture_category: string | null
+  recommended_translation: string | null
+}
+
+export interface TopicTermEntry {
+  id: number
+  entry_type: 'term'
+  title: string
+  term: TopicTermData
+  fields: Record<string, never>
+}
+
+export interface TopicContentEntry {
+  id: number
+  entry_type: string
+  title: string
+  term: null
+  fields: Record<string, string | number | boolean>
+}
+
+export type TopicEntry = TopicTermEntry | TopicContentEntry
+
+export interface PublicTopicDetail extends TopicSummary {
+  items: TopicEntry[]
+}
+
 export interface TermProfile extends TermSummary {
   cultural_connotation: string
   names: TermNameDetail[]
