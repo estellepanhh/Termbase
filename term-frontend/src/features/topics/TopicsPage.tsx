@@ -15,7 +15,6 @@ export default function TopicsPage() {
 
   useEffect(() => {
     let active = true
-    setStatus('loading')
     void listTopics()
       .then((nextTopics) => {
         if (active) {
@@ -35,7 +34,7 @@ export default function TopicsPage() {
   }), [topics])
 
   return (
-    <main className="topics-page">
+    <div className="topics-page">
       <PageIntro
         eyebrow="CURATED CULTURAL RESEARCH"
         title="文化专题"
@@ -64,7 +63,7 @@ export default function TopicsPage() {
         {status === 'error' ? (
           <div className="topics-status" role="alert">
             <p>专题暂时无法加载，请检查网络后重试。</p>
-            <button onClick={() => setRetryKey((value) => value + 1)} type="button">重新加载专题</button>
+            <button onClick={() => { setStatus('loading'); setRetryKey((value) => value + 1) }} type="button">重新加载专题</button>
           </div>
         ) : null}
         {status === 'ready' && topics?.length === 0 ? (
@@ -79,6 +78,6 @@ export default function TopicsPage() {
           </div>
         ) : null}
       </section>
-    </main>
+    </div>
   )
 }

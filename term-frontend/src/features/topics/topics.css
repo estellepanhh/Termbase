@@ -66,3 +66,44 @@
   .topics-overview > div + div { border-left: 0; border-top: 1px solid var(--color-border); }
   .topic-card__metrics { grid-template-columns: 1fr; gap: .8rem; }
 }
+
+.topic-detail { display: grid; gap: clamp(1.5rem, 4vw, 3.5rem); }
+.topic-detail__back { width: fit-content; color: var(--ink-700); font-weight: 700; text-decoration: none; }
+.topic-detail__back:hover { color: var(--vermilion-600); }
+.topic-detail__overview { margin-top: -1rem; }
+.topic-detail__nav { position: sticky; top: 5.25rem; z-index: 3; display: flex; gap: .5rem; padding: .75rem; overflow-x: auto; background: color-mix(in srgb, var(--paper-50) 92%, transparent); border: 1px solid var(--color-border); backdrop-filter: blur(12px); }
+.topic-detail__nav a { flex: 0 0 auto; padding: .55rem .75rem; color: var(--indigo-800); text-decoration: none; font-weight: 750; border-radius: var(--radius-sm); }
+.topic-detail__nav a:hover, .topic-detail__nav a:focus-visible { background: var(--paper-100); }
+.topic-detail__nav span { color: var(--vermilion-600); }
+.topic-detail__child-guide { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; padding: 1rem 1.2rem; color: var(--indigo-800); background: color-mix(in srgb, var(--jade-600) 10%, var(--color-surface)); border-left: 4px solid var(--jade-600); }
+.topic-detail__sections { display: grid; gap: 4rem; }
+.topic-detail__section { scroll-margin-top: 10rem; }
+.topic-detail__section > header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; padding-bottom: .8rem; border-bottom: 1px solid var(--color-border); }
+.topic-detail__section > header p { margin: 0; color: var(--vermilion-600); font-size: .74rem; font-weight: 800; letter-spacing: .12em; }
+.topic-detail__section > header h2 { margin: 0; color: var(--indigo-800); font-family: Georgia, 'Noto Serif SC', serif; font-size: clamp(1.55rem, 3vw, 2.3rem); }
+.topic-entry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.topic-entry { min-width: 0; padding: clamp(1.1rem, 2.5vw, 1.7rem); overflow-wrap: anywhere; background: var(--color-surface); border: 1px solid var(--color-border); }
+.topic-entry--term { border-top: 3px solid var(--indigo-800); }
+.topic-entry--content { border-top: 3px solid var(--vermilion-600); }
+.topic-entry h3 { margin: .45rem 0; color: var(--ink-950); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.35rem; }
+.topic-entry p { color: var(--ink-700); line-height: 1.75; }
+.topic-entry__meta { display: flex; flex-wrap: wrap; gap: .45rem; }
+.topic-entry__meta span { padding: .25rem .45rem; color: var(--indigo-800); background: var(--paper-100); font-size: .78rem; }
+.topic-entry__translation { color: var(--vermilion-600) !important; font-family: Georgia, serif; font-style: italic; }
+.topic-entry > a { color: var(--indigo-800); font-weight: 800; text-underline-offset: .25em; }
+.topic-entry dl { display: grid; gap: .7rem; margin: 1rem 0 0; }
+.topic-entry dl div { display: grid; grid-template-columns: minmax(5rem, .35fr) 1fr; gap: .8rem; padding-top: .7rem; border-top: 1px solid var(--color-border); }
+.topic-entry dt { color: var(--color-muted); }
+.topic-entry dd { min-width: 0; margin: 0; color: var(--ink-950); }
+.topic-detail--message { max-width: var(--reading-width); padding: clamp(2rem, 7vw, 5rem); background: var(--color-surface); border-left: 5px solid var(--vermilion-600); }
+.topic-detail--message h1 { margin: 0; color: var(--indigo-800); }
+.topic-detail--message a { width: fit-content; color: var(--indigo-800); font-weight: 800; }
+.topic-detail--message button { width: fit-content; padding: .7rem 1rem; color: white; background: var(--indigo-800); border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+.topic-detail__eyebrow { color: var(--vermilion-600); font-size: .75rem; font-weight: 800; letter-spacing: .14em; }
+
+@media (max-width: 760px) {
+  .topic-detail__nav { top: 4.5rem; margin-inline: -1rem; border-inline: 0; }
+  .topic-entry-grid { grid-template-columns: 1fr; }
+  .topic-detail__section > header { align-items: start; flex-direction: column-reverse; }
+  .topic-entry dl div { grid-template-columns: 1fr; gap: .2rem; }
+}

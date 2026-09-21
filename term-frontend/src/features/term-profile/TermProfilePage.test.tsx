@@ -149,7 +149,7 @@ describe('TermProfilePage', () => {
     expect(screen.getByRole('heading', { name: '适用场景' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '跨文化理解提示' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '协和万邦' })).toHaveAttribute('href', '/terms/2')
-    expect(screen.getByRole('link', { name: '文明交流互鉴' })).toHaveAttribute('href', '/topics?topic=civilization-dialogue')
+    expect(screen.getByRole('link', { name: '文明交流互鉴' })).toHaveAttribute('href', '/topics/civilization-dialogue')
   })
 
   it('puts the child explanation first when child mode is saved', async () => {

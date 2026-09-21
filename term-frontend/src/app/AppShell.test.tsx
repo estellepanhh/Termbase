@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { act } from 'react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../locales'
 import AppRoutes from './routes'
@@ -9,8 +9,13 @@ import { ChildModeProvider } from '../context/ChildModeContext'
 
 function renderRoute(path = '/discover') {
   return render(
-    <ChildModeProvider><MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter></ChildModeProvider>,
+    <ChildModeProvider><MemoryRouter initialEntries={[path]}><AppRoutes /><LocationProbe /></MemoryRouter></ChildModeProvider>,
   )
+}
+
+function LocationProbe() {
+  const location = useLocation()
+  return <output data-testid="app-location">{location.pathname}</output>
 }
 
 describe('research platform application shell', () => {
@@ -56,15 +61,15 @@ describe('research platform application shell', () => {
   })
 
   it.each([
-    ['/search', '术语探索'],
-    ['/browse', '术语探索'],
-    ['/guide', '术语探索'],
-    ['/huaihe', '文化专题'],
-    ['/about', '文化专题'],
-  ])('redirects legacy URL %s to the supported public route', (legacyPath, expectedHeading) => {
+    ['/search', '/discover'],
+    ['/browse', '/discover'],
+    ['/guide', '/discover'],
+    ['/huaihe', '/topics/huaihe-culture'],
+    ['/about', '/topics'],
+  ])('redirects legacy URL %s to the supported public route', async (legacyPath, expectedPath) => {
     renderRoute(legacyPath)
 
-    expect(screen.getByRole('main')).toHaveTextContent(expectedHeading)
+    await waitFor(() => expect(screen.getByTestId('app-location')).toHaveTextContent(expectedPath))
   })
 
   it('makes mobile navigation available from an accessible menu control', async () => {

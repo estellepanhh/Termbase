@@ -127,7 +127,7 @@ function ConnectionsPanel({ profile }: { profile: TermProfile }) {
         <div>
           <h3 className="term-profile-connections__label">文化专题</h3>
           <ul className="term-profile-link-list">
-            {profile.topics.map((topic) => <li key={topic.slug}><Link to={`/topics?topic=${encodeURIComponent(topic.slug)}`}>{topic.title}</Link></li>)}
+            {profile.topics.map((topic) => <li key={topic.slug}><Link to={`/topics/${encodeURIComponent(topic.slug)}`}>{topic.title}</Link></li>)}
           </ul>
         </div>
       ) : null}
