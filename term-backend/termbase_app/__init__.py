@@ -11,6 +11,7 @@ from .routes.health import bp as health_bp
 from .routes.legacy import bp as legacy_bp
 from .routes.public_terms import bp as public_terms_bp
 from .routes.public_topics import bp as public_topics_bp
+from .routes.project_overview import bp as project_overview_bp
 from .routes.expression_lab import bp as expression_lab_bp
 from .routes.review_workspace import bp as review_workspace_bp
 
@@ -30,6 +31,7 @@ def create_app(config_overrides=None):
     app.register_blueprint(health_bp)
     app.register_blueprint(public_terms_bp)
     app.register_blueprint(public_topics_bp)
+    app.register_blueprint(project_overview_bp)
     app.register_blueprint(legacy_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(expression_lab_bp)
