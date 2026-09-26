@@ -10,6 +10,7 @@ type ShellLabels = {
   lab: string
   topics: string
   workspace: string
+  project: string
   platformName: string
   primaryNavigation: string
   mobileNavigation: string
@@ -24,6 +25,7 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     lab: '表达实验室',
     topics: '文化专题',
     workspace: '研究工作台',
+    project: '项目成果',
     platformName: '中国特色话语多语知识平台',
     primaryNavigation: '主导航',
     mobileNavigation: '移动端主导航',
@@ -36,6 +38,7 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     lab: 'Expression Lab',
     topics: 'Cultural Topics',
     workspace: 'Research Workspace',
+    project: 'Project',
     platformName: 'Chinese Discourse Multilingual Knowledge Platform',
     primaryNavigation: 'Primary navigation',
     mobileNavigation: 'Mobile navigation',
@@ -88,6 +91,7 @@ export default function AppShell() {
     { to: '/lab', label: labels.lab },
     { to: '/topics', label: labels.topics },
     { to: '/workspace', label: labels.workspace },
+    { to: '/about', label: labels.project },
   ]
 
   const toggleLanguage = () => {

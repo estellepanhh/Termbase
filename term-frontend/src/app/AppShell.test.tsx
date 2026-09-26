@@ -10,11 +10,12 @@ import { ChildModeProvider } from '../context/ChildModeContext'
 
 vi.mock('../services/knowledgeApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../services/knowledgeApi')>()
-  return { ...actual, listTopics: vi.fn(), getTopic: vi.fn() }
+  return { ...actual, listTopics: vi.fn(), getTopic: vi.fn(), getProjectOverview: vi.fn() }
 })
 
 const listTopics = vi.mocked(api.listTopics)
 const getTopic = vi.mocked(api.getTopic)
+const getProjectOverview = vi.mocked(api.getProjectOverview)
 const topicSummary = {
   slug: 'huaihe-culture', title: '淮河文化', summary: '淮河流域文化专题',
   item_count: 0, term_count: 0, entry_type_counts: {},
@@ -37,6 +38,7 @@ describe('research platform application shell', () => {
     await i18n.changeLanguage('zh')
     listTopics.mockResolvedValue([topicSummary])
     getTopic.mockResolvedValue({ ...topicSummary, items: [] })
+    getProjectOverview.mockResolvedValue({ term_count: 48, translation_count: 76, language_count: 4, published_topic_count: 1 })
   })
 
   afterEach(async () => {
@@ -72,6 +74,7 @@ describe('research platform application shell', () => {
     )
     expect(screen.getByText('Chinese Cultural Terminology Database')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Expression Lab' })).toHaveAttribute('href', '/lab')
+    expect(screen.getByRole('link', { name: 'Project' })).toHaveAttribute('href', '/about')
     expect(screen.getByRole('button', { name: 'Switch to Chinese' })).toBeInTheDocument()
   })
 
@@ -80,11 +83,18 @@ describe('research platform application shell', () => {
     ['/browse', '/discover'],
     ['/guide', '/discover'],
     ['/huaihe', '/topics/huaihe-culture'],
-    ['/about', '/topics'],
   ])('redirects legacy URL %s to the supported public route', async (legacyPath, expectedPath) => {
     renderRoute(legacyPath)
 
     await waitFor(() => expect(screen.getByTestId('app-location')).toHaveTextContent(expectedPath))
+  })
+
+  it('renders the canonical project page and marks its desktop navigation link current', async () => {
+    renderRoute('/about')
+
+    expect(await screen.findByRole('heading', { name: '中国特色话语多语术语库工程化建设与研究' })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: '主导航' })
+    expect(within(navigation).getByRole('link', { name: '项目成果' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('renders the topic index through the application route tree', async () => {
@@ -112,6 +122,7 @@ describe('research platform application shell', () => {
       'href',
       '/workspace',
     )
+    expect(within(navigationDialog).getByRole('link', { name: '项目成果' })).toHaveAttribute('href', '/about')
   })
 
   it('applies child and large-text modes to the full application shell', async () => {
