@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import request from '../utils/request'
 import type { PaginatedTerms, TermProfile } from '../types/knowledge'
-import { getTerm, getTopic, listTerms, listTopics } from './knowledgeApi'
+import { getProjectOverview, getTerm, getTopic, listTerms, listTopics } from './knowledgeApi'
 
 const termSummary = {
   id: 7,
@@ -194,6 +194,20 @@ describe('knowledgeApi', () => {
 
     await expect(getTopic('huaihe culture')).resolves.toEqual(topicDetail)
     expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/topics/huaihe%20culture')
+  })
+
+  it('loads the public project overview', async () => {
+    const overview = {
+      term_count: 48,
+      translation_count: 76,
+      language_count: 4,
+      published_topic_count: 1,
+    }
+    const adapter = vi.fn(successAdapter({ code: 200, data: overview }))
+    request.defaults.adapter = adapter
+
+    await expect(getProjectOverview()).resolves.toEqual(overview)
+    expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/project/overview')
   })
 
   it('propagates a non-2xx Axios response through the real request interceptor', async () => {

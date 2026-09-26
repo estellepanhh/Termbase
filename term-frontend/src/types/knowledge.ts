@@ -35,6 +35,13 @@ export interface PageMeta {
   total: number
 }
 
+export interface ProjectOverview {
+  term_count: number
+  translation_count: number
+  language_count: number
+  published_topic_count: number
+}
+
 export interface PaginatedTerms {
   data: TermSummary[]
   meta: PageMeta

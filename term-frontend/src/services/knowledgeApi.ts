@@ -1,6 +1,7 @@
 import request from '../utils/request'
 import type {
   PaginatedTerms,
+  ProjectOverview,
   PublicTopicDetail,
   TermProfile,
   TermQuery,
@@ -24,6 +25,11 @@ interface TopicsResponse {
 interface TopicDetailResponse {
   code: number
   data: PublicTopicDetail
+}
+
+interface ProjectOverviewResponse {
+  code: number
+  data: ProjectOverview
 }
 
 export async function listTerms(query: TermQuery): Promise<PaginatedTerms> {
@@ -51,4 +57,9 @@ export async function listTopics(): Promise<TopicSummary[]> {
 export async function getTopic(slug: string): Promise<PublicTopicDetail> {
   const response = await request.get<TopicDetailResponse>(`/api/topics/${encodeURIComponent(slug)}`)
   return (response as unknown as TopicDetailResponse).data
+}
+
+export async function getProjectOverview(): Promise<ProjectOverview> {
+  const response = await request.get<ProjectOverviewResponse>('/api/project/overview')
+  return (response as unknown as ProjectOverviewResponse).data
 }
