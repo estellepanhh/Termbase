@@ -3,10 +3,10 @@
 .about-hero { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(1.2rem, 4vw, 3.5rem); min-height: min(38rem, 72vh); align-items: center; padding: clamp(2.5rem, 7vw, 6rem) clamp(1.25rem, 5vw, 4.5rem); overflow: hidden; background: var(--indigo-800); color: var(--paper-50); }
 .about-hero::after { position: absolute; right: -8rem; bottom: -12rem; width: 28rem; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; content: ''; }
 .about-hero__stamp { display: grid; place-items: center; width: 4.5rem; height: 6rem; border: 1px solid rgba(255,255,255,.5); color: var(--paper-50); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.45rem; line-height: 1.5; text-align: center; }
-.about-hero__content { position: relative; z-index: 1; max-width: 58rem; }
+.about-hero__content { position: relative; z-index: 1; min-width: 0; max-width: 58rem; }
 .about-hero .about-eyebrow { color: #e2b7a8; }
-.about-hero h1 { max-width: 17ch; margin: 0; font: 600 clamp(2.5rem, 6vw, 5.6rem)/1.08 Georgia, 'Noto Serif SC', 'Songti SC', serif; letter-spacing: -.035em; }
-.about-hero__description { max-width: 48rem; margin: 1.5rem 0 2rem; color: #dbe5e2; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.9; }
+.about-hero h1 { max-width: 17ch; margin: 0; overflow-wrap: anywhere; font: 600 clamp(2.5rem, 6vw, 5.6rem)/1.08 Georgia, 'Noto Serif SC', 'Songti SC', serif; letter-spacing: -.035em; }
+.about-hero__description { max-width: 48rem; margin: 1.5rem 0 2rem; overflow-wrap: anywhere; color: #dbe5e2; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.9; }
 .about-primary-link { display: inline-flex; gap: .7rem; align-items: center; padding: .8rem 1.1rem; color: var(--indigo-800); background: var(--paper-50); font-weight: 800; text-decoration: none; }
 .about-primary-link:focus-visible { outline: 3px solid #e2b7a8; outline-offset: 4px; }
 .about-hero__side { position: relative; z-index: 1; margin: 0; color: rgba(255,255,255,.55); font-size: .68rem; letter-spacing: .18em; writing-mode: vertical-rl; }
