@@ -8,6 +8,7 @@ import ReviewWorkspacePage from '../features/review-workspace/ReviewWorkspacePag
 import TopicsPage from '../features/topics/TopicsPage'
 import TopicDetailPage from '../features/topics/TopicDetailPage'
 import AboutPage from '../features/about/AboutPage'
+import TermManagementPage from '../features/term-management/TermManagementPage'
 
 export default function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ export default function AppRoutes() {
         <Route path="topics/:slug" element={<TopicDetailPage />} />
         <Route path="workspace" element={<ReviewWorkspacePage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="manage" element={<TermManagementPage />} />
         <Route path="search" element={<Navigate replace to="/discover" />} />
         <Route path="browse" element={<Navigate replace to="/discover" />} />
         <Route path="guide" element={<Navigate replace to="/discover" />} />

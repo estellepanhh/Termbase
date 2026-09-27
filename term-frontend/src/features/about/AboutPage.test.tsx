@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -117,9 +118,24 @@ describe('AboutPage', () => {
 
     await user.click(screen.getByRole('button', { name: '开启儿童模式' }))
     expect(screen.getByRole('heading', { name: '我们怎样把一个词研究清楚' })).toBeInTheDocument()
+    expect(screen.getByText('有些中国概念有自己的故事和文化背景，不能只在字典里找一个词来替换。')).toBeInTheDocument()
+    expect(screen.getByText('先从文章和资料里找出值得研究的重要概念。')).toBeInTheDocument()
+    expect(screen.getByText('不只找对应词，还要看看在什么场合、对谁、应该怎样说。')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '开启大字模式' }))
 
     await waitFor(() => expect(getProjectOverview).toHaveBeenCalledTimes(1))
     expect(screen.getByText('48')).toBeInTheDocument()
+    expect(document.querySelector('.about-page')).toHaveAttribute('data-large-text', 'true')
+  })
+
+  it('starts one overview request when mounted under React Strict Mode', async () => {
+    render(
+      <StrictMode>
+        <ChildModeProvider><MemoryRouter><AboutPage /></MemoryRouter></ChildModeProvider>
+      </StrictMode>,
+    )
+
+    expect(await screen.findByText('48')).toBeInTheDocument()
+    expect(getProjectOverview).toHaveBeenCalledTimes(1)
   })
 })

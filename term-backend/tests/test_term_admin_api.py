@@ -1,0 +1,67 @@
+import unittest
+
+from termbase_app import create_app
+from termbase_app.extensions import db
+from termbase_app.models import Term, Topic, TopicItem
+
+
+class TermAdminApiTests(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:"})
+        self.context = self.app.app_context()
+        self.context.push()
+        db.create_all()
+        self.client = self.app.test_client()
+        self.term = Term(preferred_name_zh="礼", definition_zh="社会交往规范", status="draft")
+        db.session.add(self.term)
+        db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.context.pop()
+
+    def test_lists_draft_and_published_terms_for_management(self):
+        response = self.client.get("/api/v1/admin/terms?q=礼")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["data"][0]["status"], "draft")
+
+    def test_creates_and_updates_a_term(self):
+        created = self.client.post("/api/v1/admin/terms", json={
+            "preferred_name_zh": "天下大同", "definition_zh": "共同理想", "status": "published",
+            "term_level": "本源层", "culture_category": "传统文化", "cultural_connotation": "和合愿景",
+        })
+        self.assertEqual(created.status_code, 201)
+        term_id = created.get_json()["data"]["id"]
+
+        updated = self.client.put(f"/api/v1/admin/terms/{term_id}", json={
+            "preferred_name_zh": "大同", "definition_zh": "共同理想", "status": "draft",
+        })
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.get_json()["data"]["preferred_name_zh"], "大同")
+        self.assertEqual(db.session.get(Term, term_id).status, "draft")
+
+    def test_rejects_invalid_name_and_status(self):
+        empty = self.client.post("/api/v1/admin/terms", json={"preferred_name_zh": " ", "status": "draft"})
+        invalid = self.client.put(f"/api/v1/admin/terms/{self.term.id}", json={"preferred_name_zh": "礼", "status": "removed"})
+        self.assertEqual(empty.status_code, 400)
+        self.assertEqual(invalid.status_code, 400)
+
+    def test_deletes_an_unlinked_term(self):
+        term_id = self.term.id
+        response = self.client.delete(f"/api/v1/admin/terms/{term_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(db.session.get(Term, term_id))
+
+    def test_refuses_to_delete_a_term_used_by_a_topic(self):
+        topic = Topic(slug="ritual", title="礼文化", status="published")
+        TopicItem(topic=topic, term=self.term, entry_type="term", title="礼")
+        db.session.add(topic)
+        db.session.commit()
+        response = self.client.delete(f"/api/v1/admin/terms/{self.term.id}")
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("专题", response.get_json()["message"])
+
+
+if __name__ == "__main__":
+    unittest.main()

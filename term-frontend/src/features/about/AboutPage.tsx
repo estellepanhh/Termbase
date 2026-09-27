@@ -12,13 +12,14 @@ import './about.css'
 
 export default function AboutPage() {
   const { i18n } = useTranslation()
-  const { isChildMode } = useChildMode()
+  const { isChildMode, isLargeTextMode } = useChildMode()
   const language = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh') ? 'zh' : 'en'
   const copy = getAboutCopy(language, isChildMode)
   const [overview, setOverview] = useState<ProjectOverview | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const mounted = useRef(false)
   const pending = useRef(false)
+  const initialRequestStarted = useRef(false)
 
   const retryOverview = async () => {
     if (pending.current) return
@@ -39,25 +40,28 @@ export default function AboutPage() {
 
   useEffect(() => {
     mounted.current = true
-    pending.current = true
-    void getProjectOverview()
-      .then((result) => {
-        if (mounted.current) {
-          setOverview(result)
-          setStatus('ready')
-        }
-      })
-      .catch(() => {
-        if (mounted.current) setStatus('error')
-      })
-      .finally(() => {
-        pending.current = false
-      })
+    if (!initialRequestStarted.current) {
+      initialRequestStarted.current = true
+      pending.current = true
+      void getProjectOverview()
+        .then((result) => {
+          if (mounted.current) {
+            setOverview(result)
+            setStatus('ready')
+          }
+        })
+        .catch(() => {
+          if (mounted.current) setStatus('error')
+        })
+        .finally(() => {
+          pending.current = false
+        })
+    }
     return () => { mounted.current = false }
   }, [])
 
   return (
-    <div className="about-page">
+    <div className="about-page" data-large-text={isLargeTextMode || undefined}>
       <ProjectHero copy={copy} />
 
       <section className="about-section about-origin" aria-labelledby="about-origin-title">

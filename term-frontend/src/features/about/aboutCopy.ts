@@ -163,15 +163,49 @@ export function getAboutCopy(language: AboutLanguage, childMode: boolean): About
       ...base,
       heroDescription: 'This project helps people in different languages understand important Chinese ideas.',
       originTitle: 'Why some Chinese ideas need more explanation',
+      originParagraphs: [
+        'Some Chinese ideas come with their own stories and cultural background, so one dictionary word is not always enough.',
+        'We save clear meanings, translations, examples, and sources so people can check and improve each explanation.',
+      ],
       workflowTitle: 'How we study a term carefully',
       workflowDescription: 'AI helps us compare ideas, and people check the evidence and make the final choice.',
+      workflowStages: [
+        { title: 'Find', description: 'Find important ideas in articles and trusted materials.' },
+        { title: 'Organize', description: 'Write down the name, meaning, group, and source clearly.' },
+        { title: 'Compare', description: 'Ask AI for several ways to explain the idea.' },
+        { title: 'Check', description: 'People check the sources and choose the clearest wording.' },
+        { title: 'Share', description: 'Publish a record that people can search and improve.' },
+      ],
+      innovations: [
+        { title: 'Words in context', description: 'We look at who is speaking, who is listening, and where the words are used.' },
+        { title: 'Culture explained', description: 'We explain the story behind an idea instead of translating it word for word.' },
+        { title: 'People and AI', description: 'AI offers ideas, while people check facts and make the final decision.' },
+        { title: 'Knowledge that grows', description: 'Sources and changes are saved so the term record can keep getting better.' },
+      ],
     }
   }
   return {
     ...base,
     heroDescription: '我们把重要的中国概念讲清楚、译准确，帮助使用不同语言的人更好地理解中国文化。',
     originTitle: '为什么有些中国概念不能只查字典',
+    originParagraphs: [
+      '有些中国概念有自己的故事和文化背景，不能只在字典里找一个词来替换。',
+      '我们会把意思、译法、使用场景和资料来源一起保存，方便大家检查，也能继续把解释改得更清楚。',
+    ],
     workflowTitle: '我们怎样把一个词研究清楚',
     workflowDescription: 'AI 帮我们整理和比较，研究者查证资料并作出最后判断。',
+    workflowStages: [
+      { title: '发现', description: '先从文章和资料里找出值得研究的重要概念。' },
+      { title: '整理', description: '把名称、意思、分类和资料来源记录清楚。' },
+      { title: '比较', description: '请 AI 提供几种说法，看看它们有什么不同。' },
+      { title: '检查', description: '由研究者查资料、找问题，选出更合适的表达。' },
+      { title: '分享', description: '把研究结果做成大家可以查找和继续完善的知识卡。' },
+    ],
+    innovations: [
+      { title: '看清使用场景', description: '不只找对应词，还要看看在什么场合、对谁、应该怎样说。' },
+      { title: '讲明文化故事', description: '不只逐字翻译，还会解释这个概念背后的文化。' },
+      { title: '人和 AI 一起做', description: 'AI 提供想法，人来查证资料并作出最后决定。' },
+      { title: '知识不断长大', description: '保存资料和每次修改，让术语档案越做越完整。' },
+    ],
   }
 }

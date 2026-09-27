@@ -6,6 +6,9 @@ import type {
   TermProfile,
   TermQuery,
   TopicSummary,
+  AdminTerm,
+  AdminTermInput,
+  PaginatedAdminTerms,
 } from '../types/knowledge'
 
 interface ListTermsResponse extends PaginatedTerms {
@@ -62,4 +65,24 @@ export async function getTopic(slug: string): Promise<PublicTopicDetail> {
 export async function getProjectOverview(): Promise<ProjectOverview> {
   const response = await request.get<ProjectOverviewResponse>('/api/project/overview')
   return (response as unknown as ProjectOverviewResponse).data
+}
+
+export async function listAdminTerms(query: { q?: string; status?: string; page?: number } = {}): Promise<PaginatedAdminTerms> {
+  const response = await request.get('/api/v1/admin/terms', { params: { ...query, page_size: 20 } })
+  const payload = response as unknown as { data: AdminTerm[]; meta: PaginatedAdminTerms['meta'] }
+  return { data: payload.data, meta: payload.meta }
+}
+
+export async function createAdminTerm(input: AdminTermInput): Promise<AdminTerm> {
+  const response = await request.post('/api/v1/admin/terms', input)
+  return (response as unknown as { data: AdminTerm }).data
+}
+
+export async function updateAdminTerm(id: number, input: AdminTermInput): Promise<AdminTerm> {
+  const response = await request.put(`/api/v1/admin/terms/${id}`, input)
+  return (response as unknown as { data: AdminTerm }).data
+}
+
+export async function deleteAdminTerm(id: number): Promise<void> {
+  await request.delete(`/api/v1/admin/terms/${id}`)
 }

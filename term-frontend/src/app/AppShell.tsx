@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet } from 'react-router-dom'
 import ReadingPreferenceControls from '../components/ReadingPreferenceControls'
+import ChatAI from '../components/ChatAI'
 import { useChildMode } from '../context/ChildModeContext'
 
 type ShellLabels = {
@@ -11,6 +12,7 @@ type ShellLabels = {
   topics: string
   workspace: string
   project: string
+  manage: string
   platformName: string
   primaryNavigation: string
   mobileNavigation: string
@@ -26,6 +28,7 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     topics: '文化专题',
     workspace: '研究工作台',
     project: '项目成果',
+    manage: '术语管理',
     platformName: '中国特色话语多语知识平台',
     primaryNavigation: '主导航',
     mobileNavigation: '移动端主导航',
@@ -39,6 +42,7 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     topics: 'Cultural Topics',
     workspace: 'Research Workspace',
     project: 'Project',
+    manage: 'Term Management',
     platformName: 'Chinese Discourse Multilingual Knowledge Platform',
     primaryNavigation: 'Primary navigation',
     mobileNavigation: 'Mobile navigation',
@@ -92,6 +96,7 @@ export default function AppShell() {
     { to: '/topics', label: labels.topics },
     { to: '/workspace', label: labels.workspace },
     { to: '/about', label: labels.project },
+    { to: '/manage', label: labels.manage },
   ]
 
   const toggleLanguage = () => {
@@ -143,6 +148,10 @@ export default function AppShell() {
       >
         <nav aria-label={labels.mobileNavigation} className="mobile-navigation">
           <Navigation items={navigationItems} onNavigate={() => setMenuOpen(false)} />
+          <button aria-label={labels.switchLanguage} className="mobile-navigation__language" onClick={toggleLanguage} type="button">
+            <span>{isChinese ? '语言 / Language' : 'Language / 语言'}</span>
+            <strong>{labels.languageControl}</strong>
+          </button>
         </nav>
       </Drawer>
 
@@ -153,6 +162,7 @@ export default function AppShell() {
       <footer className="app-footer">
         <div className="app-footer__content">{labels.footer}</div>
       </footer>
+      <ChatAI />
     </div>
   )
 }

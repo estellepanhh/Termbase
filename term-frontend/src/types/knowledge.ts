@@ -42,6 +42,21 @@ export interface ProjectOverview {
   published_topic_count: number
 }
 
+export type AdminTermStatus = 'draft' | 'published'
+export interface AdminTermInput {
+  preferred_name_zh: string
+  definition_zh: string
+  cultural_connotation: string
+  term_level: string
+  culture_category: string
+  status: AdminTermStatus
+}
+export interface AdminTerm extends AdminTermInput {
+  id: number
+  updated_at: string | null
+}
+export interface PaginatedAdminTerms { data: AdminTerm[]; meta: PageMeta }
+
 export interface PaginatedTerms {
   data: TermSummary[]
   meta: PageMeta

@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button, Input, message } from 'antd';
-import { CloseOutlined, SendOutlined } from '@ant-design/icons';
+import { useEffect, useRef, useState } from 'react'
+import { CloseOutlined, SendOutlined } from '@ant-design/icons'
 
-const ChatAI: React.FC = () => {
+type ChatMessage = { role: 'assistant' | 'user'; content: string }
+
+export default function ChatAI() {
     const [visible, setVisible] = useState(false);
-    const [messages, setMessages] = useState([
-        { role: 'assistant', content: '你好！我是术语库AI助手，有什么问题可以问我～' }
-    ]);
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        { role: 'assistant', content: '我是你的文脉研究助手。可以问我术语含义、跨文化表达，或请我带你探索淮河文化。' }
+    ])
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,12 +28,13 @@ const ChatAI: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userMsg }),
             });
-            const reader = response.body?.getReader();
+            if (!response.ok || !response.body) throw new Error('AI unavailable')
+            const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let assistantMsg = '';
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
             while (true) {
-                const { done, value } = await reader!.read();
+                const { done, value } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value);
                 const lines = chunk.split('\n');
@@ -50,7 +52,7 @@ const ChatAI: React.FC = () => {
                                     return newMessages;
                                 });
                             } else if (data.error) {
-                                message.error(data.error);
+                                throw new Error(data.error)
                             }
                         } catch {
                             // 解析失败跳过此行
@@ -59,95 +61,40 @@ const ChatAI: React.FC = () => {
                 }
             }
         } catch {
-            message.error('AI助手暂时无法响应');
-            setMessages(prev => prev.slice(0, -1));
+            setMessages(prev => [...prev.filter((item) => item.content), { role: 'assistant', content: '连接暂时中断了，请稍后再试。' }]);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <>
-            {!visible && (
-  <div
-    onClick={() => setVisible(true)}
-    style={{
-      position: 'fixed',
-      bottom: 80,
-      right: 24,
-      width: 56,
-      height: 56,
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #1677ff, #4096ff)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      cursor: 'pointer',
-      boxShadow: '0 4px 12px rgba(22,119,255,0.4), 0 0 0 4px rgba(22,119,255,0.2)',
-      transition: 'all 0.3s ease',
-      zIndex: 9999,
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.transform = 'scale(1.05)';
-      e.currentTarget.style.boxShadow = '0 6px 16px rgba(22,119,255,0.6), 0 0 0 6px rgba(22,119,255,0.2)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(22,119,255,0.4), 0 0 0 4px rgba(22,119,255,0.2)';
-    }}
-  >
-    <span style={{ fontSize: 24, fontWeight: 'bold', color: 'white', pointerEvents: 'none' }}>
-      AI
-    </span>
-  </div>
-)}
+        <div className="culture-assistant">
+            {!visible && <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} type="button"><span aria-hidden="true">文</span><strong>AI<br />助手</strong></button>}
             {visible && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        bottom: 80,
-                        right: 24,
-                        width: 360,
-                        height: 500,
-                        background: 'white',
-                        borderRadius: 12,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                        zIndex: 1001,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                    }}
-                >
-                    <div style={{ padding: '12px 16px', background: '#1677ff', color: 'white', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>AI 智能助手</span>
-                        <CloseOutlined onClick={() => setVisible(false)} style={{ cursor: 'pointer' }} />
+                <section aria-label="文脉 AI 助手" aria-modal="false" className="culture-assistant__panel" role="dialog">
+                    <div className="culture-assistant__header">
+                        <div><span>HUMAN–AI RESEARCH</span><strong>文脉 AI 助手</strong></div>
+                        <button aria-label="关闭文脉 AI 助手" onClick={() => setVisible(false)} type="button"><CloseOutlined /></button>
                     </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+                    <div aria-live="polite" className="culture-assistant__messages">
                         {messages.map((msg, idx) => (
-                            <div key={idx} style={{ marginBottom: 12, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                                <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: 12, background: msg.role === 'user' ? '#1677ff' : '#f0f0f0', color: msg.role === 'user' ? 'white' : 'black' }}>
-                                    {msg.content}
-                                </div>
-                            </div>
+                            <p className={`culture-assistant__message culture-assistant__message--${msg.role}`} key={idx}>{msg.content}</p>
                         ))}
-                        {loading && <div style={{ textAlign: 'center', color: '#999' }}>AI正在思考...</div>}
+                        {loading && <p className="culture-assistant__thinking">正在沿着知识脉络思考…</p>}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div style={{ padding: 12, borderTop: '1px solid #e8e8e8', display: 'flex', gap: 8 }}>
-                        <Input.TextArea
+                    <div className="culture-assistant__composer">
+                        <textarea
                             value={inputValue}
                             onChange={e => setInputValue(e.target.value)}
-                            onPressEnter={e => { e.preventDefault(); sendMessage(); }}
-                            placeholder="输入问题..."
-                            autoSize={{ minRows: 1, maxRows: 3 }}
-                            style={{ flex: 1 }}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage() } }}
+                            placeholder="问一个术语，或一段表达…"
+                            rows={2}
                         />
-                        <Button type="primary" icon={<SendOutlined />} onClick={sendMessage} disabled={loading} />
+                        <button aria-label="发送问题" disabled={loading || !inputValue.trim()} onClick={() => void sendMessage()} type="button"><SendOutlined /></button>
                     </div>
-                </div>
+                </section>
             )}
-        </>
-    );
-};
-
-export default ChatAI;
+        </div>
+    )
+}

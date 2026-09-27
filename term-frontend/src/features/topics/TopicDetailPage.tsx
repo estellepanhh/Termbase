@@ -6,6 +6,7 @@ import { useChildMode } from '../../context/ChildModeContext'
 import { getTopic } from '../../services/knowledgeApi'
 import type { PublicTopicDetail, TopicEntry } from '../../types/knowledge'
 import { labelForEntryType } from './topicPresentation'
+import CulturalKnowledgeMap from './CulturalKnowledgeMap'
 import TopicEntrySection from './TopicEntrySection'
 import './topics.css'
 
@@ -129,6 +130,8 @@ export default function TopicDetailPage() {
         <div><strong>{materialTypeCount}</strong><span>{typeLabel}</span></div>
       </section>
 
+      {topic.items.length ? <CulturalKnowledgeMap childMode={isChildMode} entries={topic.items} language={language} /> : null}
+
       {topic.items.length === 0 ? (
         <section className="topics-status">
           <h2>{copy.empty}</h2>
@@ -144,7 +147,7 @@ export default function TopicDetailPage() {
           </nav>
           {isChildMode ? (
             <aside className="topic-detail__child-guide">
-              <strong>{copy.childTerms}</strong>
+              <em>儿童探索路线</em><strong>{copy.childTerms}</strong>
               {hasNonTermEntries ? <span>{copy.childMore}</span> : null}
             </aside>
           ) : null}

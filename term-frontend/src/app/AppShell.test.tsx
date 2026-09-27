@@ -123,6 +123,7 @@ describe('research platform application shell', () => {
       '/workspace',
     )
     expect(within(navigationDialog).getByRole('link', { name: '项目成果' })).toHaveAttribute('href', '/about')
+    expect(within(navigationDialog).getByRole('button', { name: '切换至英文' })).toBeInTheDocument()
   })
 
   it('applies child and large-text modes to the full application shell', async () => {
@@ -133,5 +134,15 @@ describe('research platform application shell', () => {
     await user.click(screen.getByRole('button', { name: '开启大字模式' }))
     expect(shell).toHaveAttribute('data-child-mode', 'true')
     expect(shell).toHaveAttribute('data-large-text', 'true')
+  })
+
+  it('keeps the cultural AI assistant available from every route', async () => {
+    const user = userEvent.setup()
+    renderRoute('/about')
+
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+
+    expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toBeInTheDocument()
+    expect(screen.getByText(/我是你的文脉研究助手/)).toBeInTheDocument()
   })
 })

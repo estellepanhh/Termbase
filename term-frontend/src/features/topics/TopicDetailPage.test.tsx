@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -85,9 +85,12 @@ describe('TopicDetailPage', () => {
     expect(screen.getByRole('heading', { name: '核心术语' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '文化人物' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '淮河本草' })).toBeInTheDocument()
-    expect(screen.getByText('管仲')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '管仲' })).toBeInTheDocument()
     expect(screen.getByText('honeysuckle')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '专题内容导航' })).toBeInTheDocument()
+    const map = screen.getByRole('region', { name: '淮河文脉图谱' })
+    expect(within(map).getByRole('button', { name: '定位到文化人物：管仲' })).toBeInTheDocument()
+    expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
   })
 
   it('shows an empty topic without hiding its research context', async () => {
@@ -125,6 +128,7 @@ describe('TopicDetailPage', () => {
 
     expect(await screen.findByText('先认识这些词')).toBeInTheDocument()
     expect(screen.getByText('再看看相关人物和事物')).toBeInTheDocument()
+    expect(screen.getAllByText('儿童探索路线')).toHaveLength(2)
     expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
   })
 
@@ -138,5 +142,15 @@ describe('TopicDetailPage', () => {
     expect(screen.getByText('core term')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View term record: 淮河文化' })).toHaveAttribute('href', '/terms/8')
     expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
+  })
+
+  it('keeps different material types visible when the topic has many terms', async () => {
+    const manyTerms = Array.from({ length: 12 }, (_, index) => ({ ...topic.items[0], id: 100 + index, title: `术语${index}` }))
+    getTopic.mockResolvedValue({ ...topic, item_count: 14, term_count: 12, items: [...manyTerms, topic.items[1], topic.items[2]] })
+    renderTopic()
+
+    const map = await screen.findByRole('region', { name: '淮河文脉图谱' })
+    expect(within(map).getByRole('button', { name: '定位到文化人物：管仲' })).toBeInTheDocument()
+    expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
   })
 })

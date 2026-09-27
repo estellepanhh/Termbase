@@ -49,6 +49,19 @@
 .about-project-note .about-eyebrow { color: #e2b7a8; }
 .about-project-note h2 { color: var(--paper-50); }
 .about-project-note > p:last-child { margin: 1.25rem 0 0; color: #dbe5e2; line-height: 1.9; }
+.about-page[data-large-text] .about-hero__description,
+.about-page[data-large-text] .about-origin__text p,
+.about-page[data-large-text] .about-section__heading > p:last-child,
+.about-page[data-large-text] .about-workflow p,
+.about-page[data-large-text] .about-capabilities p,
+.about-page[data-large-text] .about-innovations p,
+.about-page[data-large-text] .about-project-note > p:last-child { font-size: 1.2rem; line-height: 1.95; }
+.about-page[data-large-text] .about-workflow h3,
+.about-page[data-large-text] .about-capabilities h3,
+.about-page[data-large-text] .about-innovations h3,
+.about-page[data-large-text] .about-progress h3 { font-size: 1.45rem; }
+.about-page[data-large-text] .about-progress li { font-size: 1.12rem; line-height: 1.85; }
+.about-page[data-large-text] .about-primary-link { min-height: 3.25rem; font-size: 1.1rem; }
 @media (max-width: 980px) {
   .about-workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .about-workflow li { border-bottom: 1px solid var(--color-border); }

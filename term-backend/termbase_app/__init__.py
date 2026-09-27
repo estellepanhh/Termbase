@@ -14,6 +14,7 @@ from .routes.public_topics import bp as public_topics_bp
 from .routes.project_overview import bp as project_overview_bp
 from .routes.expression_lab import bp as expression_lab_bp
 from .routes.review_workspace import bp as review_workspace_bp
+from .routes.term_admin import bp as term_admin_bp
 
 
 def create_app(config_overrides=None):
@@ -36,6 +37,7 @@ def create_app(config_overrides=None):
     app.register_blueprint(ai_bp)
     app.register_blueprint(expression_lab_bp)
     app.register_blueprint(review_workspace_bp)
+    app.register_blueprint(term_admin_bp)
 
     @app.errorhandler(RateLimitExceeded)
     def handle_rate_limit(_error):
