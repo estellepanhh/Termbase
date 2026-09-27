@@ -14,6 +14,7 @@ from .knowledge import (
     TranslationContext,
 )
 from .review import ReviewCase, ReviewCaseTerm, ReviewEvent, ReviewRevision
+from .auth import User
 
 __all__ = [
     "Context",
@@ -33,4 +34,5 @@ __all__ = [
     "ReviewCaseTerm",
     "ReviewEvent",
     "ReviewRevision",
+    "User",
 ]

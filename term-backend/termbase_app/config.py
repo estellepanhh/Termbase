@@ -17,6 +17,9 @@ def database_uri() -> str:
 
 
 class Config:
+    SECRET_KEY = os.environ.get("SECRET_KEY", "termbase-dev-secret")
+    AUTH_TOKEN_SECRET = os.environ.get("AUTH_TOKEN_SECRET", SECRET_KEY)
+    AUTH_TOKEN_MAX_AGE_SECONDS = int(os.environ.get("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
     SQLALCHEMY_DATABASE_URI = database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False

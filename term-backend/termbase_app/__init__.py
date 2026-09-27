@@ -7,6 +7,7 @@ from flask_limiter.errors import RateLimitExceeded
 from .extensions import db, limiter, migrate
 from . import models  # noqa: F401
 from .routes.ai import bp as ai_bp, init_app as init_ai
+from .routes.auth import bp as auth_bp
 from .routes.health import bp as health_bp
 from .routes.legacy import bp as legacy_bp
 from .routes.public_terms import bp as public_terms_bp
@@ -30,6 +31,7 @@ def create_app(config_overrides=None):
     )}})
     init_ai(app)
     app.register_blueprint(health_bp)
+    app.register_blueprint(auth_bp)
     app.register_blueprint(public_terms_bp)
     app.register_blueprint(public_topics_bp)
     app.register_blueprint(project_overview_bp)
