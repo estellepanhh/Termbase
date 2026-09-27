@@ -1,9 +1,18 @@
 import axios from 'axios'
 import { message } from 'antd'
+import { getAuthToken } from '../services/authApi'
 
 const service = axios.create({
   baseURL: '/',
   timeout: 15000,
+})
+
+service.interceptors.request.use((config) => {
+  const token = getAuthToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
 })
 
 // 响应拦截：提取 data 并统一错误处理

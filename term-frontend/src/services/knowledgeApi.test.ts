@@ -143,6 +143,7 @@ describe('knowledgeApi', () => {
   let originalAdapter: typeof request.defaults.adapter
 
   beforeEach(() => {
+    localStorage.clear()
     originalAdapter = request.defaults.adapter
   })
 
@@ -208,6 +209,21 @@ describe('knowledgeApi', () => {
 
     await expect(getProjectOverview()).resolves.toEqual(overview)
     expect(request.getUri(adapter.mock.calls[0][0] as InternalAxiosRequestConfig)).toBe('/api/project/overview')
+  })
+
+  it('adds Authorization bearer token to admin API requests', async () => {
+    localStorage.setItem('termbase-auth', JSON.stringify({
+      token: 'admin-token',
+      user: { username: 'admin', role: 'admin', display_name: '管理员' },
+    }))
+    const adapter = vi.fn(successAdapter({ code: 200, data: [], meta: { page: 1, page_size: 20, total: 0 } }))
+    request.defaults.adapter = adapter
+
+    const { listAdminTerms } = await import('./knowledgeApi')
+    await listAdminTerms({ page: 1 })
+
+    const config = adapter.mock.calls[0][0] as InternalAxiosRequestConfig
+    expect(config.headers.Authorization).toBe('Bearer admin-token')
   })
 
   it('propagates a non-2xx Axios response through the real request interceptor', async () => {

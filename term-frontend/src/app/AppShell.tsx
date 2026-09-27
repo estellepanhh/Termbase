@@ -6,6 +6,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import ReadingPreferenceControls from '../components/ReadingPreferenceControls'
 import ChatAI from '../components/ChatAI'
 import { useChildMode } from '../context/ChildModeContext'
+import { useAuth } from '../context/AuthContext'
 
 type ShellLabels = {
   lab: string
@@ -13,6 +14,8 @@ type ShellLabels = {
   workspace: string
   project: string
   manage: string
+  login: string
+  logout: string
   platformName: string
   primaryNavigation: string
   mobileNavigation: string
@@ -29,6 +32,8 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     workspace: '研究工作台',
     project: '项目成果',
     manage: '术语管理',
+    login: '登录',
+    logout: '退出',
     platformName: '中国特色话语多语知识平台',
     primaryNavigation: '主导航',
     mobileNavigation: '移动端主导航',
@@ -43,6 +48,8 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     workspace: 'Research Workspace',
     project: 'Project',
     manage: 'Term Management',
+    login: 'Login',
+    logout: 'Logout',
     platformName: 'Chinese Discourse Multilingual Knowledge Platform',
     primaryNavigation: 'Primary navigation',
     mobileNavigation: 'Mobile navigation',
@@ -88,6 +95,7 @@ export default function AppShell() {
   const isChinese = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh')
   const labels = newConceptLabels[isChinese ? 'zh' : 'en']
   const { isChildMode, isLargeTextMode } = useChildMode()
+  const auth = useAuth()
   const brandTitle = t('site_title')
   const navigationItems: NavigationItem[] = [
     { to: '/', label: t('home'), end: true },
@@ -96,8 +104,8 @@ export default function AppShell() {
     { to: '/topics', label: labels.topics },
     { to: '/workspace', label: labels.workspace },
     { to: '/about', label: labels.project },
-    { to: '/manage', label: labels.manage },
   ]
+  if (auth.isAdmin) navigationItems.push({ to: '/manage', label: labels.manage })
 
   const toggleLanguage = () => {
     void i18n.changeLanguage(isChinese ? 'en' : 'zh')
@@ -128,6 +136,13 @@ export default function AppShell() {
             <Button aria-label={labels.switchLanguage} onClick={toggleLanguage} type="text">
               {labels.languageControl}
             </Button>
+            {auth.status === 'authenticated' ? (
+              <Button onClick={auth.logout} type="text">
+                {auth.user?.display_name || auth.user?.username} · {labels.logout}
+              </Button>
+            ) : (
+              <NavLink className="app-login-link" to="/login">{labels.login}</NavLink>
+            )}
             <Button
               aria-label={labels.openMenu}
               className="app-menu-button"
@@ -148,6 +163,14 @@ export default function AppShell() {
       >
         <nav aria-label={labels.mobileNavigation} className="mobile-navigation">
           <Navigation items={navigationItems} onNavigate={() => setMenuOpen(false)} />
+          {auth.status === 'authenticated' ? (
+            <button className="mobile-navigation__language" onClick={() => { auth.logout(); setMenuOpen(false) }} type="button">
+              <span>{auth.user?.display_name || auth.user?.username}</span>
+              <strong>{labels.logout}</strong>
+            </button>
+          ) : (
+            <NavLink className="app-navigation__link" onClick={() => setMenuOpen(false)} to="/login">{labels.login}</NavLink>
+          )}
           <button aria-label={labels.switchLanguage} className="mobile-navigation__language" onClick={toggleLanguage} type="button">
             <span>{isChinese ? '语言 / Language' : 'Language / 语言'}</span>
             <strong>{labels.languageControl}</strong>

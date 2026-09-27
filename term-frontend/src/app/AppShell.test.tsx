@@ -13,6 +13,18 @@ vi.mock('../services/knowledgeApi', async (importOriginal) => {
   return { ...actual, listTopics: vi.fn(), getTopic: vi.fn(), getProjectOverview: vi.fn() }
 })
 
+vi.mock('../services/authApi', () => ({
+  loginRequest: vi.fn(),
+  getCurrentUser: vi.fn(),
+  getAuthToken: vi.fn(() => null),
+  getStoredAuth: vi.fn(() => {
+    const raw = localStorage.getItem('termbase-auth')
+    return raw ? JSON.parse(raw) : null
+  }),
+  saveStoredAuth: vi.fn((auth) => localStorage.setItem('termbase-auth', JSON.stringify(auth))),
+  clearStoredAuth: vi.fn(() => localStorage.removeItem('termbase-auth')),
+}))
+
 const listTopics = vi.mocked(api.listTopics)
 const getTopic = vi.mocked(api.getTopic)
 const getProjectOverview = vi.mocked(api.getProjectOverview)
@@ -124,6 +136,25 @@ describe('research platform application shell', () => {
     )
     expect(within(navigationDialog).getByRole('link', { name: '项目成果' })).toHaveAttribute('href', '/about')
     expect(within(navigationDialog).getByRole('button', { name: '切换至英文' })).toBeInTheDocument()
+  })
+
+  it('hides term management for normal users and shows it for admins', () => {
+    localStorage.setItem('termbase-auth', JSON.stringify({
+      token: 'user-token',
+      user: { username: 'user', role: 'user', display_name: '普通用户' },
+    }))
+    const { unmount } = renderRoute('/discover')
+
+    expect(screen.queryByRole('link', { name: '术语管理' })).not.toBeInTheDocument()
+    unmount()
+
+    localStorage.setItem('termbase-auth', JSON.stringify({
+      token: 'admin-token',
+      user: { username: 'admin', role: 'admin', display_name: '管理员' },
+    }))
+    renderRoute('/discover')
+
+    expect(screen.getByRole('link', { name: '术语管理' })).toHaveAttribute('href', '/manage')
   })
 
   it('applies child and large-text modes to the full application shell', async () => {
