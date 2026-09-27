@@ -1,7 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import type { ReactElement } from 'react'
+import { useAuth } from '../context/useAuth'
 
-export default function RequireAdmin({ children }: { children: JSX.Element }) {
+export default function RequireAdmin({ children }: { children: ReactElement }) {
   const auth = useAuth()
   const location = useLocation()
 

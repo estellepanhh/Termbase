@@ -6,7 +6,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import ReadingPreferenceControls from '../components/ReadingPreferenceControls'
 import ChatAI from '../components/ChatAI'
 import { useChildMode } from '../context/ChildModeContext'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 type ShellLabels = {
   lab: string
