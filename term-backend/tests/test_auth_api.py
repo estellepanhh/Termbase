@@ -57,6 +57,46 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertIn("用户名或密码错误", response.get_json()["message"])
 
+    def test_register_creates_normal_user_and_returns_token(self):
+        response = self.client.post(
+            "/api/v1/auth/register",
+            json={
+                "username": "student",
+                "password": "123456",
+                "display_name": "学生用户",
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        payload = response.get_json()["data"]
+        self.assertTrue(payload["token"])
+        self.assertEqual(payload["user"]["username"], "student")
+        self.assertEqual(payload["user"]["display_name"], "学生用户")
+        self.assertEqual(payload["user"]["role"], "user")
+
+    def test_register_rejects_existing_username(self):
+        self.client.post(
+            "/api/v1/auth/register",
+            json={"username": "student", "password": "123456"},
+        )
+
+        response = self.client.post(
+            "/api/v1/auth/register",
+            json={"username": "student", "password": "abcdef"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("账号已存在", response.get_json()["message"])
+
+    def test_register_rejects_weak_payload(self):
+        response = self.client.post(
+            "/api/v1/auth/register",
+            json={"username": "ab", "password": "123"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("账号至少", response.get_json()["message"])
+
     def test_me_returns_current_user_from_bearer_token(self):
         login = self.client.post(
             "/api/v1/auth/login",

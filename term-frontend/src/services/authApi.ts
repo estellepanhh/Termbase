@@ -58,6 +58,15 @@ export async function loginRequest(username: string, password: string): Promise<
   return unwrap<LoginResult>(response)
 }
 
+export async function registerRequest(username: string, password: string, displayName: string): Promise<LoginResult> {
+  const response = await fetch('/api/v1/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, display_name: displayName }),
+  })
+  return unwrap<LoginResult>(response)
+}
+
 export async function getCurrentUser(): Promise<AuthUser> {
   const token = getAuthToken()
   if (!token) throw new Error('请先登录')

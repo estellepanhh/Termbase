@@ -94,3 +94,27 @@ def authenticate(username: str, password: str) -> User | None:
     if user is None or not check_password_hash(user.password_hash, password):
         return None
     return user
+
+
+def register_user(username: str, password: str, display_name: str = "") -> tuple[User | None, str | None]:
+    seed_demo_users()
+    username = username.strip()
+    display_name = display_name.strip() or username
+    if len(username) < 3 or len(username) > 30:
+        return None, "账号至少 3 位，最多 30 位"
+    if not username.replace("_", "").replace("-", "").isalnum():
+        return None, "账号只能包含字母、数字、下划线或短横线"
+    if len(password) < 6:
+        return None, "密码至少 6 位"
+    if User.query.filter_by(username=username).first() is not None:
+        return None, "账号已存在"
+    user = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        role="user",
+        display_name=display_name[:100],
+        is_active=True,
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user, None

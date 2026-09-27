@@ -3,6 +3,7 @@ import {
   clearStoredAuth,
   getStoredAuth,
   loginRequest,
+  registerRequest,
   saveStoredAuth,
 } from '../services/authApi'
 import { AuthContext, type AuthContextValue } from './authContextValue'
@@ -17,6 +18,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: auth?.user.role === 'admin',
     async login(username, password) {
       const next = await loginRequest(username, password)
+      saveStoredAuth(next)
+      setAuth(next)
+    },
+    async register(username, password, displayName) {
+      const next = await registerRequest(username, password, displayName)
       saveStoredAuth(next)
       setAuth(next)
     },

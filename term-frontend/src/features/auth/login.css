@@ -3,11 +3,14 @@
 .login-panel__eyebrow{margin:0 0 .5rem;color:var(--color-vermilion);font-size:.72rem;font-weight:900;letter-spacing:.16em}
 .login-panel h1{margin:0;color:var(--indigo-800);font:600 clamp(2rem,5vw,3.4rem)/1.08 Georgia,'Noto Serif SC',serif}
 .login-panel>p{color:var(--color-muted);line-height:1.8}
+.login-panel__tabs{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:1.15rem 0 .5rem;padding:.35rem;border:1px solid var(--color-border);border-radius:999px;background:rgba(247,242,232,.8)}
+.login-panel__tabs button{margin:0;border:0;border-radius:999px;background:transparent;color:var(--color-muted);padding:.65rem 1rem;font-weight:900;cursor:pointer}
+.login-panel__tabs button[aria-selected=true]{background:var(--indigo-800);color:white;box-shadow:0 10px 24px rgba(23,61,70,.18)}
 .login-panel form{display:grid;gap:.65rem;margin-top:1.2rem}
 .login-panel label{font-weight:800}
 .login-panel input{border:1px solid var(--color-border);border-radius:6px;padding:.78rem .9rem;font:inherit}
-.login-panel button{margin-top:.5rem;border:0;border-radius:6px;background:var(--indigo-800);color:white;padding:.85rem 1rem;font-weight:900;cursor:pointer}
-.login-panel button:disabled{opacity:.65;cursor:not-allowed}
+.login-panel form button{margin-top:.5rem;border:0;border-radius:6px;background:var(--indigo-800);color:white;padding:.85rem 1rem;font-weight:900;cursor:pointer}
+.login-panel form button:disabled{opacity:.65;cursor:not-allowed}
 .login-panel [role=alert]{margin:.2rem 0;color:#9b3029;font-weight:800}
 .login-panel aside{display:grid;gap:.35rem;margin-top:1.2rem;padding:1rem;border-radius:6px;background:var(--paper-100);color:var(--color-muted)}
 .login-panel aside strong{color:var(--color-ink)}

@@ -9,6 +9,7 @@ import '../../locales'
 
 vi.mock('../../services/authApi', () => ({
   loginRequest: vi.fn(),
+  registerRequest: vi.fn(),
   getCurrentUser: vi.fn(),
   getAuthToken: vi.fn(() => null),
   getStoredAuth: vi.fn(() => {
@@ -26,6 +27,10 @@ describe('LoginPage', () => {
     vi.mocked(authApi.loginRequest).mockResolvedValue({
       token: 'admin-token',
       user: { username: 'admin', role: 'admin', display_name: '管理员' },
+    })
+    vi.mocked(authApi.registerRequest).mockResolvedValue({
+      token: 'user-token',
+      user: { username: 'student', role: 'user', display_name: '术语研究者' },
     })
   })
 
@@ -45,5 +50,26 @@ describe('LoginPage', () => {
 
     await waitFor(() => expect(screen.getByText(/管理员/)).toBeInTheDocument())
     expect(localStorage.getItem('termbase-auth')).toContain('admin-token')
+  })
+
+  it('registers a normal user and signs in immediately', async () => {
+    const user = userEvent.setup()
+    render(
+      <ChildModeProvider>
+        <MemoryRouter initialEntries={['/login']}>
+          <AppRoutes />
+        </MemoryRouter>
+      </ChildModeProvider>,
+    )
+
+    await user.click(screen.getByRole('tab', { name: '注册' }))
+    await user.type(screen.getByLabelText('昵称'), '术语研究者')
+    await user.type(screen.getByLabelText('账号'), 'student')
+    await user.type(screen.getByLabelText('密码'), '123456')
+    await user.click(screen.getByRole('button', { name: '注册并进入' }))
+
+    await waitFor(() => expect(screen.getByText(/术语研究者/)).toBeInTheDocument())
+    expect(authApi.registerRequest).toHaveBeenCalledWith('student', '123456', '术语研究者')
+    expect(localStorage.getItem('termbase-auth')).toContain('user-token')
   })
 })
