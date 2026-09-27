@@ -16,13 +16,21 @@ class TermAdminApiTests(unittest.TestCase):
         db.session.add(self.term)
         db.session.commit()
 
+    def auth_header(self, username="admin"):
+        response = self.client.post(
+            "/api/v1/auth/login",
+            json={"username": username, "password": "123456"},
+        )
+        token = response.get_json()["data"]["token"]
+        return {"Authorization": f"Bearer {token}"}
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.context.pop()
 
     def test_lists_draft_and_published_terms_for_management(self):
-        response = self.client.get("/api/v1/admin/terms?q=礼")
+        response = self.client.get("/api/v1/admin/terms?q=礼", headers=self.auth_header())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["data"][0]["status"], "draft")
 
@@ -30,26 +38,27 @@ class TermAdminApiTests(unittest.TestCase):
         created = self.client.post("/api/v1/admin/terms", json={
             "preferred_name_zh": "天下大同", "definition_zh": "共同理想", "status": "published",
             "term_level": "本源层", "culture_category": "传统文化", "cultural_connotation": "和合愿景",
-        })
+        }, headers=self.auth_header())
         self.assertEqual(created.status_code, 201)
         term_id = created.get_json()["data"]["id"]
 
         updated = self.client.put(f"/api/v1/admin/terms/{term_id}", json={
             "preferred_name_zh": "大同", "definition_zh": "共同理想", "status": "draft",
-        })
+        }, headers=self.auth_header())
         self.assertEqual(updated.status_code, 200)
         self.assertEqual(updated.get_json()["data"]["preferred_name_zh"], "大同")
         self.assertEqual(db.session.get(Term, term_id).status, "draft")
 
     def test_rejects_invalid_name_and_status(self):
-        empty = self.client.post("/api/v1/admin/terms", json={"preferred_name_zh": " ", "status": "draft"})
-        invalid = self.client.put(f"/api/v1/admin/terms/{self.term.id}", json={"preferred_name_zh": "礼", "status": "removed"})
+        headers = self.auth_header()
+        empty = self.client.post("/api/v1/admin/terms", json={"preferred_name_zh": " ", "status": "draft"}, headers=headers)
+        invalid = self.client.put(f"/api/v1/admin/terms/{self.term.id}", json={"preferred_name_zh": "礼", "status": "removed"}, headers=headers)
         self.assertEqual(empty.status_code, 400)
         self.assertEqual(invalid.status_code, 400)
 
     def test_deletes_an_unlinked_term(self):
         term_id = self.term.id
-        response = self.client.delete(f"/api/v1/admin/terms/{term_id}")
+        response = self.client.delete(f"/api/v1/admin/terms/{term_id}", headers=self.auth_header())
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(db.session.get(Term, term_id))
 
@@ -58,9 +67,21 @@ class TermAdminApiTests(unittest.TestCase):
         TopicItem(topic=topic, term=self.term, entry_type="term", title="礼")
         db.session.add(topic)
         db.session.commit()
-        response = self.client.delete(f"/api/v1/admin/terms/{self.term.id}")
+        response = self.client.delete(f"/api/v1/admin/terms/{self.term.id}", headers=self.auth_header())
         self.assertEqual(response.status_code, 409)
         self.assertIn("专题", response.get_json()["message"])
+
+    def test_rejects_admin_term_list_without_token(self):
+        response = self.client.get("/api/v1/admin/terms")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("请先登录", response.get_json()["message"])
+
+    def test_rejects_admin_term_list_for_normal_user(self):
+        response = self.client.get("/api/v1/admin/terms", headers=self.auth_header("user"))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("管理员权限", response.get_json()["message"])
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ from sqlalchemy import func, or_, select
 
 from ..extensions import db
 from ..models import Term
+from ..services.auth import require_admin
 
 
 bp = Blueprint("term_admin", __name__)
@@ -32,8 +33,18 @@ def _payload():
     return {field: (str(data.get(field, "")).strip() if field != "status" else status) for field in EDITABLE_FIELDS}, None
 
 
+def _admin_required_response():
+    user_or_response = require_admin()
+    if isinstance(user_or_response, tuple):
+        return user_or_response
+    return None
+
+
 @bp.get("/api/v1/admin/terms")
 def list_admin_terms():
+    denied = _admin_required_response()
+    if denied:
+        return denied
     try:
         page = max(1, int(request.args.get("page", 1)))
         page_size = min(100, max(1, int(request.args.get("page_size", 20))))
@@ -54,6 +65,9 @@ def list_admin_terms():
 
 @bp.post("/api/v1/admin/terms")
 def create_admin_term():
+    denied = _admin_required_response()
+    if denied:
+        return denied
     values, error = _payload()
     if error:
         return jsonify({"code": 400, "message": error}), 400
@@ -65,6 +79,9 @@ def create_admin_term():
 
 @bp.put("/api/v1/admin/terms/<int:term_id>")
 def update_admin_term(term_id):
+    denied = _admin_required_response()
+    if denied:
+        return denied
     term = db.session.get(Term, term_id)
     if term is None:
         return jsonify({"code": 404, "message": "术语不存在"}), 404
@@ -79,6 +96,9 @@ def update_admin_term(term_id):
 
 @bp.delete("/api/v1/admin/terms/<int:term_id>")
 def delete_admin_term(term_id):
+    denied = _admin_required_response()
+    if denied:
+        return denied
     term = db.session.get(Term, term_id)
     if term is None:
         return jsonify({"code": 404, "message": "术语不存在"}), 404
