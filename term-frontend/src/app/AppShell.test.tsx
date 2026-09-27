@@ -15,6 +15,7 @@ vi.mock('../services/knowledgeApi', async (importOriginal) => {
 
 vi.mock('../services/authApi', () => ({
   loginRequest: vi.fn(),
+  registerRequest: vi.fn(),
   getCurrentUser: vi.fn(),
   getAuthToken: vi.fn(() => null),
   getStoredAuth: vi.fn(() => {
@@ -85,7 +86,8 @@ describe('research platform application shell', () => {
       '/discover',
     )
     expect(screen.getByText('Chinese Cultural Terminology Database')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Expression Lab' })).toHaveAttribute('href', '/lab')
+    expect(screen.getByRole('link', { name: 'Co-construction' })).toHaveAttribute('href', '/co-construction')
+    expect(screen.queryByRole('link', { name: 'Expression Lab' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Research Workspace' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Project' })).toHaveAttribute('href', '/about')
     expect(screen.getByRole('button', { name: 'Switch to Chinese' })).toBeInTheDocument()
@@ -96,7 +98,8 @@ describe('research platform application shell', () => {
     ['/browse', '/discover'],
     ['/guide', '/discover'],
     ['/huaihe', '/topics/huaihe-culture'],
-    ['/workspace', '/lab'],
+    ['/lab', '/login'],
+    ['/workspace', '/login'],
   ])('redirects legacy URL %s to the supported public route', async (legacyPath, expectedPath) => {
     renderRoute(legacyPath)
 
@@ -133,6 +136,8 @@ describe('research platform application shell', () => {
 
     const navigationDialog = await screen.findByRole('dialog', { name: '主导航' })
     expect(within(navigationDialog).queryByRole('link', { name: '研究工作台' })).not.toBeInTheDocument()
+    expect(within(navigationDialog).queryByRole('link', { name: '表达实验室' })).not.toBeInTheDocument()
+    expect(within(navigationDialog).getByRole('link', { name: '术语共建' })).toHaveAttribute('href', '/co-construction')
     expect(within(navigationDialog).getByRole('link', { name: '项目成果' })).toHaveAttribute('href', '/about')
     expect(within(navigationDialog).getByRole('button', { name: '切换至英文' })).toBeInTheDocument()
   })
@@ -173,6 +178,6 @@ describe('research platform application shell', () => {
     await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
 
     expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toBeInTheDocument()
-    expect(screen.getByText(/我是你的文脉研究助手/)).toBeInTheDocument()
+    expect(screen.getByText(/你好，我是 AI/)).toBeInTheDocument()
   })
 })

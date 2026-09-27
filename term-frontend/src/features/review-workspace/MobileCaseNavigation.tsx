@@ -1,1 +1,0 @@
-export default function MobileCaseNavigation({title,onBack}:{title:string;onBack:()=>void}){return <div className="mobile-case-navigation"><button onClick={onBack} type="button">← 返回案例队列</button><span>{title}</span></div>}

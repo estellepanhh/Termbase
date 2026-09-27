@@ -25,25 +25,22 @@ describe('HomePage', () => {
     localStorage.clear()
   })
 
-  it('presents the project as a public digital exhibition without a hero search box', () => {
+  it('presents the simplified termbase homepage without unclear diagrams', () => {
     renderHome()
 
-    expect(screen.getByRole('heading', { name: '中国特色话语多语术语库工程化建设与研究' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '中国特色话语多语术语库' })).toBeInTheDocument()
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
-    expect(screen.getByText('术语采集')).toBeInTheDocument()
-    expect(screen.getByText('AI 辅助表达')).toBeInTheDocument()
+    expect(screen.getByText('搜索术语：和而不同 / 淮河文化 / 文化强国')).toBeInTheDocument()
+    expect(screen.queryByText('文脉知识工程')).not.toBeInTheDocument()
     expect(screen.getByText('淮河文化示范专题')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '本源层' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '核心层' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '拓展层' })).toBeInTheDocument()
   })
 
   it('keeps public research entrances available to normal visitors', () => {
     renderHome()
 
-    expect(screen.getAllByRole('link', { name: '进入术语探索' })[0]).toHaveAttribute('href', '/discover')
-    expect(screen.getAllByRole('link', { name: '查看项目介绍' })[0]).toHaveAttribute('href', '/about')
-    expect(screen.getByRole('link', { name: '进入表达实验室' })).toHaveAttribute('href', '/lab')
+    expect(screen.getAllByRole('link', { name: '进入术语检索' })[0]).toHaveAttribute('href', '/discover')
+    expect(screen.getAllByRole('link', { name: '参与术语共建' })[0]).toHaveAttribute('href', '/co-construction')
+    expect(screen.queryByRole('link', { name: '进入表达实验室' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看淮河文化专题' })).toHaveAttribute('href', '/topics/huaihe-culture')
     expect(screen.queryByRole('link', { name: '进入术语管理' })).not.toBeInTheDocument()
   })

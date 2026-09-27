@@ -4,7 +4,7 @@ import RequireAdmin from './RequireAdmin'
 import HomePage from '../features/home/HomePage'
 import DiscoveryPage from '../features/discovery/DiscoveryPage'
 import TermProfilePage from '../features/term-profile/TermProfilePage'
-import ExpressionLabPage from '../features/expression-lab/ExpressionLabPage'
+import CoConstructionPage from '../features/co-construction/CoConstructionPage'
 import TopicsPage from '../features/topics/TopicsPage'
 import TopicDetailPage from '../features/topics/TopicDetailPage'
 import AboutPage from '../features/about/AboutPage'
@@ -20,7 +20,7 @@ export default function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="discover" element={<DiscoveryPage />} />
           <Route path="terms/:id" element={<TermProfilePage />} />
-          <Route path="lab" element={<ExpressionLabPage />} />
+          <Route path="co-construction" element={<CoConstructionPage />} />
           <Route path="topics" element={<TopicsPage />} />
           <Route path="topics/:slug" element={<TopicDetailPage />} />
           <Route path="about" element={<AboutPage />} />
@@ -30,7 +30,8 @@ export default function AppRoutes() {
           <Route path="browse" element={<Navigate replace to="/discover" />} />
           <Route path="guide" element={<Navigate replace to="/discover" />} />
           <Route path="huaihe" element={<Navigate replace to="/topics/huaihe-culture" />} />
-          <Route path="workspace" element={<Navigate replace to="/lab" />} />
+          <Route path="lab" element={<Navigate replace to="/co-construction" />} />
+          <Route path="workspace" element={<Navigate replace to="/co-construction" />} />
         </Route>
       </Routes>
     </AuthProvider>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createAdminTerm, deleteAdminTerm, listAdminTerms, updateAdminTerm } from '../../services/knowledgeApi'
+import { approveSubmission, listAdminSubmissions, rejectSubmission, type TermSubmission } from '../../services/coConstructionApi'
 import type { AdminTerm, AdminTermInput } from '../../types/knowledge'
 import './term-management.css'
 
@@ -17,6 +18,7 @@ export default function TermManagementPage() {
   const [editing, setEditing] = useState<AdminTerm | null | 'new'>(null)
   const [form, setForm] = useState<AdminTermInput>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [submissions, setSubmissions] = useState<TermSubmission[]>([])
 
   const load = async (q = query) => {
     setStatus('loading')
@@ -29,6 +31,7 @@ export default function TermManagementPage() {
     void listAdminTerms().then((result) => {
       if (active) { setTerms(result.data); setStatus('ready') }
     }).catch(() => { if (active) setStatus('error') })
+    void listAdminSubmissions().then((result) => { if (active) setSubmissions(result) }).catch(() => { if (active) setSubmissions([]) })
     return () => { active = false }
   }, [])
 
@@ -53,6 +56,20 @@ export default function TermManagementPage() {
     catch (error) { setMessage(errorMessage(error)) }
   }
 
+  const refreshSubmissions = async () => setSubmissions(await listAdminSubmissions())
+  const approve = async (submission: TermSubmission) => {
+    await approveSubmission(submission.public_id)
+    setMessage('共建记录已通过并发布。')
+    await refreshSubmissions()
+    await load()
+  }
+  const reject = async (submission: TermSubmission) => {
+    const note = window.prompt(`请输入驳回“${submission.preferred_name_zh}”的理由`, '') ?? ''
+    await rejectSubmission(submission.public_id, note)
+    setMessage('共建记录已驳回。')
+    await refreshSubmissions()
+  }
+
   return (
     <div className="term-management">
       <header className="term-management__hero"><div><p>TERMINOLOGY OPERATIONS</p><h1>术语管理台</h1><span>将采集、修订和发布状态集中管理，形成可追溯的术语生产入口。</span></div><aside><strong>演示管理端</strong><p>公网部署前需接入账号与权限控制。</p></aside></header>
@@ -71,6 +88,24 @@ export default function TermManagementPage() {
         </article>)}
         {!terms.length ? <p className="term-management__state">没有找到符合条件的术语。</p> : null}
       </section> : null}
+      <section className="term-management__review" aria-labelledby="co-review-title">
+        <h2 id="co-review-title">共建审核</h2>
+        {submissions.length ? submissions.map((submission) => (
+          <article aria-label={`共建：${submission.preferred_name_zh}`} key={submission.public_id}>
+            <div>
+              <strong>{submission.preferred_name_zh}</strong>
+              <span>待审核</span>
+            </div>
+            <p>{submission.definition_zh}</p>
+            {submission.recommended_translation ? <small>推荐译法：{submission.recommended_translation}</small> : null}
+            {submission.source_text ? <small>来源：{submission.source_text}</small> : null}
+            <footer>
+              <button aria-label={`通过${submission.preferred_name_zh}`} onClick={() => void approve(submission)} type="button">通过并发布</button>
+              <button aria-label={`驳回${submission.preferred_name_zh}`} onClick={() => void reject(submission)} type="button">驳回</button>
+            </footer>
+          </article>
+        )) : <p className="term-management__state">暂无待审核共建记录。</p>}
+      </section>
       {editing ? <div className="term-editor" role="presentation"><section aria-label={editing === 'new' ? '新增术语' : `编辑术语：${editing.preferred_name_zh}`} aria-modal="true" className="term-editor__dialog" role="dialog">
         <header><div><p>TERM RECORD</p><h2>{editing === 'new' ? '新增术语' : '编辑术语'}</h2></div><button aria-label="关闭术语编辑器" onClick={() => setEditing(null)} type="button">×</button></header>
         <div className="term-editor__fields"><label>中文术语名<input aria-label="中文术语名" onChange={(e) => update('preferred_name_zh', e.target.value)} value={form.preferred_name_zh} /></label><label>中文定义<textarea aria-label="中文定义" onChange={(e) => update('definition_zh', e.target.value)} value={form.definition_zh} /></label><label>文化内涵<textarea onChange={(e) => update('cultural_connotation', e.target.value)} value={form.cultural_connotation} /></label><div><label>术语层级<input onChange={(e) => update('term_level', e.target.value)} value={form.term_level} /></label><label>文化分类<input onChange={(e) => update('culture_category', e.target.value)} value={form.culture_category} /></label></div><label>发布状态<select onChange={(e) => update('status', e.target.value)} value={form.status}><option value="draft">草稿</option><option value="published">已发布</option></select></label></div>

@@ -3,14 +3,10 @@ import { CloseOutlined, SendOutlined } from '@ant-design/icons'
 
 type ChatMessage = { role: 'assistant' | 'user'; content: string }
 
-const modes = ['术语解释', '译法比较', '淮河导览', '儿童化解释']
-const quickPrompts = ['解释这个术语', '换成儿童能懂的话', '比较中英表达', '生成传播文案', '关联淮河文化专题']
-
 export default function ChatAI() {
   const [visible, setVisible] = useState(false)
-  const [activeMode, setActiveMode] = useState(modes[0])
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '我是你的文脉研究助手。可以问我术语含义、跨文化表达，或请我带你探索淮河文化。' },
+    { role: 'assistant', content: '你好，我是 AI。你可以直接问我问题。' },
   ])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
@@ -30,7 +26,7 @@ export default function ChatAI() {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, mode: activeMode }),
+        body: JSON.stringify({ message: userMsg }),
       })
       if (!response.ok || !response.body) throw new Error('AI unavailable')
       const reader = response.body.getReader()
@@ -83,27 +79,16 @@ export default function ChatAI() {
         <section aria-label="文脉 AI 助手" aria-modal="false" className="culture-assistant__panel" role="dialog">
           <div className="culture-assistant__header">
             <div>
-              <span>HUMAN-AI RESEARCH DRAWER</span>
-              <strong>文脉 AI 助手</strong>
-              <small>术语解释 · 译法比较 · 专题导览</small>
+              <span>AI</span>
+              <strong>AI 助手</strong>
             </div>
             <button aria-label="关闭文脉 AI 助手" onClick={() => setVisible(false)} type="button"><CloseOutlined /></button>
-          </div>
-          <div className="culture-assistant__modes" aria-label="AI 助手模式">
-            {modes.map((mode) => (
-              <button aria-pressed={activeMode === mode} key={mode} onClick={() => setActiveMode(mode)} type="button">{mode}</button>
-            ))}
-          </div>
-          <div aria-label="快捷问题" className="culture-assistant__prompts">
-            {quickPrompts.map((prompt) => (
-              <button key={prompt} onClick={() => setInputValue(prompt)} type="button">{prompt}</button>
-            ))}
           </div>
           <div aria-live="polite" className="culture-assistant__messages">
             {messages.map((msg, idx) => (
               <p className={`culture-assistant__message culture-assistant__message--${msg.role}`} key={idx}>{msg.content}</p>
             ))}
-            {loading ? <p className="culture-assistant__thinking">正在沿着知识脉络思考…</p> : null}
+            {loading ? <p className="culture-assistant__thinking">正在思考…</p> : null}
             <div ref={messagesEndRef} />
           </div>
           <div className="culture-assistant__composer">
@@ -111,7 +96,7 @@ export default function ChatAI() {
               aria-label="输入给文脉 AI 的问题"
               onChange={(event) => setInputValue(event.target.value)}
               onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() } }}
-              placeholder="问一个术语，或一段表达…"
+              placeholder="输入问题…"
               rows={2}
               value={inputValue}
             />

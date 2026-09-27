@@ -1,1 +1,0 @@
-export default function LabProgress({active}:{active:'task'|'knowledge'|'report'}){const items=[['task','01','任务设置'],['knowledge','02','知识依据'],['report','03','生成报告']] as const;return <ol aria-label="表达研究流程" className="lab-progress">{items.map(([key,no,label])=><li className={key===active?'is-active':''} key={key}><span>{no}</span>{label}</li>)}</ol>}

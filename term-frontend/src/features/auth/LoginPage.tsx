@@ -12,6 +12,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [adminLogin, setAdminLogin] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -31,7 +32,7 @@ export default function LoginPage() {
       if (mode === 'register') {
         await register(username, password, displayName)
       } else {
-        await login(username, password)
+        await login(adminLogin ? username : 'user', adminLogin ? password : '123456')
       }
       navigate(from, { replace: true })
     } catch (caught) {
@@ -46,10 +47,10 @@ export default function LoginPage() {
       <div className="login-panel">
         <p className="login-panel__eyebrow">ACCOUNT ACCESS</p>
         <h1 id="login-title">{mode === 'register' ? '注册文脉账号' : '登录文脉平台'}</h1>
-        <p>{mode === 'register' ? '注册后将以普通用户身份进入研究体验，管理员账号不开放自助注册。' : '普通用户进入研究体验，管理员进入术语管理台。'}</p>
+        <p>{mode === 'register' ? '注册后将以普通用户身份参与术语共建，管理员账号不开放自助注册。' : '默认以普通用户身份进入平台，管理员可从下方入口登录。'}</p>
         <div className="login-panel__tabs" role="tablist" aria-label="账号入口">
-          <button aria-selected={mode === 'login'} onClick={() => { setMode('login'); setError('') }} role="tab" type="button">登录</button>
-          <button aria-selected={mode === 'register'} onClick={() => { setMode('register'); setError('') }} role="tab" type="button">注册</button>
+          <button aria-selected={mode === 'login'} onClick={() => { setMode('login'); setAdminLogin(false); setError('') }} role="tab" type="button">登录</button>
+          <button aria-selected={mode === 'register'} onClick={() => { setMode('register'); setAdminLogin(false); setError('') }} role="tab" type="button">注册</button>
         </div>
         <form onSubmit={(event) => void submit(event)}>
           {mode === 'register' ? (
@@ -58,21 +59,21 @@ export default function LoginPage() {
               <input id="login-display-name" autoComplete="name" onChange={(event) => setDisplayName(event.target.value)} placeholder="例如：术语研究者" value={displayName} />
             </>
           ) : null}
-          <label htmlFor="login-username">账号</label>
-          <input id="login-username" autoComplete="username" onChange={(event) => setUsername(event.target.value)} placeholder="3-30 位字母、数字、_ 或 -" value={username} />
-          <label htmlFor="login-password">密码</label>
-          <input id="login-password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+          {mode === 'register' || adminLogin ? (
+            <>
+              <label htmlFor="login-username">账号</label>
+              <input id="login-username" autoComplete="username" onChange={(event) => setUsername(event.target.value)} placeholder="3-30 位字母、数字、_ 或 -" value={username} />
+              <label htmlFor="login-password">密码</label>
+              <input id="login-password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+            </>
+          ) : null}
           {error ? <p role="alert">{error}</p> : null}
           <button disabled={submitting} type="submit">
-            {submitting ? (mode === 'register' ? '注册中…' : '登录中…') : (mode === 'register' ? '注册并进入' : '登录')}
+            {submitting ? (mode === 'register' ? '注册中…' : '登录中…') : (mode === 'register' ? '注册并进入' : adminLogin ? '管理员登录' : '普通用户登录')}
           </button>
         </form>
-        <aside>
-          <strong>演示账号</strong>
-          <span>普通用户：user / 123456</span>
-          <span>管理员：admin / 123456</span>
-          {user ? <span>{user.display_name}</span> : null}
-        </aside>
+        {mode === 'login' && !adminLogin ? <button className="login-panel__admin-link" onClick={() => { setAdminLogin(true); setUsername(''); setPassword('') }} type="button">管理员登录</button> : null}
+        {user ? <span className="login-panel__current">{user.display_name}</span> : null}
       </div>
     </section>
   )

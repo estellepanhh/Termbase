@@ -9,7 +9,7 @@ import { useChildMode } from '../context/ChildModeContext'
 import { useAuth } from '../context/useAuth'
 
 type ShellLabels = {
-  lab: string
+  coConstruction: string
   topics: string
   project: string
   manage: string
@@ -26,7 +26,7 @@ type ShellLabels = {
 
 const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
   zh: {
-    lab: '表达实验室',
+    coConstruction: '术语共建',
     topics: '文化专题',
     project: '项目成果',
     manage: '术语管理',
@@ -41,7 +41,7 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
     footer: '中国特色话语多语知识平台 · 学术研究与国际传播',
   },
   en: {
-    lab: 'Expression Lab',
+    coConstruction: 'Co-construction',
     topics: 'Cultural Topics',
     project: 'Project',
     manage: 'Term Management',
@@ -97,7 +97,7 @@ export default function AppShell() {
   const navigationItems: NavigationItem[] = [
     { to: '/', label: t('home'), end: true },
     { to: '/discover', label: t('search') },
-    { to: '/lab', label: labels.lab },
+    { to: '/co-construction', label: labels.coConstruction },
     { to: '/topics', label: labels.topics },
     { to: '/about', label: labels.project },
   ]

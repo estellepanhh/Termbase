@@ -1,5 +1,0 @@
-.workspace-export { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: -8px 0 14px; }
-.workspace-export > span:first-child { font-size: 12px; color: #6c7873; margin-right: 4px; }
-.workspace-export button { border: 1px solid #bdcbc4; background: #fff; color: #294b3e; border-radius: 8px; padding: 7px 11px; cursor: pointer; }
-.workspace-export button:disabled { opacity: .55; }
-.workspace-export [role="alert"] { color: #94392e; font-size: 12px; }

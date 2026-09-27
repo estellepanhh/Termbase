@@ -25,8 +25,8 @@ describe('LoginPage', () => {
     localStorage.clear()
     vi.mocked(authApi.getCurrentUser).mockRejectedValue(new Error('not logged in'))
     vi.mocked(authApi.loginRequest).mockResolvedValue({
-      token: 'admin-token',
-      user: { username: 'admin', role: 'admin', display_name: '管理员' },
+      token: 'user-token',
+      user: { username: 'user', role: 'user', display_name: '普通用户' },
     })
     vi.mocked(authApi.registerRequest).mockResolvedValue({
       token: 'user-token',
@@ -34,7 +34,7 @@ describe('LoginPage', () => {
     })
   })
 
-  it('logs in with demo credentials and shows the current user', async () => {
+  it('logs in as a normal user by default without showing demo credentials', async () => {
     const user = userEvent.setup()
     render(
       <ChildModeProvider>
@@ -44,12 +44,31 @@ describe('LoginPage', () => {
       </ChildModeProvider>,
     )
 
+    expect(screen.queryByText(/user \/ 123456/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('账号')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '普通用户登录' }))
+
+    await waitFor(() => expect(screen.getByText(/普通用户/)).toBeInTheDocument())
+    expect(authApi.loginRequest).toHaveBeenCalledWith('user', '123456')
+    expect(localStorage.getItem('termbase-auth')).toContain('user-token')
+  })
+
+  it('reveals administrator login as a secondary text entry', async () => {
+    const user = userEvent.setup()
+    render(
+      <ChildModeProvider>
+        <MemoryRouter initialEntries={['/login']}>
+          <AppRoutes />
+        </MemoryRouter>
+      </ChildModeProvider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: '管理员登录' }))
     await user.type(screen.getByLabelText('账号'), 'admin')
     await user.type(screen.getByLabelText('密码'), '123456')
-    await user.click(screen.getByRole('button', { name: '登录' }))
+    await user.click(screen.getByRole('button', { name: '管理员登录' }))
 
-    await waitFor(() => expect(screen.getByText(/管理员/)).toBeInTheDocument())
-    expect(localStorage.getItem('termbase-auth')).toContain('admin-token')
+    await waitFor(() => expect(authApi.loginRequest).toHaveBeenCalledWith('admin', '123456'))
   })
 
   it('registers a normal user and signs in immediately', async () => {

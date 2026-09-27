@@ -62,7 +62,8 @@ describe('AboutPage', () => {
     renderAbout()
 
     expect(await screen.findByRole('link', { name: '进入术语检索' })).toHaveAttribute('href', '/discover')
-    expect(screen.getByRole('link', { name: '进入表达实验室' })).toHaveAttribute('href', '/lab')
+    expect(screen.getByRole('link', { name: '参与术语共建' })).toHaveAttribute('href', '/co-construction')
+    expect(screen.queryByRole('link', { name: '进入表达实验室' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看文化专题' })).toHaveAttribute('href', '/topics')
     expect(screen.queryByRole('link', { name: '进入研究工作台' })).not.toBeInTheDocument()
   })

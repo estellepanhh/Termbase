@@ -8,6 +8,7 @@ import '../locales'
 
 vi.mock('../services/authApi', () => ({
   loginRequest: vi.fn(),
+  registerRequest: vi.fn(),
   getCurrentUser: vi.fn(),
   getAuthToken: vi.fn(() => null),
   getStoredAuth: vi.fn(() => {

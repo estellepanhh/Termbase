@@ -12,5 +12,5 @@
 .login-panel form button{margin-top:.5rem;border:0;border-radius:6px;background:var(--indigo-800);color:white;padding:.85rem 1rem;font-weight:900;cursor:pointer}
 .login-panel form button:disabled{opacity:.65;cursor:not-allowed}
 .login-panel [role=alert]{margin:.2rem 0;color:#9b3029;font-weight:800}
-.login-panel aside{display:grid;gap:.35rem;margin-top:1.2rem;padding:1rem;border-radius:6px;background:var(--paper-100);color:var(--color-muted)}
-.login-panel aside strong{color:var(--color-ink)}
+.login-panel__admin-link{display:block;margin:.9rem auto 0;border:0;background:transparent;color:var(--color-vermilion);font-size:.86rem;font-weight:900;cursor:pointer}
+.login-panel__current{display:block;margin-top:.8rem;text-align:center;color:var(--color-muted)}
