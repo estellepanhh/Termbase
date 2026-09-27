@@ -5,7 +5,6 @@ import HomePage from '../features/home/HomePage'
 import DiscoveryPage from '../features/discovery/DiscoveryPage'
 import TermProfilePage from '../features/term-profile/TermProfilePage'
 import ExpressionLabPage from '../features/expression-lab/ExpressionLabPage'
-import ReviewWorkspacePage from '../features/review-workspace/ReviewWorkspacePage'
 import TopicsPage from '../features/topics/TopicsPage'
 import TopicDetailPage from '../features/topics/TopicDetailPage'
 import AboutPage from '../features/about/AboutPage'
@@ -24,7 +23,6 @@ export default function AppRoutes() {
           <Route path="lab" element={<ExpressionLabPage />} />
           <Route path="topics" element={<TopicsPage />} />
           <Route path="topics/:slug" element={<TopicDetailPage />} />
-          <Route path="workspace" element={<ReviewWorkspacePage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="manage" element={<RequireAdmin><TermManagementPage /></RequireAdmin>} />
@@ -32,6 +30,7 @@ export default function AppRoutes() {
           <Route path="browse" element={<Navigate replace to="/discover" />} />
           <Route path="guide" element={<Navigate replace to="/discover" />} />
           <Route path="huaihe" element={<Navigate replace to="/topics/huaihe-culture" />} />
+          <Route path="workspace" element={<Navigate replace to="/lab" />} />
         </Route>
       </Routes>
     </AuthProvider>

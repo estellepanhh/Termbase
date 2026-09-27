@@ -28,7 +28,7 @@ export default function SaveReviewCaseDialog({ analysis, termIds, onClose }: Pro
 
   return <div aria-labelledby="save-case-title" aria-modal="true" className="save-case-overlay" role="dialog"><section className="save-case-dialog">
     <div className="save-case-dialog__header"><div><p>RESEARCH ARCHIVE</p><h2 id="save-case-title">保存为评审案例</h2></div><button aria-label="关闭保存窗口" onClick={onClose} type="button">×</button></div>
-    {status === 'success' && result ? <div className="save-case-success" role="status"><strong>{result.created ? '案例已保存。' : '该报告已经保存过，已定位到原案例。'}</strong><Link to={`/workspace?case=${result.publicId}`}>进入研究工作台</Link></div> : <>
+    {status === 'success' && result ? <div className="save-case-success" role="status"><strong>{result.created ? '案例已保存。' : '该报告已经保存过。'}</strong><Link to="/lab">返回表达实验室</Link></div> : <>
       <p>AI 报告将作为不可修改的初稿保存，后续人工修改会逐版记录。</p>
       <label htmlFor="review-case-title">案例标题<input disabled={status === 'saving'} id="review-case-title" maxLength={200} onChange={(event) => setTitle(event.target.value)} value={title} /></label>
       {error ? <p role="alert">{error}</p> : null}

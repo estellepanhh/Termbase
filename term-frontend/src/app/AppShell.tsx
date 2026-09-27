@@ -11,7 +11,6 @@ import { useAuth } from '../context/useAuth'
 type ShellLabels = {
   lab: string
   topics: string
-  workspace: string
   project: string
   manage: string
   login: string
@@ -29,7 +28,6 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
   zh: {
     lab: '表达实验室',
     topics: '文化专题',
-    workspace: '研究工作台',
     project: '项目成果',
     manage: '术语管理',
     login: '登录',
@@ -45,7 +43,6 @@ const newConceptLabels: Record<'zh' | 'en', ShellLabels> = {
   en: {
     lab: 'Expression Lab',
     topics: 'Cultural Topics',
-    workspace: 'Research Workspace',
     project: 'Project',
     manage: 'Term Management',
     login: 'Login',
@@ -102,7 +99,6 @@ export default function AppShell() {
     { to: '/discover', label: t('search') },
     { to: '/lab', label: labels.lab },
     { to: '/topics', label: labels.topics },
-    { to: '/workspace', label: labels.workspace },
     { to: '/about', label: labels.project },
   ]
   if (auth.isAdmin) navigationItems.push({ to: '/manage', label: labels.manage })

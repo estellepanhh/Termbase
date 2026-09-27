@@ -86,6 +86,7 @@ describe('research platform application shell', () => {
     )
     expect(screen.getByText('Chinese Cultural Terminology Database')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Expression Lab' })).toHaveAttribute('href', '/lab')
+    expect(screen.queryByRole('link', { name: 'Research Workspace' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Project' })).toHaveAttribute('href', '/about')
     expect(screen.getByRole('button', { name: 'Switch to Chinese' })).toBeInTheDocument()
   })
@@ -95,6 +96,7 @@ describe('research platform application shell', () => {
     ['/browse', '/discover'],
     ['/guide', '/discover'],
     ['/huaihe', '/topics/huaihe-culture'],
+    ['/workspace', '/lab'],
   ])('redirects legacy URL %s to the supported public route', async (legacyPath, expectedPath) => {
     renderRoute(legacyPath)
 
@@ -130,10 +132,7 @@ describe('research platform application shell', () => {
     await user.click(screen.getByRole('button', { name: '打开导航菜单' }))
 
     const navigationDialog = await screen.findByRole('dialog', { name: '主导航' })
-    expect(within(navigationDialog).getByRole('link', { name: '研究工作台' })).toHaveAttribute(
-      'href',
-      '/workspace',
-    )
+    expect(within(navigationDialog).queryByRole('link', { name: '研究工作台' })).not.toBeInTheDocument()
     expect(within(navigationDialog).getByRole('link', { name: '项目成果' })).toHaveAttribute('href', '/about')
     expect(within(navigationDialog).getByRole('button', { name: '切换至英文' })).toBeInTheDocument()
   })

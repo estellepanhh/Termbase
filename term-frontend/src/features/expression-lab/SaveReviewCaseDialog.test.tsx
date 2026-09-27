@@ -27,7 +27,7 @@ describe('SaveReviewCaseDialog', () => {
     await user.type(screen.getByLabelText('案例标题'), '和而不同传播案例')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
     await waitFor(() => expect(api.createReviewCase).toHaveBeenCalledWith({ title: '和而不同传播案例', term_ids: [7], analysis }))
-    expect(await screen.findByRole('link', { name: '进入研究工作台' })).toHaveAttribute('href', '/workspace?case=case-1')
+    expect(await screen.findByRole('link', { name: '返回表达实验室' })).toHaveAttribute('href', '/lab')
     expect(api.createReviewCase).toHaveBeenCalledTimes(1)
   })
 
@@ -40,6 +40,6 @@ describe('SaveReviewCaseDialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('网络失败')
     expect(screen.getByLabelText('案例标题')).toHaveValue('保留的标题')
     await user.click(screen.getByRole('button', { name: '确认保存' }))
-    expect(await screen.findByText('该报告已经保存过，已定位到原案例。')).toBeInTheDocument()
+    expect(await screen.findByText('该报告已经保存过。')).toBeInTheDocument()
   })
 })
