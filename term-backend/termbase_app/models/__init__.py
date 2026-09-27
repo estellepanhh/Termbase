@@ -15,6 +15,7 @@ from .knowledge import (
 )
 from .review import ReviewCase, ReviewCaseTerm, ReviewEvent, ReviewRevision
 from .auth import User
+from .submission import TermSubmission
 
 __all__ = [
     "Context",
@@ -35,4 +36,5 @@ __all__ = [
     "ReviewEvent",
     "ReviewRevision",
     "User",
+    "TermSubmission",
 ]
