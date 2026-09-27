@@ -173,6 +173,20 @@ describe('knowledgeApi', () => {
     await expect(listTerms({ page: 2, pageSize: 10 })).resolves.toEqual(paginatedTerms)
   })
 
+  it('accepts created responses from admin APIs after interceptor unwrapping', async () => {
+    request.defaults.adapter = successAdapter({ code: 201, data: termSummary })
+
+    const { createAdminTerm } = await import('./knowledgeApi')
+    await expect(createAdminTerm({
+      preferred_name_zh: '和而不同',
+      definition_zh: '承认差异并追求和谐共处',
+      cultural_connotation: '',
+      term_level: '本源层',
+      culture_category: '中华优秀传统文化',
+      status: 'draft',
+    })).resolves.toEqual(termSummary)
+  })
+
   it('returns a contract-shaped term profile after interceptor unwrapping', async () => {
     const adapter = vi.fn(successAdapter({ code: 200, data: termProfile }))
     request.defaults.adapter = adapter

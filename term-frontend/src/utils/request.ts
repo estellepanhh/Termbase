@@ -19,7 +19,7 @@ service.interceptors.request.use((config) => {
 service.interceptors.response.use(
   (res) => {
     const data = res.data
-    if (data.code && data.code !== 200) {
+    if (typeof data.code === 'number' && data.code >= 400) {
       const errorMessage = data.message || data.msg || '请求失败'
       message.error(errorMessage)
       return Promise.reject(new Error(errorMessage))
