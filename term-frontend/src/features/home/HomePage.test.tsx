@@ -1,121 +1,61 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../../locales'
-import type { PaginatedTerms, TermSummary } from '../../types/knowledge'
-import * as api from '../../services/knowledgeApi'
+import { AuthProvider } from '../../context/AuthContext'
 import HomePage from './HomePage'
 
-vi.mock('../../services/knowledgeApi', () => ({
-  listTerms: vi.fn(),
-}))
-
-const listTerms = vi.mocked(api.listTerms)
-
-const term: TermSummary = {
-  id: 7,
-  preferred_name_zh: '和而不同',
-  definition_zh: '承认差异并追求和谐共处。',
-  term_level: '本源层',
-  culture_category: '中华优秀传统文化',
-  data_quality: 'reviewed',
-  recommended_translation: {
-    language_code: 'en',
-    language_name_zh: '英语',
-    text: 'harmony in diversity',
-    translation_type: 'recommended',
-    authority_level: 'official',
-    review_status: 'approved',
-  },
-  language_count: 2,
-  source_count: 1,
-}
-
-const response: PaginatedTerms = {
-  data: [term],
-  meta: { page: 1, page_size: 6, total: 12 },
-}
-
-function LocationProbe() {
-  const location = useLocation()
-  return <output data-testid="home-search-location">{`${location.pathname}${location.search}`}</output>
-}
-
-function renderHome(initialEntry = '/') {
+function renderHome() {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <HomePage />
-      <LocationProbe />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    </AuthProvider>,
   )
 }
 
 describe('HomePage', () => {
   beforeEach(async () => {
+    localStorage.clear()
     await i18n.changeLanguage('zh')
-    listTerms.mockResolvedValue(response)
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    localStorage.clear()
   })
 
-  it('explains the research platform before presenting content', async () => {
+  it('presents the project as a public digital exhibition without a hero search box', () => {
     renderHome()
 
-    expect(screen.getByRole('heading', { name: '让中国特色概念被准确理解与表达' })).toBeInTheDocument()
-    expect(screen.getByRole('searchbox', { name: '搜索术语' })).toBeInTheDocument()
-    expect(screen.getByText('核心层')).toBeInTheDocument()
-    expect(screen.getByText('拓展层')).toBeInTheDocument()
-    expect(screen.getByText('本源层')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '中国特色话语多语术语库工程化建设与研究' })).toBeInTheDocument()
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+    expect(screen.getByText('术语采集')).toBeInTheDocument()
+    expect(screen.getByText('AI 辅助表达')).toBeInTheDocument()
+    expect(screen.getByText('淮河文化示范专题')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '本源层' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '核心层' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '拓展层' })).toBeInTheDocument()
   })
 
-  it('sends a submitted research query to the canonical discovery URL', async () => {
-    const user = userEvent.setup()
+  it('keeps public research entrances available to normal visitors', () => {
     renderHome()
 
-    await user.type(screen.getByRole('searchbox', { name: '搜索术语' }), '和而不同')
-    await user.click(screen.getByRole('button', { name: '开始检索' }))
-
-    expect(screen.getByTestId('home-search-location')).toHaveTextContent('/discover?q=%E5%92%8C%E8%80%8C%E4%B8%8D%E5%90%8C')
-  })
-
-  it('links featured terms to their canonical profiles and reports the proven total', async () => {
-    renderHome()
-
-    expect(await screen.findByRole('link', { name: '和而不同' })).toHaveAttribute('href', '/terms/7')
-    expect(screen.getByText('已收录 12 条术语')).toBeInTheDocument()
-    expect(listTerms).toHaveBeenCalledWith({ page: 1, pageSize: 6 })
-  })
-
-  it('shows an empty featured state without hiding the rest of the research entry points', async () => {
-    listTerms.mockResolvedValue({ data: [], meta: { page: 1, page_size: 6, total: 0 } })
-    renderHome()
-
-    expect(await screen.findByText('精选术语将在资料整理完成后呈现。')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: '进入术语探索' })[0]).toHaveAttribute('href', '/discover')
+    expect(screen.getAllByRole('link', { name: '查看项目介绍' })[0]).toHaveAttribute('href', '/about')
     expect(screen.getByRole('link', { name: '进入表达实验室' })).toHaveAttribute('href', '/lab')
     expect(screen.getByRole('link', { name: '查看淮河文化专题' })).toHaveAttribute('href', '/topics/huaihe-culture')
+    expect(screen.queryByRole('link', { name: '进入术语管理' })).not.toBeInTheDocument()
   })
 
-  it('allows a failed featured request to be retried without hiding the page', async () => {
-    const user = userEvent.setup()
-    listTerms.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(response)
+  it('shows the term management entrance only for admins', () => {
+    localStorage.setItem('termbase-auth', JSON.stringify({
+      token: 'admin-token',
+      user: { username: 'admin', role: 'admin', display_name: '管理员' },
+    }))
+
     renderHome()
 
-    await user.click(await screen.findByRole('button', { name: '重试加载精选术语' }))
-
-    expect(await screen.findByRole('link', { name: '和而不同' })).toBeInTheDocument()
-    await waitFor(() => expect(listTerms).toHaveBeenCalledTimes(2))
-    expect(screen.getByRole('heading', { name: '让中国特色概念被准确理解与表达' })).toBeInTheDocument()
-  })
-
-  it('does not invent a knowledge-progress total while the term response is unavailable', async () => {
-    listTerms.mockRejectedValue(new Error('network'))
-    renderHome()
-
-    await screen.findByRole('button', { name: '重试加载精选术语' })
-
-    expect(screen.queryByText('已收录 0 条术语')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '进入术语管理' })).toHaveAttribute('href', '/manage')
   })
 })
