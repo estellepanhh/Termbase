@@ -9,6 +9,7 @@ import type {
   AdminTerm,
   AdminTermInput,
   PaginatedAdminTerms,
+  AdminAuditLog,
 } from '../types/knowledge'
 
 interface ListTermsResponse extends PaginatedTerms {
@@ -85,4 +86,9 @@ export async function updateAdminTerm(id: number, input: AdminTermInput): Promis
 
 export async function deleteAdminTerm(id: number): Promise<void> {
   await request.delete(`/api/v1/admin/terms/${id}`)
+}
+
+export async function listAdminAuditLogs(): Promise<AdminAuditLog[]> {
+  const response = await request.get('/api/v1/admin/audit-logs', { params: { limit: 10 } })
+  return (response as unknown as { data: AdminAuditLog[] }).data
 }

@@ -3,6 +3,7 @@ import unittest
 from types import SimpleNamespace
 
 from termbase_app import create_app
+from termbase_app.extensions import db
 
 
 class FakeCompletions:
@@ -39,13 +40,31 @@ class ChatStreamTests(unittest.TestCase):
             "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
             "DEEPSEEK_CLIENT": self.client,
             "DEEPSEEK_MODEL": "configured-model",
+            "AI_MAX_MESSAGE_CHARS": 20,
         })
+        self.context = self.app.app_context()
+        self.context.push()
+        db.create_all()
         self.http = self.app.test_client()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.context.pop()
+
+    def auth_header(self):
+        response = self.http.post(
+            "/api/v1/auth/login",
+            json={"username": "user", "password": "123456"},
+        )
+        token = response.get_json()["data"]["token"]
+        return {"Authorization": f"Bearer {token}"}
 
     def test_stream_uses_configured_deepseek_model_and_preserves_sse_contract(self):
         response = self.http.post(
             "/api/chat/stream",
             json={"message": "如何翻译和而不同？"},
+            headers=self.auth_header(),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -71,10 +90,18 @@ class ChatStreamTests(unittest.TestCase):
             "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
             "DEEPSEEK_CLIENT": client,
         })
+        with app.app_context():
+            db.create_all()
+            login = app.test_client().post(
+                "/api/v1/auth/login",
+                json={"username": "user", "password": "123456"},
+            )
+            token = login.get_json()["data"]["token"]
         with self.assertLogs("termbase_app.routes.ai", level="ERROR"):
             response = app.test_client().post(
                 "/api/chat/stream",
                 json={"message": "测试异常"},
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         body = response.get_data(as_text=True)
@@ -89,6 +116,26 @@ class ChatStreamTests(unittest.TestCase):
             {"error": "AI 服务暂时不可用"},
         )
         self.assertIn("data: [DONE]", body)
+
+    def test_stream_requires_login(self):
+        response = self.http.post(
+            "/api/chat/stream",
+            json={"message": "如何解释淮河文化？"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertIn("请先登录", response.get_json()["msg"])
+
+    def test_stream_rejects_overlong_message_before_provider_call(self):
+        response = self.http.post(
+            "/api/chat/stream",
+            json={"message": "太长" * 20},
+            headers=self.auth_header(),
+        )
+
+        self.assertEqual(response.status_code, 413)
+        self.assertIn("过长", response.get_json()["msg"])
+        self.assertIsNone(self.completions.request)
 
 
 if __name__ == "__main__":

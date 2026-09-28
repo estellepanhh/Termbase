@@ -5,6 +5,8 @@ import os
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 from openai import OpenAI
 
+from ..services.auth import current_user_from_request
+
 
 bp = Blueprint("ai", __name__)
 logger = logging.getLogger(__name__)
@@ -20,6 +22,9 @@ def init_app(app):
     )
     app.config.setdefault(
         "DEEPSEEK_MODEL", os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
+    )
+    app.config.setdefault(
+        "AI_MAX_MESSAGE_CHARS", int(os.environ.get("AI_MAX_MESSAGE_CHARS", "500"))
     )
 
     if "DEEPSEEK_CLIENT" in app.config:
@@ -42,6 +47,8 @@ def _fail(message, status):
 
 @bp.post("/api/chat/stream")
 def chat_stream():
+    if current_user_from_request() is None:
+        return _fail("请先登录后使用 AI 助手", 401)
     client = current_app.extensions.get("deepseek_client")
     if client is None:
         return _fail("AI 服务未配置", 503)
@@ -50,6 +57,9 @@ def chat_stream():
     user_message = data.get("message", "").strip()
     if not user_message:
         return _fail("消息不能为空", 400)
+    max_chars = int(current_app.config.get("AI_MAX_MESSAGE_CHARS", 500))
+    if len(user_message) > max_chars:
+        return _fail(f"消息过长，请控制在 {max_chars} 字以内", 413)
 
     def generate():
         try:

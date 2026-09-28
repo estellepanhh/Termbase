@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloseOutlined, SendOutlined } from '@ant-design/icons'
+import { getAuthToken } from '../services/authApi'
 
 type ChatMessage = { role: 'assistant' | 'user'; content: string }
 
 export default function ChatAI() {
   const [visible, setVisible] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '你好，我是 AI。你可以直接问我问题。' },
+    { role: 'assistant', content: '你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。' },
   ])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   const sendMessage = async () => {
@@ -25,7 +28,7 @@ export default function ChatAI() {
     try {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}) },
         body: JSON.stringify({ message: userMsg }),
       })
       if (!response.ok || !response.body) throw new Error('AI unavailable')

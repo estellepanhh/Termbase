@@ -36,6 +36,35 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(payload["user"]["username"], "admin")
         self.assertEqual(payload["user"]["role"], "admin")
 
+    def test_demo_admin_can_be_configured_without_code_changes(self):
+        app = create_app(
+            {
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+                "SECRET_KEY": "test-secret",
+                "AUTH_TOKEN_SECRET": "test-token-secret",
+                "ADMIN_USERNAME": "manager",
+                "ADMIN_PASSWORD": "safe-password",
+                "ADMIN_DISPLAY_NAME": "项目管理员",
+            }
+        )
+        with app.app_context():
+            db.create_all()
+            client = app.test_client()
+
+            response = client.post(
+                "/api/v1/auth/login",
+                json={"username": "manager", "password": "safe-password"},
+            )
+
+            self.assertEqual(response.status_code, 200)
+            payload = response.get_json()["data"]
+            self.assertEqual(payload["user"]["username"], "manager")
+            self.assertEqual(payload["user"]["display_name"], "项目管理员")
+            self.assertEqual(payload["user"]["role"], "admin")
+            db.session.remove()
+            db.drop_all()
+
     def test_login_returns_token_for_demo_user(self):
         response = self.client.post(
             "/api/v1/auth/login",

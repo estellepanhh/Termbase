@@ -2,7 +2,7 @@ import unittest
 
 from termbase_app import create_app
 from termbase_app.extensions import db
-from termbase_app.models import Term
+from termbase_app.models import AdminAuditLog, Term
 
 
 class CoConstructionApiTests(unittest.TestCase):
@@ -123,6 +123,7 @@ class CoConstructionApiTests(unittest.TestCase):
         self.assertEqual(data["status"], "approved")
         self.assertTrue(data["term_id"])
         self.assertEqual(Term.query.filter_by(preferred_name_zh="天下为公").count(), 1)
+        self.assertEqual(AdminAuditLog.query.filter_by(action="submission.approve").count(), 1)
 
     def test_admin_rejects_submission_with_note(self):
         created = self.client.post(
@@ -139,6 +140,7 @@ class CoConstructionApiTests(unittest.TestCase):
         self.assertEqual(rejected.status_code, 200)
         self.assertEqual(rejected.get_json()["data"]["status"], "rejected")
         self.assertEqual(rejected.get_json()["data"]["review_note"], "来源不够明确")
+        self.assertEqual(AdminAuditLog.query.filter_by(action="submission.reject").count(), 1)
 
 
 if __name__ == "__main__":

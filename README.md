@@ -129,13 +129,13 @@ venv\Scripts\python scripts\import_child_explain.py
 
 ## 功能特性
 
-全站采用“新中式学术编辑部 + 数字人文”视觉体系，以墨青、朱砂和宣纸色统一首页、术语档案、表达实验室与人工评审工作台，并覆盖移动端、儿童模式和大字模式。
+全站采用“新中式学术编辑部 + 数字人文”视觉体系，以墨青、朱砂和宣纸色统一首页、术语档案、文化专题、术语共建与管理员审核流程，并覆盖移动端、儿童模式和大字模式。
 
 - 🔍 术语名称模糊搜索，多条件组合筛选（文化分类 / 场景分类 / 术语层级）
 - 📖 术语详情弹窗，含中英文官方译法、文化内涵、来源
 - 🤖 AI 智能助手（右下角悬浮按钮），DeepSeek 大模型流式对话
-- 🧭 跨文化表达实验室：组合术语知识、受众、场景与风格，输出首选/备选表达、文化风险和可追溯引用
-- 📝 人工评审工作台：固化 AI 原始快照，沉淀人工定稿、问题标签、版本历史和审核状态
+- 📝 术语共建：普通用户提交术语材料，管理员审核通过后发布
+- 🧾 管理员操作记录：记录新增、修改、下架与共建审核动作
 - 🌾 淮河文化专区，垂落式名人图谱
 - 👶 儿童模式（一键切换儿童友好解释）
 - 🌐 中英文国际化界面切换
@@ -151,9 +151,18 @@ venv\Scripts\python scripts\import_child_explain.py
 | `DB_PASSWORD` | MySQL 密码 | — |
 | `DB_HOST` | MySQL 主机 | localhost |
 | `DB_NAME` | 数据库名 | term_database |
+| `SECRET_KEY` | Flask 应用密钥；部署前必须设置随机强值 | termbase-dev-secret |
+| `AUTH_TOKEN_SECRET` | 登录 token 签名密钥；部署前必须设置随机强值 | SECRET_KEY |
+| `ADMIN_USERNAME` | 固定管理员账号 | admin |
+| `ADMIN_PASSWORD` | 固定管理员密码；部署前建议修改 | 123456 |
+| `ADMIN_DISPLAY_NAME` | 管理员显示名 | 管理员 |
+| `DEMO_USER_USERNAME` | 演示普通用户账号 | user |
+| `DEMO_USER_PASSWORD` | 演示普通用户密码 | 123456 |
+| `DEMO_USER_DISPLAY_NAME` | 演示普通用户显示名 | 普通用户 |
 | `DEEPSEEK_API_KEY` | DeepSeek API Key | — |
 | `DEEPSEEK_BASE_URL` | DeepSeek API 地址 | https://api.deepseek.com |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | deepseek-flash |
+| `AI_MAX_MESSAGE_CHARS` | AI 助手单次输入字数上限 | 500 |
 | `EXPRESSION_LAB_RATE_LIMIT` | 表达分析单 IP 限流 | 5 per minute |
 | `EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS` | 知识包字符上限 | 18000 |
 | `EXPRESSION_LAB_PROVIDER_TIMEOUT` | AI 请求超时（秒） | 45 |
@@ -162,7 +171,7 @@ venv\Scripts\python scripts\import_child_explain.py
 | `RATELIMIT_STORAGE_URI` | 限流存储；多实例须换共享存储 | memory:// |
 | `FLASK_HOST` | Flask 监听地址 | 127.0.0.1 |
 | `FLASK_PORT` | Flask 端口 | 5000 |
-| `FLASK_DEBUG` | 调试模式 | true |
+| `FLASK_DEBUG` | 调试模式；公网部署必须设为 false | true |
 
 ## 接口文档
 

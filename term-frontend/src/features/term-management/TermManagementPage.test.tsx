@@ -8,7 +8,7 @@ import TermManagementPage from './TermManagementPage'
 
 vi.mock('../../services/knowledgeApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../services/knowledgeApi')>()
-  return { ...actual, listAdminTerms: vi.fn(), createAdminTerm: vi.fn(), updateAdminTerm: vi.fn(), deleteAdminTerm: vi.fn() }
+  return { ...actual, listAdminTerms: vi.fn(), createAdminTerm: vi.fn(), updateAdminTerm: vi.fn(), deleteAdminTerm: vi.fn(), listAdminAuditLogs: vi.fn() }
 })
 
 vi.mock('../../services/coConstructionApi', () => ({
@@ -19,6 +19,7 @@ vi.mock('../../services/coConstructionApi', () => ({
 
 const term = { id: 1, preferred_name_zh: '和而不同', definition_zh: '承认差异并和谐共处', cultural_connotation: '和谐不是同一', term_level: '本源层', culture_category: '传统文化', status: 'published' as const, updated_at: '2026-09-27T10:00:00' }
 const submission = { public_id: 'sub-1', preferred_name_zh: '天下为公', definition_zh: '公共价值', recommended_translation: 'the world belongs to all', cultural_connotation: '', source_text: '礼记', status: 'pending' as const, review_note: '', term_id: null }
+const auditLog = { id: 1, actor_username: 'admin', action: 'term.archive', target_type: 'term', target_id: '1', summary: '下架术语：和而不同', created_at: '2026-09-28T10:00:00' }
 
 describe('TermManagementPage', () => {
   beforeEach(() => {
@@ -26,6 +27,7 @@ describe('TermManagementPage', () => {
     vi.mocked(api.createAdminTerm).mockResolvedValue({ ...term, id: 2, preferred_name_zh: '天下大同', status: 'draft' })
     vi.mocked(api.updateAdminTerm).mockResolvedValue({ ...term, preferred_name_zh: '和而不同（修订）' })
     vi.mocked(api.deleteAdminTerm).mockResolvedValue(undefined)
+    vi.mocked(api.listAdminAuditLogs).mockResolvedValue([auditLog])
     vi.mocked(coApi.listAdminSubmissions).mockResolvedValue([submission])
     vi.mocked(coApi.approveSubmission).mockResolvedValue({ ...submission, status: 'approved', term_id: 9 })
     vi.mocked(coApi.rejectSubmission).mockResolvedValue({ ...submission, status: 'rejected', review_note: '来源不足' })
@@ -62,5 +64,13 @@ describe('TermManagementPage', () => {
     await user.click(screen.getByRole('button', { name: '通过天下为公' }))
 
     await waitFor(() => expect(coApi.approveSubmission).toHaveBeenCalledWith('sub-1'))
+  })
+
+  it('shows recent administrator operation records', async () => {
+    render(<MemoryRouter><TermManagementPage /></MemoryRouter>)
+
+    expect(await screen.findByRole('heading', { name: '操作记录' })).toBeInTheDocument()
+    expect(screen.getByText('下架术语：和而不同')).toBeInTheDocument()
+    expect(screen.getByText(/admin/)).toBeInTheDocument()
   })
 })

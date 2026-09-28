@@ -8,12 +8,6 @@ from ..extensions import db
 from ..models import User
 
 
-DEMO_USERS = (
-    ("user", "123456", "user", "普通用户"),
-    ("admin", "123456", "admin", "管理员"),
-)
-
-
 def _serializer() -> URLSafeTimedSerializer:
     secret = current_app.config["AUTH_TOKEN_SECRET"]
     return URLSafeTimedSerializer(secret_key=secret, salt="termbase-auth")
@@ -33,7 +27,25 @@ def serialize_user(user: User) -> dict[str, str]:
 
 def seed_demo_users() -> None:
     changed = False
-    for username, password, role, display_name in DEMO_USERS:
+    configured_users = (
+        (
+            current_app.config["DEMO_USER_USERNAME"],
+            current_app.config["DEMO_USER_PASSWORD"],
+            "user",
+            current_app.config["DEMO_USER_DISPLAY_NAME"],
+        ),
+        (
+            current_app.config["ADMIN_USERNAME"],
+            current_app.config["ADMIN_PASSWORD"],
+            "admin",
+            current_app.config["ADMIN_DISPLAY_NAME"],
+        ),
+    )
+    for username, password, role, display_name in configured_users:
+        username = str(username).strip()
+        password = str(password)
+        if not username or not password:
+            continue
         user = User.query.filter_by(username=username).first()
         if user is None:
             db.session.add(
@@ -46,6 +58,16 @@ def seed_demo_users() -> None:
                 )
             )
             changed = True
+        else:
+            if user.role != role:
+                user.role = role
+                changed = True
+            if user.display_name != display_name:
+                user.display_name = display_name
+                changed = True
+            if not check_password_hash(user.password_hash, password):
+                user.password_hash = generate_password_hash(password)
+                changed = True
     if changed:
         db.session.commit()
 

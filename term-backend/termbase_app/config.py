@@ -20,6 +20,13 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "termbase-dev-secret")
     AUTH_TOKEN_SECRET = os.environ.get("AUTH_TOKEN_SECRET", SECRET_KEY)
     AUTH_TOKEN_MAX_AGE_SECONDS = int(os.environ.get("AUTH_TOKEN_MAX_AGE_SECONDS", "86400"))
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "123456")
+    ADMIN_DISPLAY_NAME = os.environ.get("ADMIN_DISPLAY_NAME", "管理员")
+    DEMO_USER_USERNAME = os.environ.get("DEMO_USER_USERNAME", "user")
+    DEMO_USER_PASSWORD = os.environ.get("DEMO_USER_PASSWORD", "123456")
+    DEMO_USER_DISPLAY_NAME = os.environ.get("DEMO_USER_DISPLAY_NAME", "普通用户")
+    AI_MAX_MESSAGE_CHARS = int(os.environ.get("AI_MAX_MESSAGE_CHARS", "500"))
     SQLALCHEMY_DATABASE_URI = database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False

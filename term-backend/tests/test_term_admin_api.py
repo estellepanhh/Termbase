@@ -2,7 +2,7 @@ import unittest
 
 from termbase_app import create_app
 from termbase_app.extensions import db
-from termbase_app.models import Term, Topic, TopicItem
+from termbase_app.models import AdminAuditLog, Term, Topic, TopicItem
 
 
 class TermAdminApiTests(unittest.TestCase):
@@ -56,11 +56,37 @@ class TermAdminApiTests(unittest.TestCase):
         self.assertEqual(empty.status_code, 400)
         self.assertEqual(invalid.status_code, 400)
 
-    def test_deletes_an_unlinked_term(self):
+    def test_archives_an_unlinked_term_instead_of_hard_deleting(self):
         term_id = self.term.id
         response = self.client.delete(f"/api/v1/admin/terms/{term_id}", headers=self.auth_header())
         self.assertEqual(response.status_code, 200)
-        self.assertIsNone(db.session.get(Term, term_id))
+        archived = db.session.get(Term, term_id)
+        self.assertIsNotNone(archived)
+        self.assertEqual(archived.status, "archived")
+        self.assertIn("下架", response.get_json()["message"])
+
+    def test_records_admin_audit_logs_for_term_changes(self):
+        headers = self.auth_header()
+        created = self.client.post("/api/v1/admin/terms", json={
+            "preferred_name_zh": "仁", "definition_zh": "爱人", "status": "published",
+        }, headers=headers)
+        term_id = created.get_json()["data"]["id"]
+
+        self.client.put(f"/api/v1/admin/terms/{term_id}", json={
+            "preferred_name_zh": "仁爱", "definition_zh": "爱人之德", "status": "draft",
+        }, headers=headers)
+        self.client.delete(f"/api/v1/admin/terms/{term_id}", headers=headers)
+
+        logs = AdminAuditLog.query.order_by(AdminAuditLog.id.asc()).all()
+        self.assertEqual([log.action for log in logs], ["term.create", "term.update", "term.archive"])
+        self.assertEqual(logs[-1].target_type, "term")
+        self.assertEqual(logs[-1].target_id, str(term_id))
+
+        response = self.client.get("/api/v1/admin/audit-logs", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()["data"]
+        self.assertEqual(payload[0]["action"], "term.archive")
+        self.assertEqual(payload[0]["actor_username"], "admin")
 
     def test_refuses_to_delete_a_term_used_by_a_topic(self):
         topic = Topic(slug="ritual", title="礼文化", status="published")

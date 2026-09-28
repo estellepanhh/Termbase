@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 
 from ..extensions import db
 from ..models import Term, TermSubmission
+from ..services.audit import record_admin_action
 from ..services.auth import current_user_from_request, require_admin
 
 
@@ -126,9 +127,9 @@ def withdraw_submission(public_id):
 
 @bp.get("/api/v1/admin/co-construction/submissions")
 def list_admin_submissions():
-    denied = require_admin()
-    if isinstance(denied, tuple):
-        return denied
+    user_or_response = require_admin()
+    if isinstance(user_or_response, tuple):
+        return user_or_response
     status = request.args.get("status", "pending").strip()
     query = select(TermSubmission)
     if status:
@@ -140,9 +141,10 @@ def list_admin_submissions():
 
 @bp.post("/api/v1/admin/co-construction/submissions/<public_id>/approve")
 def approve_submission(public_id):
-    denied = require_admin()
-    if isinstance(denied, tuple):
-        return denied
+    user_or_response = require_admin()
+    if isinstance(user_or_response, tuple):
+        return user_or_response
+    user = user_or_response
     submission = TermSubmission.query.filter_by(public_id=public_id).first()
     if submission is None:
         return jsonify({"code": 404, "message": "共建记录不存在"}), 404
@@ -165,15 +167,24 @@ def approve_submission(public_id):
     submission.term_id = term.id
     submission.status = "approved"
     submission.review_note = ""
+    record_admin_action(
+        user,
+        "submission.approve",
+        "submission",
+        submission.public_id,
+        f"通过共建：{submission.preferred_name_zh}",
+        {"term_id": term.id, "preferred_name_zh": submission.preferred_name_zh},
+    )
     db.session.commit()
     return jsonify({"code": 200, "data": _serialize(submission)})
 
 
 @bp.post("/api/v1/admin/co-construction/submissions/<public_id>/reject")
 def reject_submission(public_id):
-    denied = require_admin()
-    if isinstance(denied, tuple):
-        return denied
+    user_or_response = require_admin()
+    if isinstance(user_or_response, tuple):
+        return user_or_response
+    user = user_or_response
     submission = TermSubmission.query.filter_by(public_id=public_id).first()
     if submission is None:
         return jsonify({"code": 404, "message": "共建记录不存在"}), 404
@@ -182,5 +193,13 @@ def reject_submission(public_id):
     data = request.get_json(silent=True) or {}
     submission.status = "rejected"
     submission.review_note = str(data.get("review_note", "")).strip()
+    record_admin_action(
+        user,
+        "submission.reject",
+        "submission",
+        submission.public_id,
+        f"驳回共建：{submission.preferred_name_zh}",
+        {"preferred_name_zh": submission.preferred_name_zh, "review_note": submission.review_note},
+    )
     db.session.commit()
     return jsonify({"code": 200, "data": _serialize(submission)})

@@ -178,6 +178,6 @@ describe('research platform application shell', () => {
     await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
 
     expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toBeInTheDocument()
-    expect(screen.getByText(/你好，我是 AI/)).toBeInTheDocument()
+    expect(screen.getByText(/你好，我可以帮你解释术语/)).toBeInTheDocument()
   })
 })

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { createAdminTerm, deleteAdminTerm, listAdminTerms, updateAdminTerm } from '../../services/knowledgeApi'
+import { createAdminTerm, deleteAdminTerm, listAdminAuditLogs, listAdminTerms, updateAdminTerm } from '../../services/knowledgeApi'
 import { approveSubmission, listAdminSubmissions, rejectSubmission, type TermSubmission } from '../../services/coConstructionApi'
-import type { AdminTerm, AdminTermInput } from '../../types/knowledge'
+import type { AdminAuditLog, AdminTerm, AdminTermInput } from '../../types/knowledge'
 import './term-management.css'
 
 const emptyForm: AdminTermInput = { preferred_name_zh: '', definition_zh: '', cultural_connotation: '', term_level: '', culture_category: '', status: 'draft' }
@@ -19,6 +19,7 @@ export default function TermManagementPage() {
   const [form, setForm] = useState<AdminTermInput>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [submissions, setSubmissions] = useState<TermSubmission[]>([])
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([])
 
   const load = async (q = query) => {
     setStatus('loading')
@@ -32,6 +33,7 @@ export default function TermManagementPage() {
       if (active) { setTerms(result.data); setStatus('ready') }
     }).catch(() => { if (active) setStatus('error') })
     void listAdminSubmissions().then((result) => { if (active) setSubmissions(result) }).catch(() => { if (active) setSubmissions([]) })
+    void listAdminAuditLogs().then((result) => { if (active) setAuditLogs(result) }).catch(() => { if (active) setAuditLogs([]) })
     return () => { active = false }
   }, [])
 
@@ -45,22 +47,24 @@ export default function TermManagementPage() {
     try {
       if (editing === 'new') await createAdminTerm(form)
       else if (editing) await updateAdminTerm(editing.id, form)
-      setEditing(null); setMessage('术语已保存。'); await load()
+      setEditing(null); setMessage('术语已保存。'); await load(); await refreshAuditLogs()
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setSaving(false) }
   }
 
   const remove = async (term: AdminTerm) => {
     if (!window.confirm(`确定删除“${term.preferred_name_zh}”吗？此操作不可撤销。`)) return
-    try { await deleteAdminTerm(term.id); setMessage('术语已删除。'); await load() }
+    try { await deleteAdminTerm(term.id); setMessage('术语已下架。'); await load(); await refreshAuditLogs() }
     catch (error) { setMessage(errorMessage(error)) }
   }
 
   const refreshSubmissions = async () => setSubmissions(await listAdminSubmissions())
+  const refreshAuditLogs = async () => setAuditLogs(await listAdminAuditLogs())
   const approve = async (submission: TermSubmission) => {
     await approveSubmission(submission.public_id)
     setMessage('共建记录已通过并发布。')
     await refreshSubmissions()
+    await refreshAuditLogs()
     await load()
   }
   const reject = async (submission: TermSubmission) => {
@@ -68,6 +72,7 @@ export default function TermManagementPage() {
     await rejectSubmission(submission.public_id, note)
     setMessage('共建记录已驳回。')
     await refreshSubmissions()
+    await refreshAuditLogs()
   }
 
   return (
@@ -105,6 +110,19 @@ export default function TermManagementPage() {
             </footer>
           </article>
         )) : <p className="term-management__state">暂无待审核共建记录。</p>}
+      </section>
+      <section className="term-management__audit" aria-labelledby="audit-title">
+        <h2 id="audit-title">操作记录</h2>
+        {auditLogs.length ? (
+          <ol>
+            {auditLogs.map((log) => (
+              <li key={log.id}>
+                <strong>{log.summary}</strong>
+                <span>{log.actor_username || '管理员'} · {log.created_at ? new Date(log.created_at).toLocaleString() : '刚刚'}</span>
+              </li>
+            ))}
+          </ol>
+        ) : <p className="term-management__state">暂无管理员操作记录。</p>}
       </section>
       {editing ? <div className="term-editor" role="presentation"><section aria-label={editing === 'new' ? '新增术语' : `编辑术语：${editing.preferred_name_zh}`} aria-modal="true" className="term-editor__dialog" role="dialog">
         <header><div><p>TERM RECORD</p><h2>{editing === 'new' ? '新增术语' : '编辑术语'}</h2></div><button aria-label="关闭术语编辑器" onClick={() => setEditing(null)} type="button">×</button></header>
