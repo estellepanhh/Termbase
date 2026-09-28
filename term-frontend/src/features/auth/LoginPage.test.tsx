@@ -34,7 +34,7 @@ describe('LoginPage', () => {
     })
   })
 
-  it('logs in as a normal user by default without showing demo credentials', async () => {
+  it('logs in as a normal user with entered username and password', async () => {
     const user = userEvent.setup()
     render(
       <ChildModeProvider>
@@ -45,15 +45,16 @@ describe('LoginPage', () => {
     )
 
     expect(screen.queryByText(/user \/ 123456/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('账号')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('账号'), 'student')
+    await user.type(screen.getByLabelText('密码'), 'abcdef')
     await user.click(screen.getByRole('button', { name: '普通用户登录' }))
 
     await waitFor(() => expect(screen.getByText(/普通用户/)).toBeInTheDocument())
-    expect(authApi.loginRequest).toHaveBeenCalledWith('user', '123456')
+    expect(authApi.loginRequest).toHaveBeenCalledWith('student', 'abcdef')
     expect(localStorage.getItem('termbase-auth')).toContain('user-token')
   })
 
-  it('reveals administrator login as a secondary text entry', async () => {
+  it('locks administrator login to the fixed admin account', async () => {
     const user = userEvent.setup()
     render(
       <ChildModeProvider>
@@ -64,7 +65,7 @@ describe('LoginPage', () => {
     )
 
     await user.click(screen.getByRole('button', { name: '管理员登录' }))
-    await user.type(screen.getByLabelText('账号'), 'admin')
+    expect(screen.getByLabelText('管理员账号')).toHaveValue('admin')
     await user.type(screen.getByLabelText('密码'), '123456')
     await user.click(screen.getByRole('button', { name: '管理员登录' }))
 

@@ -93,6 +93,18 @@ describe('TopicDetailPage', () => {
     expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
   })
 
+  it('filters Huaihe topic entries from a dedicated search box', async () => {
+    const user = userEvent.setup()
+    renderTopic()
+
+    await screen.findByRole('heading', { name: '淮河文化', level: 1 })
+    await user.type(screen.getByRole('searchbox', { name: '检索淮河文化专区' }), '金银花')
+
+    expect(screen.getByRole('heading', { name: '金银花' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '管仲' })).not.toBeInTheDocument()
+    expect(screen.getByText('已筛选出 1 条专题内容')).toBeInTheDocument()
+  })
+
   it('shows an empty topic without hiding its research context', async () => {
     getTopic.mockResolvedValue({ ...topic, item_count: 0, term_count: 0, entry_type_counts: {}, items: [] })
     renderTopic()

@@ -19,7 +19,7 @@ const detailLabels = {
     errorEyebrow: 'CONNECTION INTERRUPTED', error: '专题暂时无法加载', errorDescription: '请检查网络连接后重新尝试。', retry: '重新加载专题',
     missingSummary: '该专题的研究导语正在整理中。', overview: '专题数据概览', items: '条专题内容', terms: '个核心术语', types: '类研究材料',
     empty: '该专题目前没有可公开展示的条目。', emptyDescription: '内容完成整理和审核后会在此呈现。', navigation: '专题内容导航',
-    childTerms: '先认识这些词', childMore: '再看看相关人物和事物',
+    childTerms: '先认识这些词', childMore: '再看看相关人物和事物', searchLabel: '检索淮河文化专区', searchPlaceholder: '搜索术语、人物、本草或关键词', searchAll: '当前展示全部专题内容', searchResult: '已筛选出 {{count}} 条专题内容', searchEmpty: '没有找到匹配的专题内容。',
   },
   en: {
     loading: 'Opening topic materials…', notFoundEyebrow: 'TOPIC NOT FOUND', notFound: 'This topic does not exist or is not published',
@@ -27,7 +27,7 @@ const detailLabels = {
     errorEyebrow: 'CONNECTION INTERRUPTED', error: 'This topic is temporarily unavailable', errorDescription: 'Check your connection and try again.', retry: 'Reload topic',
     missingSummary: 'The research introduction for this topic is being prepared.', overview: 'Topic data overview', items: 'topic records', terms: 'core terms', types: 'material types',
     empty: 'This topic has no public records yet.', emptyDescription: 'Reviewed materials will appear here when ready.', navigation: 'Topic contents',
-    childTerms: 'Start with these words', childMore: 'Then explore related people and objects',
+    childTerms: 'Start with these words', childMore: 'Then explore related people and objects', searchLabel: 'Search Huaihe cultural topic', searchPlaceholder: 'Search terms, people, herbs, or keywords', searchAll: 'Showing all topic records', searchResult: '{{count}} topic records matched', searchEmpty: 'No topic records match this search.',
   },
 } as const
 
@@ -45,6 +45,20 @@ function groupEntries(items: TopicEntry[]) {
   })
 }
 
+function entrySearchText(item: TopicEntry) {
+  const fieldText = Object.entries(item.fields ?? {}).flatMap(([key, value]) => [key, String(value)]).join(' ')
+  const termText = item.term
+    ? [
+      item.term.preferred_name_zh,
+      item.term.definition_zh,
+      item.term.term_level,
+      item.term.culture_category,
+      item.term.recommended_translation,
+    ].filter(Boolean).join(' ')
+    : ''
+  return `${item.title} ${item.entry_type} ${fieldText} ${termText}`.toLowerCase()
+}
+
 export default function TopicDetailPage() {
   const { slug = '' } = useParams()
   const { i18n } = useTranslation()
@@ -52,6 +66,7 @@ export default function TopicDetailPage() {
   const copy = detailLabels[language]
   const { isChildMode } = useChildMode()
   const [retryKey, setRetryKey] = useState(0)
+  const [topicSearch, setTopicSearch] = useState('')
   const requestKey = `${slug}:${retryKey}`
   const [result, setResult] = useState<{
     key: string
@@ -81,7 +96,13 @@ export default function TopicDetailPage() {
 
   const status = result.key === requestKey ? result.status : 'loading'
   const topic = result.topic
-  const groups = useMemo(() => groupEntries(topic?.items ?? []), [topic])
+  const normalizedTopicSearch = topicSearch.trim().toLowerCase()
+  const filteredEntries = useMemo(() => {
+    const entries = topic?.items ?? []
+    if (!normalizedTopicSearch) return entries
+    return entries.filter((item) => entrySearchText(item).includes(normalizedTopicSearch))
+  }, [normalizedTopicSearch, topic])
+  const groups = useMemo(() => groupEntries(filteredEntries), [filteredEntries])
   const hasNonTermEntries = groups.some(([type]) => type !== 'term')
   const materialTypeCount = topic ? Object.keys(topic.entry_type_counts).length : 0
   const itemLabel = language === 'en' && topic ? `topic ${topic.item_count === 1 ? 'record' : 'records'}` : copy.items
@@ -130,13 +151,35 @@ export default function TopicDetailPage() {
         <div><strong>{materialTypeCount}</strong><span>{typeLabel}</span></div>
       </section>
 
-      {topic.items.length ? <CulturalKnowledgeMap childMode={isChildMode} entries={topic.items} language={language} /> : null}
+      {topic.items.length ? (
+        <section className="topic-detail__search" aria-label={copy.searchLabel}>
+          <label htmlFor="topic-search">{copy.searchLabel}</label>
+          <div>
+            <input
+              id="topic-search"
+              onChange={(event) => setTopicSearch(event.target.value)}
+              placeholder={copy.searchPlaceholder}
+              type="search"
+              value={topicSearch}
+            />
+            {topicSearch ? <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}
+          </div>
+          <p>{normalizedTopicSearch ? copy.searchResult.replace('{{count}}', String(filteredEntries.length)) : copy.searchAll}</p>
+        </section>
+      ) : null}
+
+      {filteredEntries.length ? <CulturalKnowledgeMap childMode={isChildMode} entries={filteredEntries} language={language} /> : null}
 
       {topic.items.length === 0 ? (
         <section className="topics-status">
           <h2>{copy.empty}</h2>
           <p>{copy.emptyDescription}</p>
           <Link to="/topics">{copy.back}</Link>
+        </section>
+      ) : filteredEntries.length === 0 ? (
+        <section className="topics-status">
+          <h2>{copy.searchEmpty}</h2>
+          <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空检索' : 'Clear search'}</button>
         </section>
       ) : (
         <>

@@ -79,6 +79,13 @@
 .topic-detail__back { width: fit-content; color: var(--ink-700); font-weight: 700; text-decoration: none; }
 .topic-detail__back:hover { color: var(--vermilion-600); }
 .topic-detail__overview { margin-top: -1rem; }
+.topic-detail__search { display:grid; gap:.65rem; padding:1rem; background:linear-gradient(135deg,#fffdf8,#f5efe3); border:1px solid var(--color-border); box-shadow:0 12px 36px rgba(23,61,70,.06); }
+.topic-detail__search label { color:var(--indigo-800); font-weight:850; }
+.topic-detail__search div { display:flex; gap:.6rem; }
+.topic-detail__search input { flex:1; min-width:0; border:1px solid var(--color-border); background:white; padding:.78rem .9rem; font:inherit; }
+.topic-detail__search input:focus { outline:3px solid rgba(57,116,97,.16); border-color:var(--jade-600); }
+.topic-detail__search button { border:1px solid var(--indigo-800); background:white; color:var(--indigo-800); padding:.65rem .9rem; font-weight:800; cursor:pointer; }
+.topic-detail__search p { margin:0; color:var(--color-muted); font-size:.9rem; }
 .topic-detail__nav { position: sticky; top: 5.25rem; z-index: 3; display: flex; gap: .5rem; padding: .75rem; overflow-x: auto; background: color-mix(in srgb, var(--paper-50) 92%, transparent); border: 1px solid var(--color-border); backdrop-filter: blur(12px); }
 .topic-detail__nav a { flex: 0 0 auto; padding: .55rem .75rem; color: var(--indigo-800); text-decoration: none; font-weight: 750; border-radius: var(--radius-sm); }
 .topic-detail__nav a:hover, .topic-detail__nav a:focus-visible { background: var(--paper-100); }
@@ -152,6 +159,8 @@
   .topic-entry dl div { grid-template-columns: 1fr; gap: .2rem; }
   .topic-detail > .page-intro { min-height:22rem; margin-inline:-1rem; border-inline:0; }
   .topic-detail > .page-intro::after { right:-3rem; opacity:.7; }
+  .topic-detail__search { margin-inline:-1rem; border-inline:0; }
+  .topic-detail__search div { flex-direction:column; }
   .culture-map { margin-inline:-1rem; border-inline:0; }
   .culture-map__heading { align-items:start; flex-direction:column; }
   .culture-map__heading p { text-align:left; }

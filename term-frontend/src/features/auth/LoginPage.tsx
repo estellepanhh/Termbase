@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (mode === 'register') {
         await register(username, password, displayName)
       } else {
-        await login(adminLogin ? username : 'user', adminLogin ? password : '123456')
+        await login(adminLogin ? 'admin' : username, password)
       }
       navigate(from, { replace: true })
     } catch (caught) {
@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="login-panel">
         <p className="login-panel__eyebrow">ACCOUNT ACCESS</p>
         <h1 id="login-title">{mode === 'register' ? '注册文脉账号' : '登录文脉平台'}</h1>
-        <p>{mode === 'register' ? '注册后将以普通用户身份参与术语共建，管理员账号不开放自助注册。' : '默认以普通用户身份进入平台，管理员可从下方入口登录。'}</p>
+        <p>{mode === 'register' ? '注册后将以普通用户身份参与术语共建，管理员账号不开放自助注册。' : adminLogin ? '管理员入口暂时只开放固定管理账号，请输入管理员密码。' : '请输入普通用户账号和密码登录，也可以注册新账号参与术语共建。'}</p>
         <div className="login-panel__tabs" role="tablist" aria-label="账号入口">
           <button aria-selected={mode === 'login'} onClick={() => { setMode('login'); setAdminLogin(false); setError('') }} role="tab" type="button">登录</button>
           <button aria-selected={mode === 'register'} onClick={() => { setMode('register'); setAdminLogin(false); setError('') }} role="tab" type="button">注册</button>
@@ -59,12 +59,28 @@ export default function LoginPage() {
               <input id="login-display-name" autoComplete="name" onChange={(event) => setDisplayName(event.target.value)} placeholder="例如：术语研究者" value={displayName} />
             </>
           ) : null}
-          {mode === 'register' || adminLogin ? (
+          {mode === 'login' && adminLogin ? (
+            <>
+              <label htmlFor="login-admin-username">管理员账号</label>
+              <input id="login-admin-username" autoComplete="username" readOnly value="admin" />
+              <label htmlFor="login-password">密码</label>
+              <input id="login-password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+            </>
+          ) : null}
+          {mode === 'login' && !adminLogin ? (
+            <>
+              <label htmlFor="login-username">账号</label>
+              <input id="login-username" autoComplete="username" onChange={(event) => setUsername(event.target.value)} placeholder="请输入普通用户账号" value={username} />
+              <label htmlFor="login-password">密码</label>
+              <input id="login-password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+            </>
+          ) : null}
+          {mode === 'register' ? (
             <>
               <label htmlFor="login-username">账号</label>
               <input id="login-username" autoComplete="username" onChange={(event) => setUsername(event.target.value)} placeholder="3-30 位字母、数字、_ 或 -" value={username} />
               <label htmlFor="login-password">密码</label>
-              <input id="login-password" autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+              <input id="login-password" autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
             </>
           ) : null}
           {error ? <p role="alert">{error}</p> : null}
@@ -72,7 +88,7 @@ export default function LoginPage() {
             {submitting ? (mode === 'register' ? '注册中…' : '登录中…') : (mode === 'register' ? '注册并进入' : adminLogin ? '管理员登录' : '普通用户登录')}
           </button>
         </form>
-        {mode === 'login' && !adminLogin ? <button className="login-panel__admin-link" onClick={() => { setAdminLogin(true); setUsername(''); setPassword('') }} type="button">管理员登录</button> : null}
+        {mode === 'login' && !adminLogin ? <button className="login-panel__admin-link" onClick={() => { setAdminLogin(true); setUsername('admin'); setPassword('') }} type="button">管理员登录</button> : null}
         {user ? <span className="login-panel__current">{user.display_name}</span> : null}
       </div>
     </section>
