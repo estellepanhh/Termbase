@@ -137,6 +137,33 @@ class ChatStreamTests(unittest.TestCase):
         self.assertIn("过长", response.get_json()["msg"])
         self.assertIsNone(self.completions.request)
 
+    def test_stream_rate_limit_can_be_configured(self):
+        app = create_app({
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+            "DEEPSEEK_CLIENT": SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions())),
+            "AI_CHAT_RATE_LIMIT": "1 per minute",
+            "RATELIMIT_ENABLED": True,
+        })
+        with app.app_context():
+            db.create_all()
+            client = app.test_client()
+            login = client.post(
+                "/api/v1/auth/login",
+                json={"username": "user", "password": "123456"},
+            )
+            token = login.get_json()["data"]["token"]
+            headers = {"Authorization": f"Bearer {token}"}
+
+            first = client.post("/api/chat/stream", json={"message": "第一次"}, headers=headers)
+            first.get_data()
+            second = client.post("/api/chat/stream", json={"message": "第二次"}, headers=headers)
+
+            self.assertEqual(first.status_code, 200)
+            self.assertEqual(second.status_code, 429)
+            db.session.remove()
+            db.drop_all()
+
 
 if __name__ == "__main__":
     unittest.main()

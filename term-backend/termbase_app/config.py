@@ -27,6 +27,8 @@ class Config:
     DEMO_USER_PASSWORD = os.environ.get("DEMO_USER_PASSWORD", "123456")
     DEMO_USER_DISPLAY_NAME = os.environ.get("DEMO_USER_DISPLAY_NAME", "普通用户")
     AI_MAX_MESSAGE_CHARS = int(os.environ.get("AI_MAX_MESSAGE_CHARS", "500"))
+    AI_CHAT_RATE_LIMIT = os.environ.get("AI_CHAT_RATE_LIMIT", "20 per minute")
+    AUTH_LOGIN_RATE_LIMIT = os.environ.get("AUTH_LOGIN_RATE_LIMIT", "10 per minute")
     SQLALCHEMY_DATABASE_URI = database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False

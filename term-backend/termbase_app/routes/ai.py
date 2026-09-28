@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 from openai import OpenAI
 
+from ..extensions import limiter
 from ..services.auth import current_user_from_request
 
 
@@ -46,6 +47,7 @@ def _fail(message, status):
 
 
 @bp.post("/api/chat/stream")
+@limiter.limit(lambda: current_app.config["AI_CHAT_RATE_LIMIT"])
 def chat_stream():
     if current_user_from_request() is None:
         return _fail("请先登录后使用 AI 助手", 401)

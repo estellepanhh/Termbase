@@ -86,6 +86,36 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertIn("用户名或密码错误", response.get_json()["message"])
 
+    def test_login_rate_limit_can_be_configured(self):
+        app = create_app(
+            {
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite+pysqlite:///:memory:",
+                "SECRET_KEY": "test-secret",
+                "AUTH_TOKEN_SECRET": "test-token-secret",
+                "AUTH_LOGIN_RATE_LIMIT": "2 per minute",
+                "RATELIMIT_ENABLED": True,
+            }
+        )
+        with app.app_context():
+            db.create_all()
+            client = app.test_client()
+
+            for _ in range(2):
+                response = client.post(
+                    "/api/v1/auth/login",
+                    json={"username": "admin", "password": "wrong"},
+                )
+                self.assertEqual(response.status_code, 401)
+            limited = client.post(
+                "/api/v1/auth/login",
+                json={"username": "admin", "password": "wrong"},
+            )
+
+            self.assertEqual(limited.status_code, 429)
+            db.session.remove()
+            db.drop_all()
+
     def test_register_creates_normal_user_and_returns_token(self):
         response = self.client.post(
             "/api/v1/auth/register",

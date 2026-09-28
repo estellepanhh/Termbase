@@ -159,10 +159,12 @@ venv\Scripts\python scripts\import_child_explain.py
 | `DEMO_USER_USERNAME` | 演示普通用户账号 | user |
 | `DEMO_USER_PASSWORD` | 演示普通用户密码 | 123456 |
 | `DEMO_USER_DISPLAY_NAME` | 演示普通用户显示名 | 普通用户 |
+| `AUTH_LOGIN_RATE_LIMIT` | 登录接口限流 | 10 per minute |
 | `DEEPSEEK_API_KEY` | DeepSeek API Key | — |
 | `DEEPSEEK_BASE_URL` | DeepSeek API 地址 | https://api.deepseek.com |
 | `DEEPSEEK_MODEL` | DeepSeek 模型名称 | deepseek-flash |
 | `AI_MAX_MESSAGE_CHARS` | AI 助手单次输入字数上限 | 500 |
+| `AI_CHAT_RATE_LIMIT` | AI 助手接口限流 | 20 per minute |
 | `EXPRESSION_LAB_RATE_LIMIT` | 表达分析单 IP 限流 | 5 per minute |
 | `EXPRESSION_LAB_MAX_KNOWLEDGE_CHARS` | 知识包字符上限 | 18000 |
 | `EXPRESSION_LAB_PROVIDER_TIMEOUT` | AI 请求超时（秒） | 45 |

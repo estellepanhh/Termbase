@@ -107,8 +107,9 @@ const HomePage: React.FC = () => {
 
   // 初始加载（页面挂载时请求数据）
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData(1, 30)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── 搜索 & 筛选 ──

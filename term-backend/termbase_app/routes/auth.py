@@ -1,5 +1,6 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
+from ..extensions import limiter
 from ..services.auth import (
     authenticate,
     create_auth_token,
@@ -14,6 +15,7 @@ bp = Blueprint("auth", __name__)
 
 
 @bp.post("/api/v1/auth/login")
+@limiter.limit(lambda: current_app.config["AUTH_LOGIN_RATE_LIMIT"])
 def login():
     data = request.get_json(silent=True) or {}
     username = str(data.get("username", "")).strip()

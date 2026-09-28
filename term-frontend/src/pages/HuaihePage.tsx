@@ -86,8 +86,9 @@ const HuaihePage: React.FC = () => {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTerms(1, '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const openDetail = (item: DisplayTerm) => {
