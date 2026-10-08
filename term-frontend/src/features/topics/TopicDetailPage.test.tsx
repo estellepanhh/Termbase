@@ -89,6 +89,10 @@ describe('TopicDetailPage', () => {
     expect(screen.getByText('honeysuckle')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '专题内容导航' })).toBeInTheDocument()
     const map = screen.getByRole('region', { name: '淮河文脉图谱' })
+    expect(within(map).getByRole('img', { name: '淮河流域文化路线' })).toBeInTheDocument()
+    for (const place of ['寿县', '淮南', '蚌埠', '凤阳']) {
+      expect(within(map).getByText(place)).toBeInTheDocument()
+    }
     expect(within(map).getByRole('button', { name: '定位到文化人物：管仲' })).toBeInTheDocument()
     expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
   })

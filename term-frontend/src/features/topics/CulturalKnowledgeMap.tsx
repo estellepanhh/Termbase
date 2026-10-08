@@ -1,14 +1,24 @@
 import type { CSSProperties } from 'react'
 import type { TopicEntry } from '../../types/knowledge'
 import { labelForEntryType, type TopicInterfaceLanguage } from './topicPresentation'
+import KnowledgeGlyph, { type KnowledgeGlyphKind } from '../../components/KnowledgeGlyph'
 
 const positions = [
   [50, 9], [77, 20], [89, 48], [78, 76], [52, 88],
   [23, 78], [10, 51], [21, 22], [66, 38], [34, 62],
 ] as const
 
-const typeGlyph: Record<string, string> = {
-  term: '言', person: '人', place: '地', culture: '文', herb: '草',
+const placeLabels = [
+  { name: '寿县', left: 16, top: 63 },
+  { name: '淮南', left: 37, top: 50 },
+  { name: '蚌埠', left: 64, top: 43 },
+  { name: '凤阳', left: 84, top: 56 },
+] as const
+
+const glyphKinds = new Set<KnowledgeGlyphKind>(['term', 'person', 'place', 'culture', 'herb'])
+
+function glyphForEntry(type: string): KnowledgeGlyphKind {
+  return glyphKinds.has(type as KnowledgeGlyphKind) ? type as KnowledgeGlyphKind : 'term'
 }
 
 function featuredEntries(entries: TopicEntry[]) {
@@ -51,10 +61,28 @@ export default function CulturalKnowledgeMap({
         <p>{hint}</p>
       </header>
       <div className="culture-map__canvas">
-        <svg aria-hidden="true" className="culture-map__river" preserveAspectRatio="none" viewBox="0 0 1000 520">
-          <path d="M-30 305 C130 220 250 365 405 275 S690 185 1030 295" />
-          <path d="M-30 330 C160 250 270 390 425 302 S700 215 1030 320" />
+        <svg aria-label={language === 'zh' ? '淮河流域文化路线' : 'Huaihe cultural route'} className="culture-map__river" preserveAspectRatio="none" role="img" viewBox="0 0 1000 520">
+          <defs>
+            <linearGradient id="huaihe-water" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stopColor="#3a7f86" />
+              <stop offset=".45" stopColor="#66a6a2" />
+              <stop offset="1" stopColor="#397988" />
+            </linearGradient>
+            <filter id="huaihe-depth" x="-10%" y="-40%" width="120%" height="180%">
+              <feDropShadow dx="0" dy="10" floodColor="#071f27" floodOpacity=".3" stdDeviation="12" />
+            </filter>
+          </defs>
+          <path className="culture-map__riverbed" d="M-45 320 C130 218 250 382 418 286 S710 205 1045 315" />
+          <path className="culture-map__water" d="M-45 320 C130 218 250 382 418 286 S710 205 1045 315" />
+          <path className="culture-map__current" d="M-45 306 C135 235 255 355 420 272 S710 224 1045 301" />
         </svg>
+        <div aria-label={language === 'zh' ? '淮河沿岸地点' : 'Places along the Huaihe'} className="culture-map__places">
+          {placeLabels.map((place) => (
+            <span key={place.name} style={{ '--place-left': `${place.left}%`, '--place-top': `${place.top}%` } as CSSProperties}>
+              <i aria-hidden="true" />{place.name}
+            </span>
+          ))}
+        </div>
         <div className="culture-map__hub"><span>千里淮河</span><strong>文脉共生</strong><small>HUAIHE</small></div>
         {nodes.map((entry, index) => {
           const label = labelForEntryType(entry.entry_type, language)
@@ -68,7 +96,7 @@ export default function CulturalKnowledgeMap({
               style={{ '--node-left': `${left}%`, '--node-top': `${top}%`, '--node-delay': `${index * -0.7}s` } as CSSProperties}
               type="button"
             >
-              <span aria-hidden="true">{typeGlyph[entry.entry_type] ?? '录'}</span>
+              <span aria-hidden="true"><KnowledgeGlyph kind={glyphForEntry(entry.entry_type)} /></span>
               <strong>{entry.title}</strong>
               <small>{label}</small>
             </button>
