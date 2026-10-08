@@ -178,4 +178,3 @@ Expected: exit code 0 for both commands.
 - [ ] **Step 6: Commit verification repairs** if any.
 
 Commit message: `fix: polish terminology visual refresh`
-
