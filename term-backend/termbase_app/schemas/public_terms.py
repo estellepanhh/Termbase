@@ -20,6 +20,19 @@ class TermSummary(TypedDict):
     recommended_translation: TranslationSummary | None
     language_count: int
     source_count: int
+    interpretation_count: int
+    record_count: int
+
+
+class InterpretationDetail(TypedDict):
+    index: int
+    title: str
+    explanation: str
+    definition_zh: str
+    cultural_connotation: str
+    term_level: str
+    culture_category: str
+    record_id: int
 
 
 class NameDetail(TypedDict):
@@ -96,6 +109,7 @@ class TopicDetail(TypedDict):
 
 class TermDetail(TermSummary):
     cultural_connotation: str
+    interpretations: list[InterpretationDetail]
     names: list[NameDetail]
     translations: list[TranslationDetail]
     sources: list[SourceDetail]

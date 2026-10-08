@@ -213,6 +213,131 @@ class PublicTermsApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["data"][0]["child_explanation"], "大家可以不一样")
 
+    def test_list_groups_duplicate_names_and_reports_interpretation_count(self):
+        db.session.add_all([
+            Term(
+                preferred_name_zh="和而不同",
+                definition_zh="承认差异并追求和谐共处",
+                cultural_connotation="和谐不是同一",
+                term_level="本源层",
+                culture_category="中华优秀传统文化",
+                status="published",
+            ),
+            Term(
+                preferred_name_zh="和而不同",
+                definition_zh="用于文明交流的相处原则",
+                cultural_connotation="在文明交流中尊重彼此差异",
+                term_level="核心层",
+                culture_category="国际传播",
+                status="published",
+            ),
+        ])
+        db.session.commit()
+
+        payload = self.client.get("/api/v1/terms?q=和而不同").get_json()
+
+        self.assertEqual(payload["meta"]["total"], 1)
+        self.assertEqual(len(payload["data"]), 1)
+        self.assertEqual(payload["data"][0]["id"], self.term_id)
+        self.assertEqual(payload["data"][0]["record_count"], 3)
+        self.assertEqual(payload["data"][0]["interpretation_count"], 2)
+
+    def test_list_filter_matches_noncanonical_record_but_returns_canonical_term(self):
+        duplicate = Term(
+            preferred_name_zh="和而不同",
+            definition_zh="用于当代国际传播",
+            cultural_connotation="文明交流中的差异共存",
+            term_level="核心层",
+            culture_category="国际传播",
+            status="published",
+        )
+        db.session.add(duplicate)
+        db.session.commit()
+
+        payload = self.client.get("/api/v1/terms?level=核心层&culture=国际传播").get_json()
+
+        self.assertEqual(payload["meta"]["total"], 1)
+        self.assertEqual([item["id"] for item in payload["data"]], [self.term_id])
+
+    def test_detail_from_duplicate_id_returns_canonical_numbered_interpretations(self):
+        duplicate = Term(
+            preferred_name_zh="和而不同",
+            definition_zh="用于文明交流的相处原则",
+            cultural_connotation="在文明交流中尊重彼此差异",
+            term_level="核心层",
+            culture_category="国际传播",
+            status="published",
+        )
+        db.session.add(duplicate)
+        db.session.commit()
+
+        detail = self.client.get(f"/api/v1/terms/{duplicate.id}").get_json()["data"]
+
+        self.assertEqual(detail["id"], self.term_id)
+        self.assertEqual(
+            detail["interpretations"],
+            [
+                {
+                    "index": 1,
+                    "title": "中华优秀传统文化",
+                    "explanation": "和谐不是同一",
+                    "definition_zh": "承认差异并追求和谐共处",
+                    "cultural_connotation": "和谐不是同一",
+                    "term_level": "本源层",
+                    "culture_category": "中华优秀传统文化",
+                    "record_id": self.term_id,
+                },
+                {
+                    "index": 2,
+                    "title": "国际传播",
+                    "explanation": "在文明交流中尊重彼此差异",
+                    "definition_zh": "用于文明交流的相处原则",
+                    "cultural_connotation": "在文明交流中尊重彼此差异",
+                    "term_level": "核心层",
+                    "culture_category": "国际传播",
+                    "record_id": duplicate.id,
+                },
+            ],
+        )
+
+    def test_detail_deduplicates_identical_interpretations(self):
+        duplicate = Term(
+            preferred_name_zh="和而不同",
+            definition_zh="承认差异并追求和谐共处",
+            cultural_connotation="和谐不是同一",
+            term_level="本源层",
+            culture_category="中华优秀传统文化",
+            status="published",
+        )
+        db.session.add(duplicate)
+        db.session.commit()
+
+        detail = self.client.get(f"/api/v1/terms/{duplicate.id}").get_json()["data"]
+
+        self.assertEqual(detail["record_count"], 2)
+        self.assertEqual(detail["interpretation_count"], 1)
+        self.assertEqual(len(detail["interpretations"]), 1)
+
+    def test_detail_falls_back_to_definition_when_cultural_content_is_empty(self):
+        term = Term(
+            preferred_name_zh="淮河水利",
+            definition_zh="围绕淮河形成的治水知识与工程实践",
+            cultural_connotation="",
+            term_level="本源层",
+            culture_category="淮河文化",
+            status="published",
+        )
+        db.session.add(term)
+        db.session.commit()
+
+        detail = self.client.get(f"/api/v1/terms/{term.id}").get_json()["data"]
+
+        self.assertEqual(detail["interpretation_count"], 1)
+        self.assertEqual(
+            detail["interpretations"][0]["explanation"],
+            "围绕淮河形成的治水知识与工程实践",
+        )
+
     def test_list_rejects_non_integer_pagination_parameters(self):
         response = self.client.get("/api/v1/terms?page=one&page_size=20")
 
