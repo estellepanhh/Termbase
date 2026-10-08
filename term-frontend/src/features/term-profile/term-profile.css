@@ -65,3 +65,24 @@
 /* Editorial dossier */
 .term-profile-page{max-width:1160px;margin:0 auto}.term-profile-content{grid-template-columns:13rem minmax(0,1fr);column-gap:3.5rem;align-items:start}.term-profile-hero{grid-column:1/3;padding:clamp(2.5rem,7vw,6rem) 0 3rem}.term-profile-hero h1{font-weight:600;letter-spacing:-.025em}.term-profile-hero__definition{font-family:Inter,'Noto Sans SC',sans-serif;font-size:1.15rem;color:var(--color-muted);max-width:52rem}.profile-section-nav{grid-column:1;position:sticky;top:7rem;display:grid;border-top:1px solid var(--color-border)}.profile-section-nav a{padding:.8rem .25rem;border-bottom:1px solid var(--color-border);color:var(--color-muted);font-size:.85rem;text-decoration:none}.profile-section-nav a:hover{color:var(--color-vermilion);padding-left:.65rem}.term-profile-content>.term-profile-panel,.term-profile-content>.child-explanation-panel{grid-column:2}.term-profile-panel{padding-bottom:2.5rem;border-bottom:1px solid var(--color-border)}.term-profile-panel__heading{border:0}.translation-panel__list{gap:0;border-top:1px solid var(--color-border)}.translation-panel__item{border-width:0 1px 1px 0;background:transparent;padding:1.25rem}.evidence-panel__source{padding:1.5rem 0 2rem 1.5rem;border-bottom:1px solid var(--color-border)}.child-explanation-panel{border:1px solid #d8c77c;border-radius:8px;background:linear-gradient(120deg,#fff8d9,#f0f5e9)}
 @media(max-width:850px){.term-profile-content{grid-template-columns:1fr}.term-profile-hero,.profile-section-nav,.term-profile-content>.term-profile-panel,.term-profile-content>.child-explanation-panel{grid-column:1}.profile-section-nav{position:static;display:flex;overflow-x:auto;white-space:nowrap}.profile-section-nav a{padding:.75rem 1rem}.term-profile-hero{padding-top:2rem}}
+
+/* Canonical term dossier */
+.knowledge-glyph{display:block;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.term-profile-hero__glyph{display:grid;place-items:center;width:3.25rem;height:3.25rem;color:var(--color-navy);background:linear-gradient(145deg,#fffdf8,#dfeee8);border:1px solid var(--color-border);border-radius:1rem;box-shadow:0 16px 36px rgba(23,61,70,.12)}
+.term-profile-hero__glyph .knowledge-glyph{width:1.7rem}
+.child-explanation-panel>span{display:grid;place-items:center;width:3.4rem;height:3.4rem;color:#285f56;background:rgba(255,255,255,.7);border-radius:1rem;box-shadow:0 10px 24px rgba(40,95,86,.12);font-size:inherit}
+.child-explanation-panel>span .knowledge-glyph{width:2rem}
+.cultural-interpretations__heading{display:flex;align-items:end;justify-content:space-between;gap:2rem}
+.cultural-interpretations__heading>p{max-width:28rem;margin:0;color:var(--color-muted);line-height:1.7;text-align:right}
+.cultural-interpretations__list{display:grid;gap:0;margin:0;padding:0;list-style:none;border-top:1px solid var(--color-border)}
+.cultural-interpretations__list>li{display:grid;grid-template-columns:5rem minmax(0,1fr);gap:1.5rem;padding:1.75rem 0;border-bottom:1px solid var(--color-border)}
+.cultural-interpretations__index{color:color-mix(in srgb,var(--color-vermilion) 82%,var(--ink-950));font:500 clamp(2rem,5vw,3.4rem)/1 Georgia,serif;letter-spacing:-.06em}
+.cultural-interpretations__body{display:grid;gap:.9rem}
+.cultural-interpretations__title{display:flex;align-items:center;gap:.7rem}
+.cultural-interpretations__title .knowledge-glyph{width:1.25rem;color:var(--jade-600)}
+.cultural-interpretations__body>p{max-width:48rem;margin:0;color:var(--ink-700);line-height:1.9;font-size:1.02rem}
+.cultural-interpretations__body dl{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin:0}
+.cultural-interpretations__body dl div{display:flex;gap:.45rem}
+.cultural-interpretations__body dt{color:var(--color-muted);font-size:.75rem}
+.cultural-interpretations__body dd{margin:0;color:var(--indigo-800);font-size:.75rem;font-weight:750}
+@media(max-width:520px){.cultural-interpretations__heading{align-items:start;flex-direction:column;gap:.75rem}.cultural-interpretations__heading>p{text-align:left}.cultural-interpretations__list>li{grid-template-columns:3.5rem;gap:.8rem}.cultural-interpretations__index{font-size:2rem}}

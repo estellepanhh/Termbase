@@ -18,6 +18,8 @@ export interface TermSummary {
   recommended_translation: TranslationSummary | null
   language_count: number
   source_count: number
+  interpretation_count?: number
+  record_count?: number
 }
 
 export interface TermQuery {
@@ -196,6 +198,7 @@ export interface PublicTopicDetail extends TopicSummary {
 
 export interface TermProfile extends TermSummary {
   cultural_connotation: string
+  interpretations?: CulturalInterpretation[]
   names: TermNameDetail[]
   translations: TranslationDetail[]
   sources: SourceDetail[]
@@ -203,4 +206,15 @@ export interface TermProfile extends TermSummary {
   cultural_notes: CulturalNoteDetail[]
   relations: TermRelationDetail[]
   topics: TopicDetail[]
+}
+
+export interface CulturalInterpretation {
+  index: number
+  title: string
+  explanation: string
+  definition_zh: string
+  cultural_connotation: string
+  term_level: string
+  culture_category: string
+  record_id: number
 }

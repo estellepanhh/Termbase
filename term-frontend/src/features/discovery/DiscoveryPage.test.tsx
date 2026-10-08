@@ -34,6 +34,8 @@ const response: PaginatedTerms = {
     },
     language_count: 2,
     source_count: 2,
+    interpretation_count: 3,
+    record_count: 4,
   }],
   meta: { page: 1, page_size: 20, total: 42 },
 }
@@ -81,6 +83,7 @@ describe('DiscoveryPage', () => {
     expect(await screen.findByRole('link', { name: '和而不同' })).toHaveAttribute('href', '/terms/1')
     expect(screen.getByText('2 个来源')).toBeInTheDocument()
     expect(screen.getByText('2 种语言')).toBeInTheDocument()
+    expect(screen.getByText('3 个文化义项')).toBeInTheDocument()
     expect(screen.getByText('历史数据待复核')).toBeInTheDocument()
     expect(screen.queryByText('权威审定')).not.toBeInTheDocument()
   })

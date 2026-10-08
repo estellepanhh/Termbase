@@ -7,6 +7,8 @@ import TranslationPanel from './TranslationPanel'
 import './term-profile.css'
 import { useChildMode } from '../../context/ChildModeContext'
 import ProfileSectionNav from './ProfileSectionNav'
+import KnowledgeGlyph from '../../components/KnowledgeGlyph'
+import CulturalInterpretations from './CulturalInterpretations'
 
 type LoadStatus = 'loading' | 'ready' | 'error' | 'not-found'
 
@@ -49,8 +51,8 @@ function ProfileStatus({ status, onRetry }: { status: LoadStatus; onRetry: () =>
   return null
 }
 
-function ContextPanel({ profile, hideChildContext = false }: { profile: TermProfile; hideChildContext?: boolean }) {
-  const contexts = hideChildContext ? profile.contexts.filter((item) => item.context_code !== 'children') : profile.contexts
+function ContextPanel({ profile }: { profile: TermProfile }) {
+  const contexts = profile.contexts.filter((item) => item.context_code !== 'children')
   if (!contexts.length) return null
 
   return (
@@ -138,16 +140,29 @@ function ConnectionsPanel({ profile }: { profile: TermProfile }) {
 function ProfileContent({ profile }: { profile: TermProfile }) {
   const { isChildMode } = useChildMode()
   const childContext = profile.contexts.find((item) => item.context_code === 'children' && hasText(item.explanation))
+  const interpretations = profile.interpretations?.length
+    ? profile.interpretations
+    : (hasText(profile.cultural_connotation) ? [{
+      index: 1,
+      title: profile.culture_category || '文化内涵',
+      explanation: profile.cultural_connotation,
+      definition_zh: profile.definition_zh,
+      cultural_connotation: profile.cultural_connotation,
+      term_level: profile.term_level,
+      culture_category: profile.culture_category,
+      record_id: profile.id,
+    }] : [])
   const sections = [
     ...(profile.translations.length ? [{ id: 'translations', label: '多语译法' }] : []),
-    ...(hasText(profile.cultural_connotation) ? [{ id: 'connotation', label: '文化内涵' }] : []),
-    ...(profile.contexts.length ? [{ id: 'contexts', label: '适用场景' }] : []),
+    ...(interpretations.length ? [{ id: 'connotation', label: '文化内涵' }] : []),
+    ...(profile.contexts.some((item) => item.context_code !== 'children') ? [{ id: 'contexts', label: '适用场景' }] : []),
     ...(profile.cultural_notes.length ? [{ id: 'cultural-notes', label: '跨文化提示' }] : []),
     ...(profile.sources.length ? [{ id: 'evidence', label: '来源证据' }] : []),
   ]
   return (
     <article className="term-profile-content">
       <header className="term-profile-hero">
+        <span className="term-profile-hero__glyph"><KnowledgeGlyph kind="term" /></span>
         <div className="term-profile-hero__meta">
           <span>{profile.term_level}</span>
           <span>{profile.culture_category}</span>
@@ -160,22 +175,14 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
       <ProfileSectionNav sections={sections} />
 
       {isChildMode ? <section aria-labelledby="child-explanation-title" className="child-explanation-panel">
-        <span aria-hidden="true">🌱</span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
+        <span aria-hidden="true"><KnowledgeGlyph kind="child" /></span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
       </section> : null}
 
       <TranslationPanel translations={profile.translations} />
 
-      {hasText(profile.cultural_connotation) ? (
-        <section aria-labelledby="connotation-title" className="term-profile-panel" id="connotation">
-          <div className="term-profile-panel__heading">
-            <p className="term-profile-panel__eyebrow">CULTURAL CONNOTATION</p>
-            <h2 id="connotation-title">文化内涵</h2>
-          </div>
-          <p className="term-profile-prose">{profile.cultural_connotation}</p>
-        </section>
-      ) : null}
+      <CulturalInterpretations interpretations={interpretations} />
 
-      <ContextPanel hideChildContext={isChildMode} profile={profile} />
+      <ContextPanel profile={profile} />
       <CulturalNotesPanel profile={profile} />
       <EvidencePanel sources={profile.sources} />
       <ConnectionsPanel profile={profile} />

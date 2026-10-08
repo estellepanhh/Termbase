@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { TermSummary } from '../../types/knowledge'
 import { useChildMode } from '../../context/ChildModeContext'
+import KnowledgeGlyph from '../../components/KnowledgeGlyph'
 
 type TermResultItemProps = {
   term: TermSummary
@@ -11,6 +12,7 @@ export default function TermResultItem({ term }: TermResultItemProps) {
   const definition = isChildMode && term.child_explanation ? term.child_explanation : term.definition_zh
   return (
     <article className="term-result-item">
+      <span className="term-result-item__glyph"><KnowledgeGlyph kind="term" /></span>
       <div className="term-result-item__meta">
         <span>{term.term_level}</span>
         <span>{term.culture_category}</span>
@@ -26,6 +28,7 @@ export default function TermResultItem({ term }: TermResultItemProps) {
         </p>
       ) : null}
       <div className="term-result-item__facts">
+        {term.interpretation_count ? <span>{term.interpretation_count} 个文化义项</span> : null}
         <span>{term.language_count} 种语言</span>
         <span>{term.source_count} 个来源</span>
       </div>

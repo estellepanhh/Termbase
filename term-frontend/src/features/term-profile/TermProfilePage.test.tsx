@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +24,40 @@ const profile: TermProfile = {
   recommended_translation: null,
   language_count: 1,
   source_count: 1,
+  interpretation_count: 3,
+  record_count: 3,
+  interpretations: [
+    {
+      index: 1,
+      title: '哲学思想',
+      explanation: '强调差异基础上的协调共生。',
+      definition_zh: '承认差异并追求和谐共处。',
+      cultural_connotation: '强调差异基础上的协调共生。',
+      term_level: '本源层',
+      culture_category: '中华优秀传统文化',
+      record_id: 1,
+    },
+    {
+      index: 2,
+      title: '社会交往',
+      explanation: '在共同目标下保留不同意见。',
+      definition_zh: '处理群体差异的交往原则。',
+      cultural_connotation: '在共同目标下保留不同意见。',
+      term_level: '拓展层',
+      culture_category: '社会文化',
+      record_id: 2,
+    },
+    {
+      index: 3,
+      title: '国际传播',
+      explanation: '文明交流不以消除差异为前提。',
+      definition_zh: '面向文明互鉴的表达原则。',
+      cultural_connotation: '文明交流不以消除差异为前提。',
+      term_level: '核心层',
+      culture_category: '国际传播',
+      record_id: 3,
+    },
+  ],
   names: [{ name: '和同', name_type: '异名' }],
   translations: [
     {
@@ -146,6 +180,16 @@ describe('TermProfilePage', () => {
     expect(sourceLink).toHaveAttribute('target', '_blank')
     expect(sourceLink).toHaveAttribute('rel', 'noreferrer noopener')
     expect(screen.getByRole('heading', { name: '适用场景' })).toBeInTheDocument()
+    const contexts = screen.getByRole('region', { name: '适用场景' })
+    expect(within(contexts).getByRole('heading', { name: '国际交流' })).toBeInTheDocument()
+    expect(within(contexts).queryByRole('heading', { name: '儿童' })).not.toBeInTheDocument()
+    expect(within(contexts).queryByText('每个人可以不一样，也可以友好地一起做事。')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '文化内涵' })).toBeInTheDocument()
+    expect(screen.getByText('01')).toBeInTheDocument()
+    expect(screen.getByText('02')).toBeInTheDocument()
+    expect(screen.getByText('03')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '哲学思想' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '国际传播' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '跨文化理解提示' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '协和万邦' })).toHaveAttribute('href', '/terms/2')
     expect(screen.getByRole('link', { name: '文明交流互鉴' })).toHaveAttribute('href', '/topics/civilization-dialogue')
