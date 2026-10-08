@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloseOutlined, SendOutlined } from '@ant-design/icons'
 import { getAuthToken } from '../services/authApi'
+import ResearchAvatar from './ResearchAvatar'
 
 type ChatMessage = { role: 'assistant' | 'user'; content: string }
 
@@ -74,16 +75,22 @@ export default function ChatAI() {
     <div className="culture-assistant">
       {!visible ? (
         <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} type="button">
-          <span aria-hidden="true">文脉 AI</span>
-          <strong>研究助手</strong>
+          <span className="culture-assistant__avatar"><ResearchAvatar /></span>
+          <span className="culture-assistant__trigger-copy">
+            <small>文脉 AI</small>
+            <strong>数字研究员</strong>
+          </span>
         </button>
       ) : null}
       {visible ? (
         <section aria-label="文脉 AI 助手" aria-modal="false" className="culture-assistant__panel" role="dialog">
           <div className="culture-assistant__header">
-            <div>
-              <span>AI</span>
-              <strong>AI 助手</strong>
+            <div className="culture-assistant__identity">
+              <ResearchAvatar />
+              <div className="culture-assistant__identity-copy">
+                <span>HUAIHE RESEARCHER</span>
+                <strong>文脉数字研究员</strong>
+              </div>
             </div>
             <button aria-label="关闭文脉 AI 助手" onClick={() => setVisible(false)} type="button"><CloseOutlined /></button>
           </div>
@@ -91,7 +98,7 @@ export default function ChatAI() {
             {messages.map((msg, idx) => (
               <p className={`culture-assistant__message culture-assistant__message--${msg.role}`} key={idx}>{msg.content}</p>
             ))}
-            {loading ? <p className="culture-assistant__thinking">正在思考…</p> : null}
+            {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
             <div ref={messagesEndRef} />
           </div>
           <div className="culture-assistant__composer">

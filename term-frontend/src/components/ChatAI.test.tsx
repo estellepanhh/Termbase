@@ -16,7 +16,10 @@ describe('ChatAI', () => {
     const user = userEvent.setup()
     render(<ChatAI />)
 
-    await user.click(screen.getByRole('button', { name: /文脉 AI/ }))
+    const trigger = screen.getByRole('button', { name: '打开文脉 AI 助手' })
+    expect(trigger).toContainElement(screen.getByRole('img', { name: '文脉数字研究员' }))
+
+    await user.click(trigger)
 
     expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toBeInTheDocument()
     expect(screen.getByText('你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。')).toBeInTheDocument()
@@ -52,5 +55,17 @@ describe('ChatAI', () => {
     expect(fetchSpy).toHaveBeenCalledWith('/api/chat/stream', expect.objectContaining({
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer user-token' },
     }))
+  })
+
+  it('animates the digital researcher while a response is loading', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}))
+    render(<ChatAI />)
+
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    await user.type(screen.getByRole('textbox'), '解释淮河文化')
+    await user.click(screen.getByRole('button', { name: '发送问题' }))
+
+    expect(await screen.findByRole('img', { name: '文脉数字研究员正在思考' })).toBeInTheDocument()
   })
 })
