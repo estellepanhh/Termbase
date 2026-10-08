@@ -85,4 +85,4 @@
 .cultural-interpretations__body dl div{display:flex;gap:.45rem}
 .cultural-interpretations__body dt{color:var(--color-muted);font-size:.75rem}
 .cultural-interpretations__body dd{margin:0;color:var(--indigo-800);font-size:.75rem;font-weight:750}
-@media(max-width:520px){.cultural-interpretations__heading{align-items:start;flex-direction:column;gap:.75rem}.cultural-interpretations__heading>p{text-align:left}.cultural-interpretations__list>li{grid-template-columns:3.5rem;gap:.8rem}.cultural-interpretations__index{font-size:2rem}}
+@media(max-width:520px){.cultural-interpretations__heading{align-items:start;flex-direction:column;gap:.75rem}.cultural-interpretations__heading>p{text-align:left}.cultural-interpretations__list>li{grid-template-columns:3rem minmax(0,1fr);gap:.7rem}.cultural-interpretations__index{font-size:2rem}.cultural-interpretations__body dl{gap:.45rem .9rem}}
