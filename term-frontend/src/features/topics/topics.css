@@ -58,6 +58,14 @@
 .topic-card:focus-within { outline: 3px solid color-mix(in srgb, var(--vermilion-600) 45%, transparent); outline-offset: 4px; }
 .topic-card__link:focus-visible { outline: 3px solid color-mix(in srgb, var(--vermilion-600) 45%, transparent); outline-offset: 4px; }
 
+/* Open cultural atlas */
+.topics-atlas{grid-template-columns:1fr;gap:0;border-top:1px solid var(--line-soft)}
+.topic-atlas-entry{grid-template-columns:4rem minmax(12rem,.55fr) minmax(0,1fr) auto;align-items:center;gap:.75rem 1.5rem;padding:1.7rem 0;border:0;border-bottom:1px solid var(--line-soft);background:transparent;box-shadow:none;overflow:visible;transition:background .2s ease,padding .2s ease}
+.topic-atlas-entry::before{width:0}.topic-atlas-entry:hover,.topic-atlas-entry:focus-within{padding-inline:1rem;background:linear-gradient(90deg,rgba(229,239,235,.55),transparent)}
+.topic-atlas-entry__number{grid-row:1/5;color:var(--sand-600);font:500 1.7rem/1 Georgia,serif}.topic-atlas-entry .topic-card__index,.topic-atlas-entry h2{grid-column:2}.topic-atlas-entry .topic-card__summary{grid-column:3;grid-row:1/3}.topic-atlas-entry .topic-card__metrics{grid-column:2;grid-row:3/5;border:0;padding:0}.topic-atlas-entry .topic-card__types{grid-column:3}.topic-atlas-entry .topic-card__link{grid-column:4;grid-row:1/5}.topic-atlas-entry .topic-card__link::after{inset:0}
+.topics-overview{border-color:var(--line-soft)}.topics-overview>div+div{border-color:var(--line-soft)}
+@media(max-width:850px){.topic-atlas-entry{grid-template-columns:3rem 1fr}.topic-atlas-entry__number{grid-row:1/7}.topic-atlas-entry .topic-card__index,.topic-atlas-entry h2,.topic-atlas-entry .topic-card__summary,.topic-atlas-entry .topic-card__metrics,.topic-atlas-entry .topic-card__types,.topic-atlas-entry .topic-card__link{grid-column:2;grid-row:auto}}
+
 .topics-status { padding: 2rem; color: var(--ink-700); background: var(--paper-100); border: 1px dashed var(--color-border); text-align: center; }
 .topics-status h2 { margin-top: 0; }
 .topics-status button { padding: .65rem 1rem; color: white; background: var(--indigo-800); border: 0; border-radius: var(--radius-sm); cursor: pointer; }

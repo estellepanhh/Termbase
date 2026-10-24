@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { TopicSummary } from '../../types/knowledge'
 import { labelForEntryType } from './topicPresentation'
 
-export default function TopicCard({ topic }: { topic: TopicSummary }) {
+export default function TopicCard({ topic, index }: { topic: TopicSummary; index: number }) {
   const { i18n } = useTranslation()
   const language = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh') ? 'zh' : 'en'
   const copy = language === 'zh' ? {
@@ -16,7 +16,8 @@ export default function TopicCard({ topic }: { topic: TopicSummary }) {
     types: 'Topic content types', open: `Open ${topic.title} topic`,
   }
   return (
-    <article className="topic-card">
+    <article className="topic-card topic-atlas-entry">
+      <span aria-hidden="true" className="topic-atlas-entry__number">{String(index + 1).padStart(2, '0')}</span>
       <div className="topic-card__index" aria-hidden="true">{copy.index} / {topic.slug}</div>
       <h2>{topic.title}</h2>
       <p className="topic-card__summary">{topic.summary || copy.missingSummary}</p>

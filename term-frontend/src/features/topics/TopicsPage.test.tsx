@@ -49,6 +49,8 @@ describe('TopicsPage', () => {
     renderTopics()
 
     expect(await screen.findByRole('heading', { name: '淮河文化' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '文化专题图志' })).toBeInTheDocument()
+    expect(screen.getByText('01', { selector: '.topic-atlas-entry__number' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /进入淮河文化专题/ })).toHaveAttribute('href', '/topics/huaihe-culture')
     expect(screen.getByText('3 条内容')).toBeInTheDocument()
     expect(screen.getByText('1 个核心术语')).toBeInTheDocument()

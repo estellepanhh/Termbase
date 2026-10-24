@@ -96,9 +96,9 @@ export default function TopicsPage() {
           </div>
         ) : null}
         {topics?.length ? (
-          <div className="topics-grid">
-            {topics.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
-          </div>
+          <nav aria-label={language === 'zh' ? '文化专题图志' : 'Cultural topic atlas'} className="topics-grid topics-atlas">
+            {topics.map((topic, index) => <TopicCard index={index} key={topic.slug} topic={topic} />)}
+          </nav>
         ) : null}
       </section>
     </div>
