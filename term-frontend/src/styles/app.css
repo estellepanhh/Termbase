@@ -17,7 +17,7 @@
 .app-navigation__link:hover, .app-navigation__link[aria-current='page'] { color: var(--color-navy); background: color-mix(in srgb, var(--color-navy) 8%, transparent); }
 .app-navigation__link[aria-current='page'] { font-weight: 700; }
 .app-menu-button { display: none; }
-.app-main { flex: 1; padding-block: 2.5rem 4rem; }
+.app-main { flex: 1; padding-block: 2.5rem 4rem; outline: none; }
 .app-route-placeholder { max-width: 48rem; padding: clamp(1.5rem, 5vw, 3rem); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-soft); }
 .app-route-placeholder__eyebrow { color: var(--color-vermilion); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; }
 .app-route-placeholder h1 { color: var(--color-ink); font-family: Georgia, 'Songti SC', 'SimSun', serif; font-size: clamp(1.75rem, 4vw, 2.75rem); line-height: 1.2; margin: 0.75rem 0; }

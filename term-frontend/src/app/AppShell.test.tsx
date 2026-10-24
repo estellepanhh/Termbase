@@ -62,6 +62,8 @@ describe('research platform application shell', () => {
     renderRoute()
 
     expect(screen.getByRole('banner')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '跳至主要内容' })).toHaveAttribute('href', '#main-content')
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
     expect(screen.getByRole('main')).toHaveTextContent('术语探索')
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByText('中国特色话语多语术语库')).toBeInTheDocument()

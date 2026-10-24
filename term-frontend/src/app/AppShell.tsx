@@ -109,6 +109,7 @@ export default function AppShell() {
 
   return (
     <div className="app-shell" data-child-mode={isChildMode || undefined} data-large-text={isLargeTextMode || undefined}>
+      <a className="skip-link" href="#main-content">{isChinese ? '跳至主要内容' : 'Skip to main content'}</a>
       <header className="app-header">
         <div className="app-header__content">
           <NavLink aria-label={`${brandTitle} ${t('home')}`} className="app-brand" to="/">
@@ -174,7 +175,7 @@ export default function AppShell() {
         </nav>
       </Drawer>
 
-      <main className="app-main">
+      <main className="app-main" id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
 
