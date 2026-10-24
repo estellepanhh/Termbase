@@ -1,71 +1,118 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChatAI from './ChatAI'
 
-vi.mock('../services/authApi', () => ({
-  getAuthToken: vi.fn(() => 'user-token'),
+const auth = vi.hoisted(() => ({
+  status: 'authenticated' as 'authenticated' | 'unauthenticated',
+  token: 'user-token' as string | null,
+  user: { username: 'researcher', display_name: '研究员', role: 'user' },
+  isAdmin: false,
+  login: vi.fn(), register: vi.fn(), logout: vi.fn(),
 }))
 
+vi.mock('../context/useAuth', () => ({ useAuth: () => auth }))
+
+function streamResponse(chunks: string[]) {
+  const encoder = new TextEncoder()
+  return new Response(new ReadableStream({
+    start(controller) {
+      chunks.forEach((chunk) => controller.enqueue(encoder.encode(chunk)))
+      controller.close()
+    },
+  }), { status: 200 })
+}
+
+async function openChat() {
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+  return user
+}
+
 describe('ChatAI', () => {
+  beforeEach(() => {
+    auth.status = 'authenticated'
+    auth.token = 'user-token'
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('opens a plain chat popup without task chips', async () => {
-    const user = userEvent.setup()
+  it('opens an accessible modal with the digital researcher', async () => {
     render(<ChatAI />)
-
     const trigger = screen.getByRole('button', { name: '打开文脉 AI 助手' })
     expect(trigger).toContainElement(screen.getByRole('img', { name: '文脉数字研究员' }))
-
-    await user.click(trigger)
-
-    expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toBeInTheDocument()
-    expect(screen.getByText('你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '术语解释' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '换成儿童能懂的话' })).not.toBeInTheDocument()
+    await openChat()
+    expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toHaveAttribute('aria-modal', 'true')
+    expect(screen.getByText(/你好，我可以帮你解释术语/)).toBeInTheDocument()
   })
 
-  it('keeps a normal question composer', async () => {
-    const user = userEvent.setup()
+  it('shows a login path without sending a request when signed out', async () => {
+    auth.status = 'unauthenticated'
+    auth.token = null
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     render(<ChatAI />)
-
-    await user.click(screen.getByRole('button', { name: /文脉 AI/ }))
-    await user.type(screen.getByRole('textbox'), '你好')
-
-    expect(screen.getByRole('textbox')).toHaveValue('你好')
+    await openChat()
+    expect(screen.getByText('登录后可使用文脉 AI')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '前往登录' })).toHaveAttribute('href', '/login')
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('sends authenticated AI requests', async () => {
+  it('sends an authenticated request and reassembles split stream content', async () => {
     const user = userEvent.setup()
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode('data: {"content":"回答"}\n\ndata: [DONE]\n\n'))
-        controller.close()
-      },
-    })
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(stream, { status: 200 }))
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(streamResponse([
+      'data: {"cont', 'ent":"淮河"}\n\ndata: {"content":"文脉"}\n\ndata: [DONE]\n\n',
+    ]))
     render(<ChatAI />)
-
-    await user.click(screen.getByRole('button', { name: /文脉 AI/ }))
-    await user.type(screen.getByRole('textbox'), '解释淮河文化')
-    await user.click(screen.getByRole('button', { name: '发送问题' }))
-
-    expect(fetchSpy).toHaveBeenCalledWith('/api/chat/stream', expect.objectContaining({
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer user-token' },
-    }))
-  })
-
-  it('animates the digital researcher while a response is loading', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}))
-    render(<ChatAI />)
-
     await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
     await user.type(screen.getByRole('textbox'), '解释淮河文化')
     await user.click(screen.getByRole('button', { name: '发送问题' }))
+    expect(fetchSpy).toHaveBeenCalledWith('/api/chat/stream', expect.objectContaining({
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer user-token' },
+    }))
+    expect(await screen.findByText('淮河文脉')).toBeInTheDocument()
+  })
 
-    expect(await screen.findByRole('img', { name: '文脉数字研究员正在思考' })).toBeInTheDocument()
+  it.each([
+    [401, '登录状态已失效，请重新登录。'],
+    [429, '提问有点频繁，请稍后再试。'],
+    [503, 'AI 服务正在休息，请稍后再试。'],
+  ])('shows actionable feedback for HTTP %s without an empty assistant bubble', async (status, message) => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status }))
+    render(<ChatAI />)
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    await user.type(screen.getByRole('textbox'), '解释淮河')
+    await user.click(screen.getByRole('button', { name: '发送问题' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.getByRole('button', { name: '重新发送' })).toBeInTheDocument()
+  })
+
+  it('shows a backend stream error and keeps the question available for retry', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(streamResponse(['data: {"error":"AI 服务暂时不可用"}\n\n']))
+    render(<ChatAI />)
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    await user.type(screen.getByRole('textbox'), '解释淮河')
+    await user.click(screen.getByRole('button', { name: '发送问题' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('AI 服务暂时不可用')
+    expect(screen.getByRole('button', { name: '重新发送' })).toBeInTheDocument()
+  })
+
+  it('aborts an in-flight request when the dialog closes', async () => {
+    const user = userEvent.setup()
+    let requestSignal: AbortSignal | undefined
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => {
+      requestSignal = init?.signal ?? undefined
+      return new Promise(() => undefined)
+    })
+    render(<ChatAI />)
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    await user.type(screen.getByRole('textbox'), '解释淮河')
+    await user.click(screen.getByRole('button', { name: '发送问题' }))
+    await user.click(screen.getByRole('button', { name: '关闭文脉 AI 助手' }))
+    await waitFor(() => expect(requestSignal?.aborted).toBe(true))
   })
 })

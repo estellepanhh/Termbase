@@ -1,72 +1,101 @@
 import { useEffect, useRef, useState } from 'react'
-import { CloseOutlined, SendOutlined } from '@ant-design/icons'
-import { getAuthToken } from '../services/authApi'
+import { CloseOutlined, SendOutlined, StopOutlined } from '@ant-design/icons'
+import { useAuth } from '../context/useAuth'
 import ResearchAvatar from './ResearchAvatar'
+import { ChatServiceError, consumeChatStream } from './chat/streamParser'
 
-type ChatMessage = { role: 'assistant' | 'user'; content: string }
+type ChatMessage = { id: number; role: 'assistant' | 'user'; content: string }
+
+const welcomeMessage: ChatMessage = {
+  id: 1,
+  role: 'assistant',
+  content: '你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。',
+}
+
+function errorForStatus(status: number) {
+  if (status === 401 || status === 403) return new ChatServiceError('auth', '登录状态已失效，请重新登录。')
+  if (status === 429) return new ChatServiceError('rate-limit', '提问有点频繁，请稍后再试。')
+  return new ChatServiceError('server', 'AI 服务正在休息，请稍后再试。')
+}
+
+function publicError(error: unknown) {
+  if (error instanceof ChatServiceError) return error.message
+  return '网络连接暂时中断，请检查网络后重新尝试。'
+}
 
 export default function ChatAI() {
+  const auth = useAuth()
   const [visible, setVisible] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。' },
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [lastQuestion, setLastQuestion] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const nextMessageId = useRef(2)
 
   useEffect(() => {
     if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages])
+  }, [messages, error, loading])
 
-  const sendMessage = async () => {
-    if (!inputValue.trim()) return
-    const userMsg = inputValue
+  useEffect(() => () => abortRef.current?.abort(), [])
+
+  const closeDialog = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setLoading(false)
+    setVisible(false)
+  }
+
+  const stopResponse = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setLoading(false)
+  }
+
+  const sendMessage = async (question = inputValue) => {
+    const userMsg = question.trim()
+    if (!userMsg || auth.status !== 'authenticated' || !auth.token || loading) return
+
     setInputValue('')
-    setMessages((prev) => [...prev, { role: 'user', content: userMsg }])
+    setError('')
+    setLastQuestion(userMsg)
+    setMessages((previous) => [...previous, { id: nextMessageId.current++, role: 'user', content: userMsg }])
     setLoading(true)
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}) },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
         body: JSON.stringify({ message: userMsg }),
+        signal: controller.signal,
       })
-      if (!response.ok || !response.body) throw new Error('AI unavailable')
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let assistantMsg = ''
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6)
-            if (dataStr === '[DONE]') continue
-            try {
-              const data = JSON.parse(dataStr)
-              if (data.content) {
-                assistantMsg += data.content
-                setMessages((prev) => {
-                  const next = [...prev]
-                  next[next.length - 1].content = assistantMsg
-                  return next
-                })
-              } else if (data.error) {
-                throw new Error(data.error)
-              }
-            } catch {
-              // Ignore malformed stream chunks.
-            }
-          }
+      if (!response.ok) throw errorForStatus(response.status)
+      if (!response.body) throw new ChatServiceError('stream', 'AI 没有返回内容，请重新尝试。')
+
+      let assistantId: number | null = null
+      let assistantText = ''
+      await consumeChatStream(response.body.getReader(), (content) => {
+        assistantText += content
+        if (assistantId === null) {
+          assistantId = nextMessageId.current++
+          setMessages((previous) => [...previous, { id: assistantId as number, role: 'assistant', content: assistantText }])
+        } else {
+          const id = assistantId
+          setMessages((previous) => previous.map((message) => message.id === id ? { ...message, content: assistantText } : message))
         }
-      }
-    } catch {
-      setMessages((prev) => [...prev.filter((item) => item.content), { role: 'assistant', content: '连接暂时中断了，请稍后再试。' }])
+      }, controller.signal)
+      if (!assistantText) throw new ChatServiceError('stream', 'AI 没有返回内容，请重新尝试。')
+      setLastQuestion('')
+    } catch (caught) {
+      if ((caught as { name?: string })?.name !== 'AbortError') setError(publicError(caught))
     } finally {
+      if (abortRef.current === controller) abortRef.current = null
       setLoading(false)
     }
   }
@@ -76,43 +105,53 @@ export default function ChatAI() {
       {!visible ? (
         <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} type="button">
           <span className="culture-assistant__avatar"><ResearchAvatar /></span>
-          <span className="culture-assistant__trigger-copy">
-            <small>文脉 AI</small>
-            <strong>数字研究员</strong>
-          </span>
+          <span className="culture-assistant__trigger-copy"><small>文脉 AI</small><strong>数字研究员</strong></span>
         </button>
       ) : null}
+
       {visible ? (
-        <section aria-label="文脉 AI 助手" aria-modal="false" className="culture-assistant__panel" role="dialog">
-          <div className="culture-assistant__header">
-            <div className="culture-assistant__identity">
-              <ResearchAvatar />
-              <div className="culture-assistant__identity-copy">
-                <span>HUAIHE RESEARCHER</span>
-                <strong>文脉数字研究员</strong>
+        <div className="culture-assistant__backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialog() }}>
+          <section aria-label="文脉 AI 助手" aria-modal="true" className="culture-assistant__panel" role="dialog">
+            <div className="culture-assistant__header">
+              <div className="culture-assistant__identity">
+                <ResearchAvatar />
+                <div className="culture-assistant__identity-copy"><span>CULTURAL RESEARCH COMPANION</span><strong>文脉数字研究员</strong><small>从术语进入文化语境</small></div>
               </div>
+              <button aria-label="关闭文脉 AI 助手" onClick={closeDialog} type="button"><CloseOutlined /></button>
             </div>
-            <button aria-label="关闭文脉 AI 助手" onClick={() => setVisible(false)} type="button"><CloseOutlined /></button>
-          </div>
-          <div aria-live="polite" className="culture-assistant__messages">
-            {messages.map((msg, idx) => (
-              <p className={`culture-assistant__message culture-assistant__message--${msg.role}`} key={idx}>{msg.content}</p>
-            ))}
-            {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
-            <div ref={messagesEndRef} />
-          </div>
-          <div className="culture-assistant__composer">
-            <textarea
-              aria-label="输入给文脉 AI 的问题"
-              onChange={(event) => setInputValue(event.target.value)}
-              onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() } }}
-              placeholder="输入问题…"
-              rows={2}
-              value={inputValue}
-            />
-            <button aria-label="发送问题" disabled={loading || !inputValue.trim()} onClick={() => void sendMessage()} type="button"><SendOutlined /></button>
-          </div>
-        </section>
+
+            {auth.status !== 'authenticated' ? (
+              <div className="culture-assistant__login">
+                <ResearchAvatar />
+                <p>登录后可使用文脉 AI</p>
+                <span>登录后可继续提问、整理译法并获得文化语境提示。</span>
+                <a href="/login">前往登录</a>
+              </div>
+            ) : (
+              <>
+                <div aria-live="polite" className="culture-assistant__messages">
+                  {messages.map((message) => <p className={`culture-assistant__message culture-assistant__message--${message.role}`} key={message.id}>{message.content}</p>)}
+                  {error ? <div className="culture-assistant__error" role="alert"><span>{error}</span><button onClick={() => void sendMessage(lastQuestion)} type="button">重新发送</button></div> : null}
+                  {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
+                  <div ref={messagesEndRef} />
+                </div>
+                <div className="culture-assistant__composer">
+                  <textarea
+                    aria-label="输入给文脉 AI 的问题"
+                    onChange={(event) => setInputValue(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() } }}
+                    placeholder="输入术语或文化问题…"
+                    rows={2}
+                    value={inputValue}
+                  />
+                  {loading
+                    ? <button aria-label="停止生成" className="culture-assistant__stop" onClick={stopResponse} type="button"><StopOutlined /></button>
+                    : <button aria-label="发送问题" disabled={!inputValue.trim()} onClick={() => void sendMessage()} type="button"><SendOutlined /></button>}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
       ) : null}
     </div>
   )
