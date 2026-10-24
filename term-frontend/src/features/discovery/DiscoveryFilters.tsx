@@ -30,6 +30,11 @@ export default function DiscoveryFilters({ values, onSearch, onFilterChange }: D
     event.preventDefault()
     onSearch(query.trim())
   }
+  const activeFilters = [
+    values.level ? { key: 'level' as const, label: values.level } : null,
+    values.culture ? { key: 'culture' as const, label: values.culture } : null,
+    values.language ? { key: 'language' as const, label: languages.find((item) => item.code === values.language)?.label ?? values.language } : null,
+  ].filter((item): item is { key: 'level' | 'culture' | 'language'; label: string } => Boolean(item))
 
   return (
     <section aria-label="术语检索条件" className="discovery-filters">
@@ -70,6 +75,7 @@ export default function DiscoveryFilters({ values, onSearch, onFilterChange }: D
           </select>
         </label>
       </div>
+      {activeFilters.length ? <div aria-label="已选筛选条件" className="discovery-active-filters">{activeFilters.map((filter) => <button aria-label={`移除筛选：${filter.label}`} key={filter.key} onClick={() => onFilterChange(filter.key, '')} type="button">{filter.label}<span aria-hidden="true">×</span></button>)}</div> : null}
     </section>
   )
 }

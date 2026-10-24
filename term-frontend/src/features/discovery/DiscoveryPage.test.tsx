@@ -86,6 +86,9 @@ describe('DiscoveryPage', () => {
     expect(screen.getByText('3 个文化义项')).toBeInTheDocument()
     expect(screen.getByText('历史数据待复核')).toBeInTheDocument()
     expect(screen.queryByText('权威审定')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '移除筛选：本源层' }))
+    expect(screen.getByTestId('discovery-location')).toHaveTextContent('/discover?q=%E5%92%8C%E8%80%8C')
   })
 
   it('uses the child explanation in child mode without losing the term link', async () => {

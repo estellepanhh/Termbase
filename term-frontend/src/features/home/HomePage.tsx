@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import './home.css'
 
@@ -10,6 +11,13 @@ const entrances = [
 
 export default function HomePage() {
   const { isAdmin } = useAuth()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const normalized = query.trim()
+    navigate(normalized ? `/discover?q=${encodeURIComponent(normalized)}` : '/discover')
+  }
 
   return (
     <div className="home-page">
@@ -20,6 +28,10 @@ export default function HomePage() {
           <p className="home-hero__introduction">
             面向国际传播、外语教学与区域文化阐释，提供中国特色话语术语检索、文化说明、多语表达与共建审核的一体化平台。
           </p>
+          <form className="home-hero__search" onSubmit={submitSearch}>
+            <label htmlFor="home-term-search">检索术语</label>
+            <div><input id="home-term-search" onChange={(event) => setQuery(event.target.value)} placeholder="搜索术语、译名或文化概念" type="search" value={query} /><button type="submit">开始检索</button></div>
+          </form>
           <div className="home-hero__actions">
             <Link className="home-primary-link" to="/discover">进入术语检索</Link>
             <Link className="home-secondary-link" to="/co-construction">参与术语共建</Link>
@@ -36,9 +48,10 @@ export default function HomePage() {
       <section className="home-section" aria-labelledby="home-entry-title">
         <p className="home-eyebrow">PLATFORM ENTRANCES</p>
         <h2 id="home-entry-title">从这里开始使用术语库</h2>
-        <div className="home-capability-grid">
-          {entrances.map(([title, description, href, link]) => (
+        <nav aria-label="平台使用路径" className="home-capability-grid">
+          {entrances.map(([title, description, href, link], index) => (
             <article key={href}>
+              <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
               <h3>{title}</h3>
               <p>{description}</p>
               <Link to={href}>{link}</Link>
@@ -51,7 +64,7 @@ export default function HomePage() {
               <Link to="/manage">进入术语管理</Link>
             </article>
           ) : null}
-        </div>
+        </nav>
       </section>
 
       <section className="home-topic-preview" aria-labelledby="home-topic-title">

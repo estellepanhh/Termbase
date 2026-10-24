@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../../locales'
 import { AuthProvider } from '../../context/AuthContext'
@@ -9,10 +10,15 @@ function renderHome() {
   return render(
     <AuthProvider>
       <MemoryRouter>
-        <HomePage />
+        <HomePage /><LocationProbe />
       </MemoryRouter>
     </AuthProvider>,
   )
+}
+
+function LocationProbe() {
+  const location = useLocation()
+  return <output data-testid="home-location">{`${location.pathname}${location.search}`}</output>
 }
 
 describe('HomePage', () => {
@@ -25,12 +31,15 @@ describe('HomePage', () => {
     localStorage.clear()
   })
 
-  it('presents the simplified termbase homepage without unclear diagrams', () => {
+  it('presents an open editorial homepage with a direct term search', async () => {
+    const user = userEvent.setup()
     renderHome()
 
     expect(screen.getByRole('heading', { name: '中国特色话语多语术语库' })).toBeInTheDocument()
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
-    expect(screen.getByText('搜索术语：和而不同 / 淮河文化 / 文化强国')).toBeInTheDocument()
+    await user.type(screen.getByRole('searchbox', { name: '检索术语' }), '淮河文化')
+    await user.click(screen.getByRole('button', { name: '开始检索' }))
+    expect(screen.getByTestId('home-location')).toHaveTextContent('/discover?q=%E6%B7%AE%E6%B2%B3%E6%96%87%E5%8C%96')
+    expect(screen.getByRole('navigation', { name: '平台使用路径' })).toBeInTheDocument()
     expect(screen.queryByText('文脉知识工程')).not.toBeInTheDocument()
     expect(screen.getByText('淮河文化示范专题')).toBeInTheDocument()
   })
