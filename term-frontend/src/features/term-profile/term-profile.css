@@ -4,7 +4,7 @@
 .term-profile-hero__meta { color: var(--color-muted); display: flex; flex-wrap: wrap; font-size: 0.8125rem; gap: 0.5rem 1rem; }
 .term-profile-hero__warning { color: var(--color-vermilion); font-weight: 700; }
 .term-profile-hero h1, .term-profile-panel h2, .term-profile-panel h3, .term-profile-status h1 { color: var(--color-ink); font-family: Georgia, 'Songti SC', 'SimSun', serif; line-height: 1.2; }
-.term-profile-hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0; }
+.term-profile-hero h1 { font-size: clamp(2.35rem, 5vw, 3.9rem); margin: 0; }
 .term-profile-hero__definition { color: var(--color-navy); font-family: Georgia, 'Songti SC', 'SimSun', serif; font-size: clamp(1.125rem, 2vw, 1.4rem); line-height: 1.7; margin: 0; max-width: 48rem; }
 .term-profile-hero__names { color: var(--color-muted); margin: 0; }
 .term-profile-panel { display: grid; gap: 1.25rem; }
@@ -86,3 +86,16 @@
 .cultural-interpretations__body dt{color:var(--color-muted);font-size:.75rem}
 .cultural-interpretations__body dd{margin:0;color:var(--indigo-800);font-size:.75rem;font-weight:750}
 @media(max-width:520px){.cultural-interpretations__heading{align-items:start;flex-direction:column;gap:.75rem}.cultural-interpretations__heading>p{text-align:left}.cultural-interpretations__list>li{grid-template-columns:3rem minmax(0,1fr);gap:.7rem}.cultural-interpretations__index{font-size:2rem}.cultural-interpretations__body dl{gap:.45rem .9rem}}
+
+/* Open term dossier */
+.term-profile-hero{padding-top:clamp(2.5rem,6vw,5rem)}
+.term-profile-panel,.cultural-interpretations__list>li{border-color:var(--line-soft)}
+.translation-panel__list{grid-template-columns:1fr;border-color:var(--line-soft)}
+.translation-panel__item{display:grid;grid-template-columns:minmax(9rem,12rem) minmax(0,1fr);column-gap:1.5rem;padding:1.3rem 0;border:0;border-bottom:1px solid var(--line-soft);background:transparent}
+.translation-panel__language-line{display:flex;grid-column:1;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;gap:.35rem .7rem}
+.translation-panel__language{color:var(--color-navy);font-weight:800}.translation-panel__type{margin:0;color:var(--sand-600)}.translation-panel__review{padding:.14rem .5rem;border-radius:999px;background:var(--mist-100)}
+.translation-panel__text,.translation-panel__note{grid-column:2}.translation-panel__text{margin:0}.translation-panel__note{margin-top:.5rem}
+.term-profile-card-list{grid-template-columns:1fr;gap:0;border-top:1px solid var(--line-soft)}.term-profile-card{padding:1.35rem 0;border:0;border-bottom:1px solid var(--line-soft);background:transparent}.cultural-notes-panel .term-profile-card{background:transparent}
+.child-explanation-panel{border:0;border-radius:1.4rem;background:linear-gradient(120deg,#fff8d9,#edf5ed)}
+.term-profile-link-list li{border:0;border-bottom:1px solid var(--line-soft);background:transparent}
+@media(max-width:620px){.translation-panel__item{grid-template-columns:1fr;gap:.65rem}.translation-panel__language-line,.translation-panel__text,.translation-panel__note{grid-column:1}}

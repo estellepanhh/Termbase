@@ -1,20 +1,8 @@
 import type { TranslationDetail } from '../../types/knowledge'
+import { presentLanguage, presentReviewStatus, presentTranslationType } from './translationPresentation'
 
 type TranslationPanelProps = {
   translations: TranslationDetail[]
-}
-
-const translationTypeLabels: Record<string, string> = {
-  recommended: '推荐译法',
-  acceptable: '可用译法',
-  historical: '历史译法',
-  discouraged: '不建议使用',
-}
-
-function reviewStatusLabel(status: string) {
-  if (status === 'reviewed') return '已审校'
-  if (status === 'pending') return '待审核'
-  return status || '未标注审核状态'
 }
 
 function TranslationList({ translations, label }: { translations: TranslationDetail[]; label: string }) {
@@ -24,17 +12,20 @@ function TranslationList({ translations, label }: { translations: TranslationDet
     <div className="translation-panel__group">
       <h3>{label}</h3>
       <ul className="translation-panel__list">
-        {translations.map((translation) => (
-          <li className="translation-panel__item" key={`${translation.language_code}-${translation.text}`}>
-            <div className="translation-panel__item-header">
-              <span className="translation-panel__language">{translation.language_name_zh || translation.language_code}</span>
-              <span className="translation-panel__review">状态：{reviewStatusLabel(translation.review_status)}</span>
-            </div>
-            <p className="translation-panel__type">{translationTypeLabels[translation.translation_type] ?? '其他译法'}</p>
-            <p className="translation-panel__text">{translation.text}</p>
-            {translation.note ? <p className="translation-panel__note">{translation.note}</p> : null}
-          </li>
-        ))}
+        {translations.map((translation) => {
+          const reviewStatus = presentReviewStatus(translation.review_status)
+          return (
+            <li className="translation-panel__item" key={`${translation.language_code}-${translation.text}`}>
+              <div className="translation-panel__language-line">
+                <span className="translation-panel__language">{presentLanguage(translation.language_code, translation.language_name_zh)}</span>
+                <span className="translation-panel__type">{presentTranslationType(translation.translation_type)}</span>
+                {reviewStatus ? <span className="translation-panel__review">{reviewStatus}</span> : null}
+              </div>
+              <p className="translation-panel__text">{translation.text}</p>
+              {translation.note ? <p className="translation-panel__note">{translation.note}</p> : null}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

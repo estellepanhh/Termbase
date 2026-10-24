@@ -82,6 +82,17 @@ const profile: TermProfile = {
       note: '仅供研究语境参照。',
       contexts: [],
     },
+    {
+      language_code: 'und',
+      language_name_zh: '未指定语言',
+      text: "une harmonie qui respecte les différences",
+      translation_type: 'legacy',
+      authority_level: 'research',
+      review_status: 'unreviewed',
+      region: null,
+      note: '法语参考表达。',
+      contexts: [],
+    },
   ],
   sources: [{
     id: 1,
@@ -166,7 +177,11 @@ describe('TermProfilePage', () => {
     expect(screen.getByText('历史数据待复核')).toBeInTheDocument()
     expect(screen.getByText('harmony in diversity')).toBeInTheDocument()
     expect(screen.getByText('harmonious difference')).toBeInTheDocument()
-    expect(screen.getByText('状态：待审核')).toBeInTheDocument()
+    expect(screen.getAllByText('待校订')).toHaveLength(2)
+    expect(screen.getByText("une harmonie qui respecte les différences")).toBeInTheDocument()
+    expect(screen.getByText('其他语种')).toBeInTheDocument()
+    expect(screen.queryByText('unreviewed')).not.toBeInTheDocument()
+    expect(screen.queryByText('未指定语言')).not.toBeInTheDocument()
     expect(screen.queryByText('官方')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '来源与依据' })).toBeInTheDocument()
     expect(screen.getByText('论语')).toBeInTheDocument()
