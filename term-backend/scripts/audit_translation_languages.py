@@ -28,6 +28,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def print_report(rendered: str) -> None:
+    try:
+        print(rendered)
+    except UnicodeEncodeError:
+        sys.stdout.buffer.write((rendered + "\n").encode("utf-8"))
+
+
 def main() -> None:
     args = build_parser().parse_args()
 
@@ -40,7 +47,7 @@ def main() -> None:
                 report_file.write(rendered + "\n")
         if args.apply:
             db.session.commit()
-        print(rendered)
+        print_report(rendered)
 
 
 if __name__ == "__main__":
