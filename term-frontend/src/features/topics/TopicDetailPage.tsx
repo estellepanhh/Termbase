@@ -57,6 +57,16 @@ function bubbleEntries(items: TopicEntry[]) {
   return selected.slice(0, 7)
 }
 
+const bubbleLayouts = [
+  { left: '48%', delay: '-2s', duration: '13s', size: '5.5rem', staticTop: '20%' },
+  { left: '64%', delay: '-8s', duration: '15s', size: '6.5rem', staticTop: '38%' },
+  { left: '76%', delay: '-4s', duration: '12s', size: '4.75rem', staticTop: '17%' },
+  { left: '88%', delay: '-10s', duration: '16s', size: '5.75rem', staticTop: '48%' },
+  { left: '56%', delay: '-12s', duration: '17s', size: '5.125rem', staticTop: '58%' },
+  { left: '71%', delay: '-6s', duration: '14s', size: '6rem', staticTop: '68%' },
+  { left: '94%', delay: '-1s', duration: '13s', size: '4.5rem', staticTop: '25%' },
+] as const
+
 export default function TopicDetailPage() {
   const { slug = '' } = useParams()
   const { i18n } = useTranslation()
@@ -166,7 +176,21 @@ export default function TopicDetailPage() {
             </div>
           </div>
           <div aria-hidden="true" className="huaihe-hero__bubbles" data-testid="huaihe-bubble-field">
-            {bubbleEntries(filteredEntries).map((entry, index) => <span className={`huaihe-bubble huaihe-bubble--${entry.entry_type}`} key={entry.id} style={{ '--bubble-index': index } as CSSProperties}>{entry.title}</span>)}
+            {bubbleEntries(filteredEntries).map((entry, index) => {
+              const layout = bubbleLayouts[index]
+              return <span
+                className={`huaihe-bubble huaihe-bubble--${entry.entry_type}`}
+                data-testid="huaihe-bubble"
+                key={entry.id}
+                style={{
+                  '--bubble-size': layout.size,
+                  '--bubble-static-top': layout.staticTop,
+                  animationDelay: layout.delay,
+                  animationDuration: layout.duration,
+                  left: layout.left,
+                } as CSSProperties}
+              >{entry.title}</span>
+            })}
           </div>
           <div aria-hidden="true" className="huaihe-hero__river" data-testid="huaihe-river" />
         </section>
