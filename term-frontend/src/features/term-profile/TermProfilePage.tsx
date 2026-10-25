@@ -7,7 +7,6 @@ import TranslationPanel from './TranslationPanel'
 import './term-profile.css'
 import { useChildMode } from '../../context/ChildModeContext'
 import ProfileSectionNav from './ProfileSectionNav'
-import KnowledgeGlyph from '../../components/KnowledgeGlyph'
 import CulturalInterpretations from './CulturalInterpretations'
 
 type LoadStatus = 'loading' | 'ready' | 'error' | 'not-found'
@@ -162,30 +161,37 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
   return (
     <article className="term-profile-content">
       <header className="term-profile-hero">
-        <span className="term-profile-hero__glyph"><KnowledgeGlyph kind="term" /></span>
+        <p className="term-profile-hero__eyebrow">TERM DOSSIER · {String(profile.id).padStart(3, '0')}</p>
+        <h1>{profile.preferred_name_zh}</h1>
+        <p className="term-profile-hero__definition">{profile.definition_zh}</p>
         <div className="term-profile-hero__meta">
           <span>{profile.term_level}</span>
           <span>{profile.culture_category}</span>
+          <span>{profile.language_count} 种语言</span>
+          <span>{interpretations.length} 条文化解读</span>
           {profile.data_quality === 'legacy_unreviewed' ? <span className="term-profile-hero__warning">历史数据待复核</span> : null}
         </div>
-        <h1>{profile.preferred_name_zh}</h1>
-        <p className="term-profile-hero__definition">{profile.definition_zh}</p>
         {profile.names.length ? <p className="term-profile-hero__names">异名：{profile.names.map((name) => name.name).join('、')}</p> : null}
+        <svg aria-hidden="true" className="term-profile-hero__motif" data-testid="term-hero-motif" viewBox="0 0 260 120">
+          <path d="M8 76C44 22 78 105 118 54s75 38 134-28" />
+          <path d="M22 103C70 49 112 126 170 65c24-25 45-26 76-13" />
+          <circle cx="9" cy="76" r="5" /><circle cx="75" cy="65" r="4" /><circle cx="118" cy="54" r="6" /><circle cx="184" cy="59" r="4" /><circle cx="252" cy="26" r="6" />
+        </svg>
       </header>
-      <ProfileSectionNav sections={sections} />
-
-      {isChildMode ? <section aria-labelledby="child-explanation-title" className="child-explanation-panel">
-        <span aria-hidden="true"><KnowledgeGlyph kind="child" /></span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
-      </section> : null}
-
-      <TranslationPanel translations={profile.translations} />
-
-      <CulturalInterpretations interpretations={interpretations} />
-
-      <ContextPanel profile={profile} />
-      <CulturalNotesPanel profile={profile} />
-      <EvidencePanel sources={profile.sources} />
-      <ConnectionsPanel profile={profile} />
+      <div className="term-profile-layout">
+        <ProfileSectionNav sections={sections} />
+        <div className="term-profile-sections">
+          {isChildMode ? <section aria-labelledby="child-explanation-title" className="child-explanation-panel">
+            <span aria-hidden="true">✦</span><div><p>CHILD-FRIENDLY EXPLANATION</p><h2 id="child-explanation-title">给小朋友的话</h2><p>{childContext?.explanation || profile.definition_zh}</p></div>
+          </section> : null}
+          <TranslationPanel translations={profile.translations} />
+          <CulturalInterpretations interpretations={interpretations} />
+          <ContextPanel profile={profile} />
+          <CulturalNotesPanel profile={profile} />
+          <EvidencePanel sources={profile.sources} />
+          <ConnectionsPanel profile={profile} />
+        </div>
+      </div>
     </article>
   )
 }

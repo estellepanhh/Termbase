@@ -210,6 +210,19 @@ describe('TermProfilePage', () => {
     expect(screen.getByRole('link', { name: '文明交流互鉴' })).toHaveAttribute('href', '/topics/civilization-dialogue')
   })
 
+  it('renders the confirmed dossier hero and translation reading flow', async () => {
+    renderProfile()
+
+    expect(await screen.findByRole('heading', { name: '和而不同' })).toBeInTheDocument()
+    expect(screen.getByText('TERM DOSSIER · 001')).toBeInTheDocument()
+    expect(screen.getByText('1 种语言')).toBeInTheDocument()
+    expect(screen.getByText('3 条文化解读')).toBeInTheDocument()
+    expect(screen.getByText('汇集不同语种的规范译法、使用依据与校订线索，便于在具体语境中选择合适表达。')).toBeInTheDocument()
+    const translationFlow = screen.getByRole('list', { name: '多语译法阅读流' })
+    expect(within(translationFlow).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByTestId('term-hero-motif')).toBeInTheDocument()
+  })
+
   it('puts the child explanation first when child mode is saved', async () => {
     localStorage.setItem('termbase-reading-preferences', JSON.stringify({ childMode: true, largeTextMode: false }))
     renderProfile()
