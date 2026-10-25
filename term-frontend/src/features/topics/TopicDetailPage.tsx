@@ -5,7 +5,7 @@ import PageIntro from '../../components/editorial/PageIntro'
 import { useChildMode } from '../../context/ChildModeContext'
 import { getTopic } from '../../services/knowledgeApi'
 import type { PublicTopicDetail, TopicEntry } from '../../types/knowledge'
-import { labelForEntryType } from './topicPresentation'
+import { entrySearchText, labelForEntryType } from './topicPresentation'
 import CulturalKnowledgeMap from './CulturalKnowledgeMap'
 import TopicEntrySection from './TopicEntrySection'
 import './topics.css'
@@ -45,25 +45,12 @@ function groupEntries(items: TopicEntry[]) {
   })
 }
 
-function entrySearchText(item: TopicEntry) {
-  const fieldText = Object.entries(item.fields ?? {}).flatMap(([key, value]) => [key, String(value)]).join(' ')
-  const termText = item.term
-    ? [
-      item.term.preferred_name_zh,
-      item.term.definition_zh,
-      item.term.term_level,
-      item.term.culture_category,
-      item.term.recommended_translation,
-    ].filter(Boolean).join(' ')
-    : ''
-  return `${item.title} ${item.entry_type} ${fieldText} ${termText}`.toLowerCase()
-}
-
 export default function TopicDetailPage() {
   const { slug = '' } = useParams()
   const { i18n } = useTranslation()
   const language = (i18n.resolvedLanguage ?? i18n.language).startsWith('zh') ? 'zh' : 'en'
   const copy = detailLabels[language]
+  const isHuaihe = slug === 'huaihe-culture'
   const { isChildMode } = useChildMode()
   const [retryKey, setRetryKey] = useState(0)
   const [topicSearch, setTopicSearch] = useState('')
@@ -108,6 +95,15 @@ export default function TopicDetailPage() {
   const itemLabel = language === 'en' && topic ? `topic ${topic.item_count === 1 ? 'record' : 'records'}` : copy.items
   const termLabel = language === 'en' && topic ? `core ${topic.term_count === 1 ? 'term' : 'terms'}` : copy.terms
   const typeLabel = language === 'en' ? `material ${materialTypeCount === 1 ? 'type' : 'types'}` : copy.types
+  const topicTitle = isHuaihe
+    ? (language === 'zh' ? '淮河文脉' : 'Huaihe Cultural Threads')
+    : topic?.title
+  const topicEyebrow = isHuaihe
+    ? (language === 'zh' ? '淮河文化专题' : 'HUAIHE CULTURAL TOPIC')
+    : 'CULTURAL RESEARCH DOSSIER'
+  const topicDescription = isHuaihe
+    ? (language === 'zh' ? '沿水而生的词语、人物与地方记忆' : 'Words, people, and local memories born along the water.')
+    : (topic?.summary || copy.missingSummary)
 
   if (status === 'loading') {
     return <div aria-busy="true" className="topic-detail"><p className="topics-status">{copy.loading}</p></div>
@@ -137,12 +133,12 @@ export default function TopicDetailPage() {
   }
 
   return (
-    <div className="topic-detail">
+    <div className={`topic-detail${isHuaihe ? ' topic-detail--huaihe' : ''}`}>
       <Link className="topic-detail__back" to="/topics">← {copy.back}</Link>
       <PageIntro
-        eyebrow="CULTURAL RESEARCH DOSSIER"
-        title={topic.title}
-        description={topic.summary || copy.missingSummary}
+        eyebrow={topicEyebrow}
+        title={topicTitle ?? topic.title}
+        description={topicDescription}
       />
 
       <section aria-label={copy.overview} className="topics-overview topic-detail__overview">

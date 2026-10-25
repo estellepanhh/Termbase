@@ -126,7 +126,7 @@ describe('research platform application shell', () => {
   it('renders topic detail through the application route tree', async () => {
     renderRoute('/topics/huaihe-culture')
 
-    expect(await screen.findByRole('heading', { name: '淮河文化', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '淮河文脉', level: 1 })).toBeInTheDocument()
     expect(getTopic).toHaveBeenCalledWith('huaihe-culture')
   })
 

@@ -193,3 +193,209 @@
 .culture-map__node>span .knowledge-glyph{width:1.28rem;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 @media(max-width:760px){.culture-map__river .culture-map__riverbed{stroke-width:82}.culture-map__river .culture-map__water{stroke-width:60}.culture-map__places span{font-size:.64rem;padding:.25rem .4rem}}
 @media(prefers-reduced-motion:reduce){.culture-map__river .culture-map__current{animation:none}.culture-map__node{animation:none}}
+
+/* Huaihe atlas: one continuous landscape instead of stacked panels. */
+.topic-detail--huaihe {
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.topic-detail--huaihe::before {
+  height: 48rem;
+  background:
+    radial-gradient(circle at 82% 12%, rgba(255, 223, 181, .42), transparent 24%),
+    radial-gradient(circle at 18% 28%, rgba(174, 218, 207, .42), transparent 30%),
+    linear-gradient(155deg, #fbf7ed 5%, #edf6f2 54%, #edf5f6 100%);
+}
+
+.topic-detail--huaihe > .page-intro {
+  min-height: 17rem;
+  padding: clamp(2rem, 6vw, 4.5rem);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.topic-detail--huaihe > .page-intro::after {
+  right: clamp(1rem, 7vw, 7rem);
+  width: clamp(7rem, 17vw, 12rem);
+  border-color: rgba(67, 137, 133, .18);
+  color: rgba(49, 116, 116, .12);
+  box-shadow: 0 0 0 1.2rem rgba(126, 187, 177, .08), 0 0 0 2.5rem rgba(126, 187, 177, .04);
+  font-size: clamp(4rem, 9vw, 7rem);
+}
+
+.topic-detail--huaihe > .page-intro h1 {
+  font-size: clamp(2.65rem, 6vw, 5.25rem);
+  letter-spacing: -.045em;
+}
+
+.topic-detail--huaihe .topic-detail__overview {
+  margin-top: -2rem;
+  background: transparent;
+}
+
+.topic-detail--huaihe .topic-detail__search {
+  position: relative;
+  z-index: 2;
+  width: min(46rem, 100%);
+  margin: 0 auto -4.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.topic-detail--huaihe .topic-detail__search label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.topic-detail--huaihe .topic-detail__search div {
+  padding: .42rem;
+  border: 1px solid rgba(52, 112, 112, .14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 18px 50px rgba(41, 103, 105, .12);
+  backdrop-filter: blur(16px);
+}
+
+.topic-detail--huaihe .topic-detail__search input {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding-inline: 1.15rem;
+}
+
+.topic-detail--huaihe .topic-detail__search button {
+  border: 0;
+  border-radius: 999px;
+  background: #3d8584;
+  color: white;
+  padding-inline: 1.2rem;
+}
+
+.topic-detail--huaihe .topic-detail__search p {
+  padding: .45rem 1.2rem 0;
+}
+
+.topic-detail--huaihe .culture-map {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: max(1rem, calc(50vw - var(--content-width) / 2));
+  overflow: hidden;
+  border: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 231, 192, .48), transparent 24%),
+    linear-gradient(180deg, #edf6f2 0%, #e7f3f1 54%, #dbeeee 100%);
+  color: var(--indigo-800);
+  box-shadow: none;
+}
+
+.topic-detail--huaihe .culture-map__heading {
+  padding: clamp(5.5rem, 9vw, 7rem) 0 1.25rem;
+  border: 0;
+}
+
+.topic-detail--huaihe .culture-map__heading span { color: #b1664d; }
+.topic-detail--huaihe .culture-map__heading h2 {
+  color: var(--indigo-800);
+  font-size: clamp(1.8rem, 3.8vw, 3.2rem);
+}
+.topic-detail--huaihe .culture-map__heading p { color: #557573; }
+
+.topic-detail--huaihe .culture-map__canvas {
+  min-height: clamp(30rem, 50vw, 40rem);
+  margin-inline: min(-1rem, calc(var(--content-width) / 2 - 50vw));
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255,255,255,.72), transparent 18%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(115,190,192,.18));
+}
+
+.topic-detail--huaihe .culture-map__canvas::before {
+  opacity: .24;
+  background-image: radial-gradient(rgba(40, 108, 108, .36) .65px, transparent .65px);
+}
+
+.topic-detail--huaihe .culture-map__river {
+  filter: drop-shadow(0 18px 30px rgba(65, 137, 139, .18));
+}
+.topic-detail--huaihe .culture-map__river .culture-map__riverbed {
+  stroke: rgba(116, 181, 181, .2);
+  stroke-width: 118;
+}
+.topic-detail--huaihe .culture-map__river .culture-map__water { stroke-width: 92; }
+.topic-detail--huaihe .culture-map__river .culture-map__current {
+  stroke: rgba(255, 255, 255, .76);
+  stroke-width: 5;
+}
+
+.topic-detail--huaihe .culture-map__hub {
+  width: clamp(8.5rem, 16vw, 11.5rem);
+  border-color: rgba(61, 133, 132, .2);
+  background: radial-gradient(circle, rgba(255,255,255,.9) 0 56%, rgba(191,222,216,.74) 57%);
+  box-shadow: 0 0 0 1rem rgba(255,255,255,.24), 0 18px 45px rgba(48, 111, 111, .14);
+}
+.topic-detail--huaihe .culture-map__hub span { color: #a35d47; }
+.topic-detail--huaihe .culture-map__hub strong { color: #215f61; }
+.topic-detail--huaihe .culture-map__hub small { color: #648d88; }
+
+.topic-detail--huaihe .culture-map__node {
+  display: grid;
+  grid-template-columns: 2.3rem auto;
+  min-width: 8.5rem;
+  border-color: rgba(50, 119, 118, .12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.68);
+  color: #174f54;
+  box-shadow: 0 14px 36px rgba(53, 117, 118, .13), inset 0 1px rgba(255,255,255,.82);
+}
+.topic-detail--huaihe .culture-map__node small { color: #64817f; }
+.topic-detail--huaihe .culture-map__node:hover,
+.topic-detail--huaihe .culture-map__node:focus-visible {
+  border-color: color-mix(in srgb, var(--node-color) 64%, #397d7b);
+  box-shadow: 0 20px 45px rgba(53,117,118,.2);
+}
+
+.topic-detail--huaihe .culture-map__places span {
+  color: #315f61;
+  background: rgba(248, 253, 250, .72);
+  border-color: rgba(54, 122, 120, .12);
+  box-shadow: 0 8px 20px rgba(63, 130, 130, .1);
+}
+.topic-detail--huaihe .culture-map__places i { background: #ca8465; }
+.topic-detail--huaihe .culture-map__more {
+  border: 0;
+  color: #557573;
+}
+
+.topic-detail--huaihe .topic-detail__nav {
+  border: 0;
+  border-bottom: 1px solid rgba(39, 95, 96, .15);
+  background: color-mix(in srgb, var(--paper-50) 82%, transparent);
+}
+
+.topic-detail--huaihe .topic-entry-grid { gap: 0; }
+.topic-detail--huaihe .topic-entry {
+  padding: 1.5rem clamp(.2rem, 2vw, 1.5rem) 1.8rem;
+  border: 0;
+  border-bottom: 1px solid rgba(38, 91, 91, .15);
+  background: transparent;
+}
+.topic-detail--huaihe .topic-entry:nth-child(odd) { padding-left: 0; padding-right: clamp(1rem, 4vw, 3rem); }
+.topic-detail--huaihe .topic-entry:nth-child(even) { padding-right: 0; padding-left: clamp(1rem, 4vw, 3rem); }
+.topic-detail--huaihe .topic-entry::after { display: none; }
+.topic-detail--huaihe .topic-entry:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .topic-detail--huaihe > .page-intro { min-height: 15rem; }
+  .topic-detail--huaihe .topic-detail__search { margin-bottom: -3.5rem; }
+  .topic-detail--huaihe .culture-map { margin-inline: -.625rem; padding-inline: .625rem; }
+  .topic-detail--huaihe .culture-map__heading { padding-top: 5rem; }
+  .topic-detail--huaihe .topic-entry:nth-child(n) { padding-inline: 0; }
+}

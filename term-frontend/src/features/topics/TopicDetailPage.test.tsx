@@ -80,7 +80,9 @@ describe('TopicDetailPage', () => {
   it('groups topic entries and links core terms to their profiles', async () => {
     renderTopic()
 
-    expect(await screen.findByRole('heading', { name: '淮河文化', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '淮河文脉', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('沿水而生的词语、人物与地方记忆')).toBeInTheDocument()
+    expect(screen.getByText('淮河文化专题')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看术语档案：淮河文化' })).toHaveAttribute('href', '/terms/8')
     expect(screen.getByRole('heading', { name: '核心术语' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '文化人物' })).toBeInTheDocument()
@@ -101,19 +103,23 @@ describe('TopicDetailPage', () => {
     const user = userEvent.setup()
     renderTopic()
 
-    await screen.findByRole('heading', { name: '淮河文化', level: 1 })
+    await screen.findByRole('heading', { name: '淮河文脉', level: 1 })
     await user.type(screen.getByRole('searchbox', { name: '检索淮河文化专区' }), '金银花')
 
     expect(screen.getByRole('heading', { name: '金银花' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '管仲' })).not.toBeInTheDocument()
     expect(screen.getByText('已筛选出 1 条专题内容')).toBeInTheDocument()
+
+    await user.clear(screen.getByRole('searchbox', { name: '检索淮河文化专区' }))
+    await user.type(screen.getByRole('searchbox', { name: '检索淮河文化专区' }), 'honeysuckle')
+    expect(screen.getByRole('heading', { name: '金银花' })).toBeInTheDocument()
   })
 
   it('shows an empty topic without hiding its research context', async () => {
     getTopic.mockResolvedValue({ ...topic, item_count: 0, term_count: 0, entry_type_counts: {}, items: [] })
     renderTopic()
 
-    expect(await screen.findByRole('heading', { name: '淮河文化', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '淮河文脉', level: 1 })).toBeInTheDocument()
     expect(screen.getByText('该专题目前没有可公开展示的条目。')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '返回文化专题' })).toHaveAttribute('href', '/topics')
   })
@@ -125,7 +131,7 @@ describe('TopicDetailPage', () => {
 
     await user.click(await screen.findByRole('button', { name: '重新加载专题' }))
 
-    expect(await screen.findByRole('heading', { name: '淮河文化', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '淮河文脉', level: 1 })).toBeInTheDocument()
     expect(getTopic).toHaveBeenCalledTimes(2)
   })
 
@@ -145,7 +151,7 @@ describe('TopicDetailPage', () => {
     expect(await screen.findByText('先认识这些词')).toBeInTheDocument()
     expect(screen.getByText('再看看相关人物和事物')).toBeInTheDocument()
     expect(screen.getAllByText('儿童探索路线')).toHaveLength(2)
-    expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
+    expect(screen.getByText('沿水而生的词语、人物与地方记忆')).toBeInTheDocument()
   })
 
   it('switches topic interface labels to English without translating stored data', async () => {
@@ -157,7 +163,7 @@ describe('TopicDetailPage', () => {
     expect(screen.getByRole('navigation', { name: 'Topic contents' })).toBeInTheDocument()
     expect(screen.getByText('core term')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View term record: 淮河文化' })).toHaveAttribute('href', '/terms/8')
-    expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
+    expect(screen.getByText('Words, people, and local memories born along the water.')).toBeInTheDocument()
   })
 
   it('keeps different material types visible when the topic has many terms', async () => {

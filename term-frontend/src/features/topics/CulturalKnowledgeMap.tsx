@@ -64,12 +64,12 @@ export default function CulturalKnowledgeMap({
         <svg aria-label={language === 'zh' ? '淮河流域文化路线' : 'Huaihe cultural route'} className="culture-map__river" preserveAspectRatio="none" role="img" viewBox="0 0 1000 520">
           <defs>
             <linearGradient id="huaihe-water" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stopColor="#3a7f86" />
-              <stop offset=".45" stopColor="#66a6a2" />
-              <stop offset="1" stopColor="#397988" />
+              <stop offset="0" stopColor="#b8dcda" />
+              <stop offset=".45" stopColor="#82c5c7" />
+              <stop offset="1" stopColor="#aed8cf" />
             </linearGradient>
             <filter id="huaihe-depth" x="-10%" y="-40%" width="120%" height="180%">
-              <feDropShadow dx="0" dy="10" floodColor="#071f27" floodOpacity=".3" stdDeviation="12" />
+              <feDropShadow dx="0" dy="12" floodColor="#4b8e91" floodOpacity=".18" stdDeviation="16" />
             </filter>
           </defs>
           <path className="culture-map__riverbed" d="M-45 320 C130 218 250 382 418 286 S710 205 1045 315" />
