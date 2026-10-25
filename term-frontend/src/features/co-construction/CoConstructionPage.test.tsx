@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -72,6 +72,11 @@ describe('CoConstructionPage', () => {
     }))
     const user = userEvent.setup()
     renderRoute()
+
+    const process = screen.getByRole('navigation', { name: '术语共建流程' })
+    expect(within(process).getByText('提交资料')).toBeInTheDocument()
+    expect(within(process).getByText('专业审核')).toBeInTheDocument()
+    expect(within(process).getByText('进入术语库')).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('术语名称'), '天下为公')
     await user.type(screen.getByLabelText('定义说明'), '公共价值')

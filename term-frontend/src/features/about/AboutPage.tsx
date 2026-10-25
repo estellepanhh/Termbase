@@ -73,10 +73,7 @@ export default function AboutPage() {
       </section>
 
       <ResearchWorkflow copy={copy} />
-      <OutcomeOverview copy={copy} onRetry={() => void retryOverview()} overview={overview} status={status} />
-      <PlatformCapabilities copy={copy} />
-
-      <section className="about-section" aria-labelledby="about-innovation-title">
+      <section className="about-section about-innovation-section" aria-labelledby="about-innovation-title">
         <div className="about-section__heading">
           <p className="about-eyebrow">{copy.innovationEyebrow}</p>
           <h2 id="about-innovation-title">{copy.innovationTitle}</h2>
@@ -96,6 +93,9 @@ export default function AboutPage() {
           <article><h3>{copy.ongoingTitle}</h3><ul>{copy.ongoingItems.map((item) => <li key={item}>{item}</li>)}</ul></article>
         </div>
       </section>
+
+      <OutcomeOverview copy={copy} onRetry={() => void retryOverview()} overview={overview} status={status} />
+      <PlatformCapabilities copy={copy} />
 
       <section className="about-project-note" aria-labelledby="about-project-title">
         <p className="about-eyebrow">{copy.projectEyebrow}</p>

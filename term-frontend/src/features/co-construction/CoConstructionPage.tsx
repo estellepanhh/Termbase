@@ -75,6 +75,14 @@ export default function CoConstructionPage() {
         <span>提交新的中国特色话语术语资料，由管理员审核后进入正式术语库。</span>
       </header>
 
+      <nav aria-label="术语共建流程" className="co-construction-process">
+        <ol>
+          <li><span>01</span><strong>提交资料</strong><small>补充术语、译法与来源依据</small></li>
+          <li><span>02</span><strong>专业审核</strong><small>核对定义、语境与表达规范</small></li>
+          <li><span>03</span><strong>进入术语库</strong><small>审核通过后形成公开术语档案</small></li>
+        </ol>
+      </nav>
+
       <div className="co-construction-layout">
         <form className="co-construction-form" onSubmit={(event) => void submit(event)}>
           <h2>提交共建术语</h2>

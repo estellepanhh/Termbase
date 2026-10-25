@@ -1,11 +1,11 @@
 .about-page { display: grid; gap: clamp(3rem, 8vw, 7rem); }
 .about-eyebrow { margin: 0 0 .8rem; color: var(--vermilion-600); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
-.about-hero { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(1.2rem, 4vw, 3.5rem); min-height: min(38rem, 72vh); align-items: center; padding: clamp(2.5rem, 7vw, 6rem) clamp(1.25rem, 5vw, 4.5rem); overflow: hidden; background: var(--indigo-800); color: var(--paper-50); }
+.about-hero { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(1.2rem, 4vw, 3.5rem); min-height: min(32rem, 64vh); align-items: center; padding: clamp(2.5rem, 7vw, 6rem) clamp(1.25rem, 5vw, 4.5rem); overflow: hidden; background: radial-gradient(circle at 82% 22%,rgba(153,202,190,.28),transparent 29%),linear-gradient(135deg,#214e55,#386f72); color: var(--paper-50); }
 .about-hero::after { position: absolute; right: -8rem; bottom: -12rem; width: 28rem; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; content: ''; }
 .about-hero__stamp { display: grid; place-items: center; width: 4.5rem; height: 6rem; border: 1px solid rgba(255,255,255,.5); color: var(--paper-50); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.45rem; line-height: 1.5; text-align: center; }
 .about-hero__content { position: relative; z-index: 1; min-width: 0; max-width: 58rem; }
 .about-hero .about-eyebrow { color: #e2b7a8; }
-.about-hero h1 { max-width: 17ch; margin: 0; overflow-wrap: anywhere; font: 600 clamp(2.5rem, 6vw, 5.6rem)/1.08 Georgia, 'Noto Serif SC', 'Songti SC', serif; letter-spacing: -.035em; }
+.about-hero h1 { max-width: 19ch; margin: 0; overflow-wrap: anywhere; font: 600 clamp(2.3rem, 5vw, 4.7rem)/1.1 Georgia, 'Noto Serif SC', 'Songti SC', serif; letter-spacing: -.035em; }
 .about-hero__description { max-width: 48rem; margin: 1.5rem 0 2rem; overflow-wrap: anywhere; color: #dbe5e2; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.9; }
 .about-primary-link { display: inline-flex; gap: .7rem; align-items: center; padding: .8rem 1.1rem; color: var(--indigo-800); background: var(--paper-50); font-weight: 800; text-decoration: none; }
 .about-primary-link:focus-visible { outline: 3px solid #e2b7a8; outline-offset: 4px; }
@@ -17,14 +17,14 @@
 .about-origin { grid-template-columns: minmax(14rem, .7fr) minmax(0, 1fr); align-items: start; }
 .about-origin__text { max-width: 46rem; padding-left: clamp(1rem, 4vw, 3rem); border-left: 1px solid var(--color-border); }
 .about-origin__text p { margin: 0 0 1.1rem; color: var(--ink-700); font-size: 1.05rem; line-height: 1.9; }
-.about-workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; border-block: 1px solid var(--color-border); }
+.about-workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; border-block: 1px solid var(--color-border); background:linear-gradient(90deg,transparent,rgba(204,225,216,.22),transparent); }
 .about-workflow li { position: relative; min-width: 0; padding: 1.5rem 1.1rem 1.8rem; }
 .about-workflow li + li { border-left: 1px solid var(--color-border); }
 .about-workflow li + li::before { position: absolute; top: 2rem; left: -.45rem; padding: 0 .1rem; color: var(--vermilion-600); background: var(--paper-50); content: '›'; font-size: 1.2rem; }
 .about-workflow span, .about-capabilities article > span { color: var(--vermilion-600); font-family: Georgia, serif; font-size: .8rem; }
 .about-workflow h3, .about-capabilities h3, .about-innovations h3, .about-progress h3 { margin: .8rem 0 .6rem; color: var(--indigo-800); font: 600 1.22rem/1.35 Georgia, 'Noto Serif SC', serif; }
 .about-workflow p, .about-capabilities p, .about-innovations p { margin: 0; color: var(--ink-700); line-height: 1.75; }
-.about-outcomes { padding: clamp(2rem, 5vw, 4rem); background: var(--paper-100); }
+.about-outcomes { margin-inline:calc(50% - 50vw); padding:clamp(2rem,5vw,4rem) max(1rem,calc(50vw - var(--content-width) / 2)); background: linear-gradient(100deg,#f4efe3,#edf4ef 48%,#eef5f5); }
 .about-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--color-border); }
 .about-metrics div { display: flex; min-width: 0; flex-direction: column; padding: 1.5rem clamp(.75rem, 2vw, 1.5rem); }
 .about-metrics div + div { border-left: 1px solid var(--color-border); }
@@ -33,19 +33,20 @@
 .about-status { padding: 1.5rem; color: var(--ink-700); background: var(--color-surface); border: 1px dashed var(--color-border); }
 .about-status button { padding: .7rem 1rem; color: white; background: var(--indigo-800); border: 0; cursor: pointer; font-weight: 750; }
 .about-status button:disabled { cursor: wait; opacity: .65; }
-.about-capabilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--color-border); border: 1px solid var(--color-border); }
-.about-capabilities article { position: relative; display: grid; gap: .4rem; min-height: 14rem; align-content: start; padding: clamp(1.4rem, 4vw, 2.5rem); background: var(--color-surface); }
+.about-capabilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:clamp(1.5rem,4vw,4rem); background:transparent; border-block:1px solid var(--color-border); }
+.about-capabilities article { position: relative; display: grid; gap: .4rem; min-height: 12rem; align-content: start; padding: clamp(1.4rem, 4vw, 2.5rem) 0; background:transparent; }
+.about-capabilities article:nth-child(even){padding-left:clamp(1rem,3vw,3rem);border-left:1px solid var(--color-border)}
 .about-capabilities a { width: fit-content; margin-top: auto; color: var(--indigo-800); font-weight: 800; text-underline-offset: .25em; }
 .about-capabilities a::after { position: absolute; inset: 0; content: ''; }
 .about-capabilities article:focus-within { outline: 3px solid color-mix(in srgb, var(--vermilion-600) 45%, transparent); outline-offset: -5px; }
 .about-innovations { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .about-innovations article { padding: 1.4rem 0 1.4rem 1.2rem; border-left: 3px solid var(--vermilion-600); }
 .about-progress { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.about-progress article { padding: clamp(1.3rem, 3vw, 2rem); background: var(--color-surface); border: 1px solid var(--color-border); }
-.about-progress article:first-child { border-top: 4px solid var(--jade-600); }
-.about-progress article:last-child { border-top: 4px solid var(--vermilion-600); }
+.about-progress article { padding: clamp(1.3rem, 3vw, 2rem) 0; background:transparent; border-top:1px solid var(--color-border); }
+.about-progress article:first-child { border-top-color:var(--jade-600); }
+.about-progress article:last-child { border-top-color:var(--vermilion-600); }
 .about-progress ul { display: grid; gap: .75rem; margin: 1rem 0 0; padding-left: 1.2rem; color: var(--ink-700); line-height: 1.6; }
-.about-project-note { max-width: 58rem; padding: clamp(2rem, 6vw, 4.5rem); background: var(--indigo-800); color: var(--paper-50); }
+.about-project-note { max-width:none; margin-inline:calc(50% - 50vw); padding:clamp(2rem,6vw,4.5rem) max(1rem,calc(50vw - var(--content-width) / 2)); background:linear-gradient(115deg,#214d54,#39726f); color: var(--paper-50); }
 .about-project-note .about-eyebrow { color: #e2b7a8; }
 .about-project-note h2 { color: var(--paper-50); }
 .about-project-note > p:last-child { margin: 1.25rem 0 0; color: #dbe5e2; line-height: 1.9; }
@@ -79,6 +80,7 @@
   .about-hero__side { display: none; }
   .about-hero h1 { font-size: clamp(2.2rem, 12vw, 3.35rem); }
   .about-origin, .about-capabilities, .about-progress { grid-template-columns: 1fr; }
+  .about-capabilities article:nth-child(even){padding-left:0;border-left:0;border-top:1px solid var(--color-border)}
   .about-origin__text { padding: 1.2rem 0 0; border-top: 1px solid var(--color-border); border-left: 0; }
   .about-workflow, .about-metrics, .about-innovations { grid-template-columns: 1fr; }
   .about-workflow li { padding-left: 3.4rem; border-bottom: 0; border-left: 2px solid var(--color-border) !important; }
