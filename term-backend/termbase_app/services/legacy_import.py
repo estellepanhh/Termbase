@@ -178,7 +178,7 @@ def _canonical_value(value):
 def _add_translations(session, term, row, report):
     for column, language_code, name_zh, name_en in (
         ("官方译法（英文）", "en", "英语", "English"),
-        ("官方译法（小语种）", "und", "未指定语言", "Undetermined"),
+        ("官方译法（小语种）", "und", "其他语种", "Other language"),
     ):
         translation_text = clean(row.get(column))
         if not translation_text:

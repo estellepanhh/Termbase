@@ -177,6 +177,10 @@ class LegacyImportTests(unittest.TestCase):
             {(item.language.code, item.text) for item in term.translations},
             {("en", "harmony in diversity"), ("und", "harmonie dans la diversite")},
         )
+        self.assertEqual(
+            next(item.language.name_zh for item in term.translations if item.language.code == "und"),
+            "其他语种",
+        )
         self.assertEqual(term.sources[0].legacy_value, "论语")
         self.assertTrue(
             term.contexts[0].context.code.startswith("legacy-international-exchange-")
