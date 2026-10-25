@@ -1,4 +1,5 @@
 import unittest
+from scripts.audit_translation_languages import build_parser
 
 from termbase_app import create_app
 from termbase_app.extensions import db
@@ -10,6 +11,13 @@ from termbase_app.services.translation_cleanup import (
 
 
 class TranslationInferenceTests(unittest.TestCase):
+    def test_apply_requires_a_durable_report_path(self):
+        parser = build_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["--apply"])
+        args = parser.parse_args(["--apply", "--report", "cleanup-report.json"])
+        self.assertTrue(args.apply)
+
     def test_recognizes_only_explicit_language_markers(self):
         examples = {
             "法语：communauté de destin": "fr",

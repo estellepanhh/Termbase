@@ -30,6 +30,15 @@ describe('consumeChatStream', () => {
     expect(received).toEqual(['文', '脉'])
   })
 
+  it('handles a CRLF event boundary split across network chunks', async () => {
+    const received: string[] = []
+    await consumeChatStream(
+      readerFromChunks(['data: {"content":"文"}\r\n\r', '\ndata: {"content":"脉"}\r\n\r\n']),
+      (content) => received.push(content),
+    )
+    expect(received).toEqual(['文', '脉'])
+  })
+
   it('surfaces a backend stream error instead of treating it as malformed JSON', async () => {
     const promise = consumeChatStream(
       readerFromChunks(['data: {"error":"AI 服务暂时不可用"}\n\n']),

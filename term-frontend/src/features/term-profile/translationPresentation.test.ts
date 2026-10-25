@@ -24,4 +24,9 @@ describe('translation presentation', () => {
   it('uses a meaningful fallback for an unknown translation type', () => {
     expect(presentTranslationType('legacy')).toBe('参考译法')
   })
+
+  it('does not call unreviewed legacy translations formal', () => {
+    expect(presentTranslationType('official', 'legacy_unverified', 'unreviewed')).toBe('参考译法')
+    expect(presentTranslationType('official', 'official', 'reviewed')).toBe('正式译法')
+  })
 })

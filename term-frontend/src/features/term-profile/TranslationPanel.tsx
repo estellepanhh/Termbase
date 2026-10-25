@@ -18,7 +18,7 @@ function TranslationList({ translations, label }: { translations: TranslationDet
             <li className="translation-panel__item" key={`${translation.language_code}-${translation.text}`}>
               <div className="translation-panel__language-line">
                 <span className="translation-panel__language">{presentLanguage(translation.language_code, translation.language_name_zh)}</span>
-                <span className="translation-panel__type">{presentTranslationType(translation.translation_type)}</span>
+                <span className="translation-panel__type">{presentTranslationType(translation.translation_type, translation.authority_level, translation.review_status)}</span>
                 {reviewStatus ? <span className="translation-panel__review">{reviewStatus}</span> : null}
               </div>
               <p className="translation-panel__text">{translation.text}</p>

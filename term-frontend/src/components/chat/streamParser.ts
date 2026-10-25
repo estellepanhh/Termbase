@@ -1,4 +1,4 @@
-export type ChatServiceErrorKind = 'auth' | 'rate-limit' | 'server' | 'network' | 'stream'
+export type ChatServiceErrorKind = 'auth' | 'validation' | 'rate-limit' | 'server' | 'network' | 'stream'
 
 export class ChatServiceError extends Error {
   readonly kind: ChatServiceErrorKind
@@ -50,7 +50,8 @@ export async function consumeChatStream(
       throw abortError()
     }
     const { done, value } = await reader.read()
-    buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, '\n')
+    buffer += decoder.decode(value, { stream: !done })
+    buffer = buffer.replace(/\r\n/g, '\n')
 
     let boundary = buffer.indexOf('\n\n')
     while (boundary >= 0) {

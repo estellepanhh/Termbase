@@ -46,6 +46,16 @@ describe('ChatAI', () => {
     await openChat()
     expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toHaveAttribute('aria-modal', 'true')
     expect(screen.getByText(/你好，我可以帮你解释术语/)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
+  })
+
+  it('closes with Escape and restores focus to the launcher', async () => {
+    const user = userEvent.setup()
+    render(<ChatAI />)
+    await openChat()
+    await user.keyboard('{Escape}')
+    const launcher = screen.getByRole('button', { name: '打开文脉 AI 助手' })
+    await waitFor(() => expect(launcher).toHaveFocus())
   })
 
   it('shows a login path without sending a request when signed out', async () => {
@@ -76,18 +86,24 @@ describe('ChatAI', () => {
   })
 
   it.each([
-    [401, '登录状态已失效，请重新登录。'],
-    [429, '提问有点频繁，请稍后再试。'],
-    [503, 'AI 服务正在休息，请稍后再试。'],
-  ])('shows actionable feedback for HTTP %s without an empty assistant bubble', async (status, message) => {
+    [401, '登录状态已失效，请重新登录。', false],
+    [413, '问题太长，请控制在 500 字以内。', false],
+    [429, '提问有点频繁，请稍后再试。', true],
+    [503, 'AI 服务正在休息，请稍后再试。', true],
+  ])('shows actionable feedback for HTTP %s without an empty assistant bubble', async (status, message, retryable) => {
     const user = userEvent.setup()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status }))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      status === 413 ? JSON.stringify({ msg: message }) : null,
+      { status, headers: { 'Content-Type': 'application/json' } },
+    ))
     render(<ChatAI />)
     await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
     await user.type(screen.getByRole('textbox'), '解释淮河')
     await user.click(screen.getByRole('button', { name: '发送问题' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
-    expect(screen.getByRole('button', { name: '重新发送' })).toBeInTheDocument()
+    const retry = screen.queryByRole('button', { name: '重新发送' })
+    if (retryable) expect(retry).toBeInTheDocument()
+    else expect(retry).not.toBeInTheDocument()
   })
 
   it('shows a backend stream error and keeps the question available for retry', async () => {

@@ -21,6 +21,9 @@ export function presentLanguage(code: string, name: string) {
   return normalizedName || languageNames[normalizedCode] || '其他语种'
 }
 
-export function presentTranslationType(type: string) {
+export function presentTranslationType(type: string, authorityLevel = '', reviewStatus = '') {
+  if (type === 'official' && (reviewStatus !== 'reviewed' || ['legacy_unverified', 'unverified'].includes(authorityLevel))) {
+    return '参考译法'
+  }
   return translationTypes[type] ?? '参考译法'
 }

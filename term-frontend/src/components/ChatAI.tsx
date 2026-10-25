@@ -12,9 +12,19 @@ const welcomeMessage: ChatMessage = {
   content: '你好，我可以帮你解释术语、整理多语表达，或从文化传播角度润色说明。你可以直接输入想了解的术语或问题。',
 }
 
-function errorForStatus(status: number) {
-  if (status === 401 || status === 403) return new ChatServiceError('auth', '登录状态已失效，请重新登录。')
-  if (status === 429) return new ChatServiceError('rate-limit', '提问有点频繁，请稍后再试。')
+async function errorForResponse(response: Response) {
+  if (response.status === 401 || response.status === 403) return new ChatServiceError('auth', '登录状态已失效，请重新登录。')
+  if (response.status === 400 || response.status === 413) {
+    const fallback = response.status === 413 ? '问题太长，请控制在 500 字以内。' : '请输入有效的问题后再发送。'
+    try {
+      const payload = await response.json() as { msg?: unknown; message?: unknown }
+      const message = typeof payload.msg === 'string' ? payload.msg : typeof payload.message === 'string' ? payload.message : fallback
+      return new ChatServiceError('validation', message)
+    } catch {
+      return new ChatServiceError('validation', fallback)
+    }
+  }
+  if (response.status === 429) return new ChatServiceError('rate-limit', '提问有点频繁，请稍后再试。')
   return new ChatServiceError('server', 'AI 服务正在休息，请稍后再试。')
 }
 
@@ -31,7 +41,12 @@ export default function ChatAI() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [lastQuestion, setLastQuestion] = useState('')
+  const [canRetry, setCanRetry] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const wasOpenRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   const nextMessageId = useRef(2)
 
@@ -42,6 +57,19 @@ export default function ChatAI() {
   }, [messages, error, loading])
 
   useEffect(() => () => abortRef.current?.abort(), [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (visible) {
+        wasOpenRef.current = true
+        const target = inputRef.current ?? dialogRef.current?.querySelector<HTMLElement>('button, a[href], textarea')
+        target?.focus()
+      } else if (wasOpenRef.current) {
+        triggerRef.current?.focus()
+      }
+    })
+    return () => window.clearTimeout(timer)
+  }, [visible, auth.status])
 
   const closeDialog = () => {
     abortRef.current?.abort()
@@ -62,6 +90,7 @@ export default function ChatAI() {
 
     setInputValue('')
     setError('')
+    setCanRetry(false)
     setLastQuestion(userMsg)
     setMessages((previous) => [...previous, { id: nextMessageId.current++, role: 'user', content: userMsg }])
     setLoading(true)
@@ -75,7 +104,7 @@ export default function ChatAI() {
         body: JSON.stringify({ message: userMsg }),
         signal: controller.signal,
       })
-      if (!response.ok) throw errorForStatus(response.status)
+      if (!response.ok) throw await errorForResponse(response)
       if (!response.body) throw new ChatServiceError('stream', 'AI 没有返回内容，请重新尝试。')
 
       let assistantId: number | null = null
@@ -93,7 +122,10 @@ export default function ChatAI() {
       if (!assistantText) throw new ChatServiceError('stream', 'AI 没有返回内容，请重新尝试。')
       setLastQuestion('')
     } catch (caught) {
-      if ((caught as { name?: string })?.name !== 'AbortError') setError(publicError(caught))
+      if ((caught as { name?: string })?.name !== 'AbortError') {
+        setError(publicError(caught))
+        setCanRetry(caught instanceof ChatServiceError && !['validation', 'auth'].includes(caught.kind))
+      }
     } finally {
       if (abortRef.current === controller) abortRef.current = null
       setLoading(false)
@@ -103,7 +135,7 @@ export default function ChatAI() {
   return (
     <div className="culture-assistant">
       {!visible ? (
-        <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} type="button">
+        <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} ref={triggerRef} type="button">
           <span className="culture-assistant__avatar"><ResearchAvatar /></span>
           <span className="culture-assistant__trigger-copy"><small>文脉 AI</small><strong>数字研究员</strong></span>
         </button>
@@ -111,7 +143,23 @@ export default function ChatAI() {
 
       {visible ? (
         <div className="culture-assistant__backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialog() }}>
-          <section aria-label="文脉 AI 助手" aria-modal="true" className="culture-assistant__panel" role="dialog">
+          <section
+            aria-label="文脉 AI 助手"
+            aria-modal="true"
+            className="culture-assistant__panel"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') { event.preventDefault(); closeDialog(); return }
+              if (event.key !== 'Tab') return
+              const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
+              if (!focusable.length) return
+              const first = focusable[0]
+              const last = focusable[focusable.length - 1]
+              if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+              else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+            }}
+            ref={dialogRef}
+            role="dialog"
+          >
             <div className="culture-assistant__header">
               <div className="culture-assistant__identity">
                 <ResearchAvatar />
@@ -131,16 +179,18 @@ export default function ChatAI() {
               <>
                 <div aria-live="polite" className="culture-assistant__messages">
                   {messages.map((message) => <p className={`culture-assistant__message culture-assistant__message--${message.role}`} key={message.id}>{message.content}</p>)}
-                  {error ? <div className="culture-assistant__error" role="alert"><span>{error}</span><button onClick={() => void sendMessage(lastQuestion)} type="button">重新发送</button></div> : null}
+                  {error ? <div className="culture-assistant__error" role="alert"><span>{error}</span>{canRetry ? <button onClick={() => void sendMessage(lastQuestion)} type="button">重新发送</button> : null}</div> : null}
                   {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
                   <div ref={messagesEndRef} />
                 </div>
                 <div className="culture-assistant__composer">
                   <textarea
                     aria-label="输入给文脉 AI 的问题"
+                    maxLength={500}
                     onChange={(event) => setInputValue(event.target.value)}
                     onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendMessage() } }}
                     placeholder="输入术语或文化问题…"
+                    ref={inputRef}
                     rows={2}
                     value={inputValue}
                   />
