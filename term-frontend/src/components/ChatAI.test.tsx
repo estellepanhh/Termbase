@@ -49,6 +49,19 @@ describe('ChatAI', () => {
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
   })
 
+  it('uses the confirmed two-part digital researcher stage and prompt routes', async () => {
+    render(<ChatAI />)
+    const user = await openChat()
+
+    expect(screen.getByTestId('digital-researcher-stage')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '今天想沿哪条文脉出发？' })).toBeInTheDocument()
+    expect(screen.getByText('DIGITAL CULTURE GUIDE')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '比较六种译法' }))
+    expect(screen.getByRole('textbox')).toHaveValue('比较六种译法')
+    expect(screen.getByRole('button', { name: '带我游淮河' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '儿童版解释' })).toBeInTheDocument()
+  })
+
   it('closes with Escape and restores focus to the launcher', async () => {
     const user = userEvent.setup()
     render(<ChatAI />)

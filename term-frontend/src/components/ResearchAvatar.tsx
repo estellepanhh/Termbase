@@ -1,9 +1,29 @@
 type ResearchAvatarProps = {
   thinking?: boolean
   className?: string
+  stage?: boolean
 }
 
-export default function ResearchAvatar({ thinking = false, className = '' }: ResearchAvatarProps) {
+export default function ResearchAvatar({ thinking = false, className = '', stage = false }: ResearchAvatarProps) {
+  if (stage) {
+    return (
+      <svg aria-label={thinking ? '文脉数字研究员正在思考' : '文脉数字研究员'} className={`research-avatar research-avatar--stage${thinking ? ' is-thinking' : ''}${className ? ` ${className}` : ''}`} role="img" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="research-robe" x1="0" x2="1"><stop stopColor="#f9f2df" /><stop offset="1" stopColor="#c9ddd3" /></linearGradient></defs>
+        <ellipse cx="150" cy="402" rx="103" ry="14" fill="rgba(3,35,42,.18)" />
+        <g className="research-avatar__figure">
+          <path d="M42 409c8-112 41-158 108-158s100 46 108 158" fill="url(#research-robe)" />
+          <path d="M116 252h68l-12 157h-44z" fill="#aa513f" opacity=".92" />
+          <path d="M77 188c0-81 28-132 76-132 51 0 78 48 72 135-12-18-17-40-15-61-25 18-72 31-129 23" fill="#163f43" />
+          <ellipse cx="151" cy="174" rx="65" ry="77" fill="#f2cfae" />
+          <path d="M88 157c8-70 30-100 69-100 44 0 70 35 68 97-24-4-40-25-46-48-17 30-48 47-91 51" fill="#173f43" />
+          <g className="research-avatar__eyes" fill="#18383b"><ellipse cx="128" cy="177" rx="5" ry="7" /><ellipse cx="177" cy="177" rx="5" ry="7" /></g>
+          <path d="M138 211q14 12 30 0" fill="none" stroke="#a65f51" strokeLinecap="round" strokeWidth="4" />
+          <path d="M91 291q59 48 119 0" fill="none" opacity=".8" stroke="#d0a85f" strokeWidth="5" />
+          <circle cx="151" cy="327" r="20" fill="#f5e7c6" stroke="#d0a85f" strokeWidth="3" /><text x="151" y="335" textAnchor="middle" fontSize="21" fill="#245e60">文</text>
+        </g>
+      </svg>
+    )
+  }
   return (
     <svg
       aria-label={thinking ? '文脉数字研究员正在思考' : '文脉数字研究员'}

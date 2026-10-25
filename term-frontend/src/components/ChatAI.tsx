@@ -147,6 +147,7 @@ export default function ChatAI() {
             aria-label="文脉 AI 助手"
             aria-modal="true"
             className="culture-assistant__panel"
+            data-testid="digital-researcher-stage"
             onKeyDown={(event) => {
               if (event.key === 'Escape') { event.preventDefault(); closeDialog(); return }
               if (event.key !== 'Tab') return
@@ -160,28 +161,28 @@ export default function ChatAI() {
             ref={dialogRef}
             role="dialog"
           >
-            <div className="culture-assistant__header">
-              <div className="culture-assistant__identity">
-                <ResearchAvatar />
-                <div className="culture-assistant__identity-copy"><span>CULTURAL RESEARCH COMPANION</span><strong>文脉数字研究员</strong><small>从术语进入文化语境</small></div>
-              </div>
-              <button aria-label="关闭文脉 AI 助手" onClick={closeDialog} type="button"><CloseOutlined /></button>
+            <button aria-label="关闭文脉 AI 助手" className="culture-assistant__close" onClick={closeDialog} type="button"><CloseOutlined /></button>
+            <div className="culture-assistant__avatar-stage">
+              <ResearchAvatar stage thinking={loading} />
+              <div className="culture-assistant__avatar-label"><strong>文脉数字研究员</strong><small>DIGITAL CULTURE GUIDE</small></div>
             </div>
-
-            {auth.status !== 'authenticated' ? (
-              <div className="culture-assistant__login">
-                <ResearchAvatar />
-                <p>登录后可使用文脉 AI</p>
-                <span>登录后可继续提问、整理译法并获得文化语境提示。</span>
-                <a href="/login">前往登录</a>
-              </div>
-            ) : (
-              <>
+            <div className="culture-assistant__conversation">
+              <header className="culture-assistant__conversation-header"><h2>今天想沿哪条文脉出发？</h2><p>我可以解释术语、比较译法，也可以带你认识淮河文化。</p></header>
+              {auth.status !== 'authenticated' ? (
+                <div className="culture-assistant__login">
+                  <p>登录后可使用文脉 AI</p>
+                  <span>登录后可继续提问、整理译法并获得文化语境提示。</span>
+                  <a href="/login">前往登录</a>
+                </div>
+              ) : <>
                 <div aria-live="polite" className="culture-assistant__messages">
                   {messages.map((message) => <p className={`culture-assistant__message culture-assistant__message--${message.role}`} key={message.id}>{message.content}</p>)}
                   {error ? <div className="culture-assistant__error" role="alert"><span>{error}</span>{canRetry ? <button onClick={() => void sendMessage(lastQuestion)} type="button">重新发送</button> : null}</div> : null}
                   {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
                   <div ref={messagesEndRef} />
+                </div>
+                <div aria-label="推荐提问" className="culture-assistant__suggestions">
+                  {['比较六种译法', '带我游淮河', '儿童版解释'].map((suggestion) => <button key={suggestion} onClick={() => { setInputValue(suggestion); inputRef.current?.focus() }} type="button">{suggestion}</button>)}
                 </div>
                 <div className="culture-assistant__composer">
                   <textarea
@@ -198,8 +199,8 @@ export default function ChatAI() {
                     ? <button aria-label="停止生成" className="culture-assistant__stop" onClick={stopResponse} type="button"><StopOutlined /></button>
                     : <button aria-label="发送问题" disabled={!inputValue.trim()} onClick={() => void sendMessage()} type="button"><SendOutlined /></button>}
                 </div>
-              </>
-            )}
+              </>}
+            </div>
           </section>
         </div>
       ) : null}
