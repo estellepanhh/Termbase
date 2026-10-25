@@ -223,6 +223,16 @@ describe('TermProfilePage', () => {
     expect(screen.getByTestId('term-hero-motif')).toBeInTheDocument()
   })
 
+  it('uses the first cultural interpretation when a legacy term has no definition', async () => {
+    getTerm.mockResolvedValueOnce({ ...profile, definition_zh: '' })
+    renderProfile()
+
+    const heading = await screen.findByRole('heading', { name: '和而不同' })
+    const hero = heading.closest('header')
+    expect(hero).not.toBeNull()
+    expect(within(hero as HTMLElement).getByText('强调差异基础上的协调共生。')).toBeInTheDocument()
+  })
+
   it('puts the child explanation first when child mode is saved', async () => {
     localStorage.setItem('termbase-reading-preferences', JSON.stringify({ childMode: true, largeTextMode: false }))
     renderProfile()

@@ -434,3 +434,10 @@
   .topic-detail--huaihe .culture-map__heading { padding-top: 5rem; }
   .topic-detail--huaihe .topic-entry:nth-child(n) { padding-inline: 0; }
 }
+
+/* Final Huaihe composition overrides legacy atlas spacing. */
+.topic-detail--huaihe{gap:0}
+.topic-detail--huaihe>.topic-detail__back{position:absolute;top:.75rem;left:max(1rem,calc(50% - var(--content-width)/2));z-index:9;width:auto;margin:0;padding:.45rem .7rem;border-radius:999px;background:rgba(255,253,248,.66);backdrop-filter:blur(10px)}
+.topic-detail--huaihe .topic-entry:nth-child(n){padding:1.65rem 0;border:0;border-top:1px solid rgba(23,61,66,.15)}
+.topic-detail--huaihe .topic-entry:last-child{border-bottom:1px solid rgba(23,61,66,.15)}
+@media(max-width:760px){.topic-detail--huaihe>.topic-detail__back{left:1rem}.topic-detail--huaihe .topic-entry:nth-child(n){padding-inline:0}}

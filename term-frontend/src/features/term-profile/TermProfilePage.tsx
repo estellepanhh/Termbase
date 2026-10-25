@@ -151,6 +151,9 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
       culture_category: profile.culture_category,
       record_id: profile.id,
     }] : [])
+  const heroDefinition = hasText(profile.definition_zh)
+    ? profile.definition_zh
+    : interpretations[0]?.explanation || profile.cultural_connotation
   const sections = [
     ...(profile.translations.length ? [{ id: 'translations', label: '多语译法' }] : []),
     ...(interpretations.length ? [{ id: 'connotation', label: '文化内涵' }] : []),
@@ -163,7 +166,7 @@ function ProfileContent({ profile }: { profile: TermProfile }) {
       <header className="term-profile-hero">
         <p className="term-profile-hero__eyebrow">TERM DOSSIER · {String(profile.id).padStart(3, '0')}</p>
         <h1>{profile.preferred_name_zh}</h1>
-        <p className="term-profile-hero__definition">{profile.definition_zh}</p>
+        <p className="term-profile-hero__definition">{heroDefinition}</p>
         <div className="term-profile-hero__meta">
           <span>{profile.term_level}</span>
           <span>{profile.culture_category}</span>
