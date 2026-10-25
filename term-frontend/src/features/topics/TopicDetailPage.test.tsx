@@ -90,13 +90,13 @@ describe('TopicDetailPage', () => {
     expect(screen.getByRole('heading', { name: '管仲' })).toBeInTheDocument()
     expect(screen.getByText('honeysuckle')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: '专题内容导航' })).toBeInTheDocument()
-    const map = screen.getByRole('region', { name: '淮河文脉图谱' })
-    expect(within(map).getByRole('img', { name: '淮河流域文化路线' })).toBeInTheDocument()
-    for (const place of ['寿县', '淮南', '蚌埠', '凤阳']) {
-      expect(within(map).getByText(place)).toBeInTheDocument()
-    }
-    expect(within(map).getByRole('button', { name: '定位到文化人物：管仲' })).toBeInTheDocument()
-    expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
+    const hero = screen.getByRole('region', { name: '淮河文脉导览' })
+    expect(within(hero).getByText('1', { selector: '.huaihe-hero__stat--term strong' })).toBeInTheDocument()
+    expect(within(hero).getByText('1', { selector: '.huaihe-hero__stat--person strong' })).toBeInTheDocument()
+    expect(within(hero).getByText('1', { selector: '.huaihe-hero__stat--herb strong' })).toBeInTheDocument()
+    expect(within(hero).getByTestId('huaihe-bubble-field')).toBeInTheDocument()
+    expect(within(hero).getByTestId('huaihe-river')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '沿着水脉，阅读地方文化' })).toBeInTheDocument()
   })
 
   it('filters Huaihe topic entries from a dedicated search box', async () => {
@@ -150,7 +150,7 @@ describe('TopicDetailPage', () => {
 
     expect(await screen.findByText('先认识这些词')).toBeInTheDocument()
     expect(screen.getByText('再看看相关人物和事物')).toBeInTheDocument()
-    expect(screen.getAllByText('儿童探索路线')).toHaveLength(2)
+    expect(screen.getAllByText('儿童探索路线')).toHaveLength(1)
     expect(screen.getByText('沿水而生的词语、人物与地方记忆')).toBeInTheDocument()
   })
 
@@ -161,7 +161,6 @@ describe('TopicDetailPage', () => {
     expect(await screen.findByRole('heading', { name: 'Core terms' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Cultural figures' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Topic contents' })).toBeInTheDocument()
-    expect(screen.getByText('core term')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View term record: 淮河文化' })).toHaveAttribute('href', '/terms/8')
     expect(screen.getByText('Words, people, and local memories born along the water.')).toBeInTheDocument()
   })
@@ -171,8 +170,8 @@ describe('TopicDetailPage', () => {
     getTopic.mockResolvedValue({ ...topic, item_count: 14, term_count: 12, items: [...manyTerms, topic.items[1], topic.items[2]] })
     renderTopic()
 
-    const map = await screen.findByRole('region', { name: '淮河文脉图谱' })
-    expect(within(map).getByRole('button', { name: '定位到文化人物：管仲' })).toBeInTheDocument()
-    expect(within(map).getByRole('button', { name: '定位到淮河本草：金银花' })).toBeInTheDocument()
+    const hero = await screen.findByRole('region', { name: '淮河文脉导览' })
+    expect(within(hero).getByText('管仲')).toBeInTheDocument()
+    expect(within(hero).getByText('金银花')).toBeInTheDocument()
   })
 })

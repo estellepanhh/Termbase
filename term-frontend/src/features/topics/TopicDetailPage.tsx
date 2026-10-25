@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import PageIntro from '../../components/editorial/PageIntro'
@@ -43,6 +43,18 @@ function groupEntries(items: TopicEntry[]) {
     const rightIndex = entryTypeOrder.indexOf(right)
     return (leftIndex < 0 ? 99 : leftIndex) - (rightIndex < 0 ? 99 : rightIndex) || left.localeCompare(right)
   })
+}
+
+function bubbleEntries(items: TopicEntry[]) {
+  const selected: TopicEntry[] = []
+  entryTypeOrder.forEach((type) => {
+    const entry = items.find((item) => item.entry_type === type)
+    if (entry) selected.push(entry)
+  })
+  items.forEach((item) => {
+    if (selected.length < 7 && !selected.some((selectedItem) => selectedItem.id === item.id)) selected.push(item)
+  })
+  return selected.slice(0, 7)
 }
 
 export default function TopicDetailPage() {
@@ -135,19 +147,38 @@ export default function TopicDetailPage() {
   return (
     <div className={`topic-detail${isHuaihe ? ' topic-detail--huaihe' : ''}`}>
       <Link className="topic-detail__back" to="/topics">← {copy.back}</Link>
-      <PageIntro
-        eyebrow={topicEyebrow}
-        title={topicTitle ?? topic.title}
-        description={topicDescription}
-      />
+      {isHuaihe ? (
+        <section aria-label={language === 'zh' ? '淮河文脉导览' : 'Huaihe cultural guide'} className="huaihe-hero">
+          <div className="huaihe-hero__copy">
+            <p className="huaihe-hero__eyebrow"><span>{topicEyebrow}</span><span aria-hidden="true"> · HUAIHE CULTURAL DOSSIER</span></p>
+            <h1>{topicTitle}</h1>
+            <p className="huaihe-hero__subtitle">{topicDescription}</p>
+            <p className="huaihe-hero__description">{language === 'zh' ? '循着淮河水系，连接民俗、本草、历史人物与地域表达，阅读一方文化如何生长、交流与传承。' : 'Follow the Huaihe waterways through folk customs, herbs, historic figures, and local expressions.'}</p>
+            <div aria-label={copy.overview} className="huaihe-hero__stats">
+              <span className="huaihe-hero__stat--term"><strong>{topic.entry_type_counts.term ?? topic.term_count}</strong><small>{language === 'zh' ? '核心术语' : 'Core terms'}</small></span>
+              <span className="huaihe-hero__stat--person"><strong>{topic.entry_type_counts.person ?? 0}</strong><small>{language === 'zh' ? '文化人物' : 'Cultural figures'}</small></span>
+              <span className="huaihe-hero__stat--herb"><strong>{topic.entry_type_counts.herb ?? 0}</strong><small>{language === 'zh' ? '淮河本草' : 'Huaihe herbs'}</small></span>
+            </div>
+            <div className="huaihe-hero__search">
+              <label htmlFor="topic-search">{copy.searchLabel}</label>
+              <div><span aria-hidden="true">⌕</span><input id="topic-search" onChange={(event) => setTopicSearch(event.target.value)} placeholder={copy.searchPlaceholder} type="search" value={topicSearch} />{topicSearch ? <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}</div>
+              <p>{normalizedTopicSearch ? copy.searchResult.replace('{{count}}', String(filteredEntries.length)) : copy.searchAll}</p>
+            </div>
+          </div>
+          <div aria-hidden="true" className="huaihe-hero__bubbles" data-testid="huaihe-bubble-field">
+            {bubbleEntries(filteredEntries).map((entry, index) => <span className={`huaihe-bubble huaihe-bubble--${entry.entry_type}`} key={entry.id} style={{ '--bubble-index': index } as CSSProperties}>{entry.title}</span>)}
+          </div>
+          <div aria-hidden="true" className="huaihe-hero__river" data-testid="huaihe-river" />
+        </section>
+      ) : <PageIntro eyebrow={topicEyebrow} title={topicTitle ?? topic.title} description={topicDescription} />}
 
-      <section aria-label={copy.overview} className="topics-overview topic-detail__overview">
+      {!isHuaihe ? <section aria-label={copy.overview} className="topics-overview topic-detail__overview">
         <div><strong>{topic.item_count}</strong><span>{itemLabel}</span></div>
         <div><strong>{topic.term_count}</strong><span>{termLabel}</span></div>
         <div><strong>{materialTypeCount}</strong><span>{typeLabel}</span></div>
-      </section>
+      </section> : null}
 
-      {topic.items.length ? (
+      {topic.items.length && !isHuaihe ? (
         <section className="topic-detail__search" aria-label={copy.searchLabel}>
           <label htmlFor="topic-search">{copy.searchLabel}</label>
           <div>
@@ -164,7 +195,9 @@ export default function TopicDetailPage() {
         </section>
       ) : null}
 
-      {filteredEntries.length ? <CulturalKnowledgeMap childMode={isChildMode} entries={filteredEntries} language={language} /> : null}
+      {filteredEntries.length && !isHuaihe ? <CulturalKnowledgeMap childMode={isChildMode} entries={filteredEntries} language={language} /> : null}
+
+      {isHuaihe ? <div className="huaihe-stream-intro"><h2>{language === 'zh' ? <>沿着水脉，<br />阅读地方文化</> : <>Read local culture<br />along the river</>}</h2><p>{language === 'zh' ? '从人物、物产、技艺与地方记忆出发，顺着一条条知识支流认识淮河文化的丰富面貌。' : 'Begin with people, produce, crafts, and local memory, then follow each branch of knowledge.'}</p></div> : null}
 
       {topic.items.length === 0 ? (
         <section className="topics-status">
