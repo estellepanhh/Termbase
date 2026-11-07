@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import hashlib
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass
@@ -10,6 +11,18 @@ from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
+from sqlalchemy import select
+
+from ..models import (
+    Context,
+    Language,
+    Source,
+    Term,
+    TermContext,
+    Topic,
+    TopicItem,
+    Translation,
+)
 
 
 REQUIRED_HEADERS = (
@@ -37,6 +50,30 @@ LANGUAGE_COLUMNS = {
     "西班牙语": "es",
     "阿拉伯语": "ar",
     "日语": "ja",
+}
+
+LANGUAGE_DEFINITIONS = {
+    "en": ("英语", "English"),
+    "fr": ("法语", "French"),
+    "ru": ("俄语", "Russian"),
+    "es": ("西班牙语", "Spanish"),
+    "ar": ("阿拉伯语", "Arabic"),
+    "ja": ("日语", "Japanese"),
+}
+
+MASTER_CATALOG_KEY = "master_catalog_2026_11_07"
+
+TOPIC_DEFINITIONS = {
+    "徽州文化": ("huizhou-culture", "从徽商、徽州村落与传统技艺中阅读徽州文化。"),
+    "长江文化(安徽段)": ("yangtze-culture-anhui", "呈现长江安徽段的地域记忆、物产与文化表达。"),
+    "淮河文化": ("huaihe-culture", "沿淮河水系，连接民俗、本草、历史人物与地域表达。"),
+    "黄梅戏文化": ("huangmei-opera-culture", "从唱腔、剧目与舞台传统认识黄梅戏文化。"),
+    "大运河文化(安徽段)": ("grand-canal-culture-anhui", "追寻大运河安徽段的城镇、交通与文化遗产。"),
+    "黄河文化": ("yellow-river-culture", "汇集黄河文明的历史记忆与当代表达。"),
+    "社会主义先进文化": ("advanced-socialist-culture", "梳理社会主义先进文化的核心概念与传播表达。"),
+    "革命文化": ("revolutionary-culture", "记录革命历史、精神谱系与红色文化表达。"),
+    "近现代文化": ("modern-contemporary-culture", "呈现中国近现代社会变迁中的人物、事件与观念。"),
+    "中华优秀传统文化": ("excellent-traditional-chinese-culture", "汇聚中华优秀传统文化的概念、技艺与思想资源。"),
 }
 
 LIST_SEPARATOR = re.compile(r"\s*[,，、;；]\s*")
@@ -69,6 +106,17 @@ class CatalogData:
     topic_counts: dict[str, int]
     canonical_term_count: int
     duplicate_names: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CatalogImportReport:
+    source_rows: int
+    canonical_terms: int
+    topics: int
+    translations: int
+    topic_items: int
+    sources: int
+    contexts: int
 
 
 def normalize_text(value: Any) -> str:
@@ -174,4 +222,211 @@ def load_catalog(path: Path) -> CatalogData:
         topic_counts=topic_counts,
         canonical_term_count=len(name_counts),
         duplicate_names=duplicates,
+    )
+
+
+def _first_clause(value: str) -> str:
+    return re.split(r"[;；]", value, maxsplit=1)[0].strip()
+
+
+def _context_code(label: str) -> str:
+    digest = hashlib.sha1(label.encode("utf-8")).hexdigest()[:16]
+    return f"scene-{digest}"
+
+
+def _group_rows(catalog: CatalogData) -> dict[str, list[CatalogRow]]:
+    grouped: dict[str, list[CatalogRow]] = {}
+    for row in catalog.rows:
+        grouped.setdefault(row.term_name, []).append(row)
+    return grouped
+
+
+def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
+    """Upsert the reviewed catalog into the normalized knowledge model.
+
+    The caller owns the transaction. This function flushes so its report is
+    accurate, but deliberately never commits.
+    """
+
+    unknown_topics = sorted(set(catalog.topic_counts) - set(TOPIC_DEFINITIONS))
+    if unknown_topics:
+        raise CatalogValidationError(f"尚未配置专题：{'、'.join(unknown_topics)}")
+
+    languages = {item.code: item for item in session.scalars(select(Language))}
+    for code, (name_zh, name_en) in LANGUAGE_DEFINITIONS.items():
+        language = languages.get(code)
+        if language is None:
+            language = Language(code=code, name_zh=name_zh, name_en=name_en, enabled=True)
+            session.add(language)
+            languages[code] = language
+        else:
+            language.name_zh = name_zh
+            language.name_en = name_en
+            language.enabled = True
+
+    topics_by_slug = {item.slug: item for item in session.scalars(select(Topic))}
+    topics_by_name: dict[str, Topic] = {}
+    for topic_name in catalog.topic_counts:
+        slug, summary = TOPIC_DEFINITIONS[topic_name]
+        topic = topics_by_slug.get(slug)
+        if topic is None:
+            topic = Topic(slug=slug)
+            session.add(topic)
+            topics_by_slug[slug] = topic
+        topic.title = topic_name
+        topic.summary = summary
+        topic.status = "published"
+        topics_by_name[topic_name] = topic
+
+    session.flush()
+
+    existing_terms: dict[str, Term] = {}
+    for term in session.scalars(select(Term).order_by(Term.id)):
+        existing_terms.setdefault(normalize_name(term.preferred_name_zh), term)
+
+    terms_by_name: dict[str, Term] = {}
+    grouped_rows = _group_rows(catalog)
+    for term_name, rows in grouped_rows.items():
+        primary = rows[0]
+        term = existing_terms.get(term_name)
+        if term is None:
+            term = Term(
+                preferred_name_zh=term_name,
+                legacy_table=MASTER_CATALOG_KEY,
+                legacy_id=term_name,
+            )
+            session.add(term)
+            existing_terms[term_name] = term
+        term.preferred_name_zh = term_name
+        term.definition_zh = _first_clause(primary.cultural_connotation)
+        term.cultural_connotation = primary.cultural_connotation
+        term.term_level = primary.term_level
+        term.culture_category = primary.culture_category
+        term.status = "published"
+        term.data_quality = "curated"
+        payload = dict(term.legacy_payload or {})
+        payload[MASTER_CATALOG_KEY] = {
+            "rows": [row.raw for row in rows],
+            "topics": list(dict.fromkeys(row.topic_name for row in rows)),
+            "tags": list(dict.fromkeys(tag for row in rows for tag in row.tags)),
+        }
+        term.legacy_payload = payload
+        terms_by_name[term_name] = term
+
+    session.flush()
+
+    for term_name, rows in grouped_rows.items():
+        term = terms_by_name[term_name]
+        translations_by_language: dict[int, list[Translation]] = {}
+        for translation in term.translations:
+            translations_by_language.setdefault(translation.language_id, []).append(translation)
+        for code, language in languages.items():
+            values = list(
+                dict.fromkeys(
+                    normalize_text(row.translations[code])
+                    for row in rows
+                    if normalize_text(row.translations[code])
+                )
+            )
+            existing = translations_by_language.setdefault(language.id, [])
+            by_text = {normalize_text(item.text): item for item in existing}
+            for item in existing:
+                if item.translation_type == "recommended":
+                    item.translation_type = "acceptable"
+            for index, value in enumerate(values):
+                translation = by_text.get(value)
+                if translation is None:
+                    translation = Translation(term=term, language=language, text=value)
+                    session.add(translation)
+                    existing.append(translation)
+                    by_text[value] = translation
+                translation.translation_type = "recommended" if index == 0 else "acceptable"
+                translation.authority_level = "reviewed"
+                translation.review_status = "reviewed"
+
+    sources_by_citation = {
+        normalize_text(item.citation): item
+        for item in session.scalars(select(Source))
+        if item.citation
+    }
+    contexts_by_code = {item.code: item for item in session.scalars(select(Context))}
+    for row in catalog.rows:
+        term = terms_by_name[row.term_name]
+        citation = row.source_text
+        source = sources_by_citation.get(citation)
+        if source is None:
+            source = Source(
+                title=_first_clause(citation)[:255],
+                source_type="curated_reference",
+                citation=citation,
+                authority_level="reviewed",
+                legacy_value=citation[:255],
+            )
+            session.add(source)
+            sources_by_citation[citation] = source
+        if source not in term.sources:
+            term.sources.append(source)
+
+        for scene in row.scenes:
+            code = _context_code(scene)
+            context = contexts_by_code.get(code)
+            if context is None:
+                context = Context(
+                    code=code,
+                    name_zh=scene,
+                    audience="公众",
+                    style="专题场景",
+                    description=f"适用于{scene}相关表达。",
+                )
+                session.add(context)
+                contexts_by_code[code] = context
+            if not any(link.context is context for link in term.contexts):
+                session.add(TermContext(term=term, context=context))
+
+    session.flush()
+
+    existing_items: dict[tuple[int, int], list[TopicItem]] = {}
+    for item in session.scalars(select(TopicItem).order_by(TopicItem.id)):
+        if item.term_id is not None:
+            existing_items.setdefault((item.topic_id, item.term_id), []).append(item)
+
+    desired_item_ids: set[int] = set()
+    for row in catalog.rows:
+        topic = topics_by_name[row.topic_name]
+        term = terms_by_name[row.term_name]
+        key = (topic.id, term.id)
+        matches = existing_items.get(key, [])
+        if matches:
+            item = matches[0]
+            for duplicate in matches[1:]:
+                session.delete(duplicate)
+        else:
+            item = TopicItem(topic=topic, term=term)
+            session.add(item)
+            session.flush()
+            existing_items[key] = [item]
+        item.entry_type = "term"
+        item.title = term.preferred_name_zh
+        item.payload = {"catalog_row": row.raw, "tags": list(row.tags)}
+        item.legacy_table = MASTER_CATALOG_KEY
+        item.legacy_id = str(row.sequence)
+        desired_item_ids.add(item.id)
+
+    for item in session.scalars(
+        select(TopicItem).where(TopicItem.legacy_table == MASTER_CATALOG_KEY)
+    ):
+        if item.id not in desired_item_ids:
+            session.delete(item)
+
+    session.flush()
+    return CatalogImportReport(
+        source_rows=len(catalog.rows),
+        canonical_terms=len(terms_by_name),
+        topics=len(topics_by_name),
+        translations=session.query(Translation).filter(
+            Translation.term_id.in_([term.id for term in terms_by_name.values()])
+        ).count(),
+        topic_items=len(desired_item_ids),
+        sources=len(sources_by_citation),
+        contexts=len(contexts_by_code),
     )
