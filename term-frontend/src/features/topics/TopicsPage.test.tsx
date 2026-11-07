@@ -95,4 +95,27 @@ describe('TopicsPage', () => {
     expect(screen.getByText('1 core term')).toBeInTheDocument()
     expect(screen.getByText(topic.summary as string)).toBeInTheDocument()
   })
+
+  it('filters the topic catalog by title or summary and can clear the query', async () => {
+    const user = userEvent.setup()
+    const huizhou: TopicSummary = {
+      ...topic,
+      slug: 'huizhou-culture',
+      title: '徽州文化',
+      summary: '从徽商与传统技艺中阅读徽州。',
+    }
+    listTopics.mockResolvedValue([topic, huizhou])
+    renderTopics()
+
+    const search = await screen.findByRole('searchbox', { name: '检索文化专题' })
+    await user.type(search, '徽商')
+
+    expect(screen.getByRole('heading', { name: '徽州文化' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '淮河文化' })).not.toBeInTheDocument()
+    expect(screen.getByText('找到 1 个专题')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '清空专题检索' }))
+    expect(screen.getByRole('heading', { name: '淮河文化' })).toBeInTheDocument()
+    expect(screen.getByText('共 2 个专题')).toBeInTheDocument()
+  })
 })

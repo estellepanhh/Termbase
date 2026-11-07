@@ -179,4 +179,20 @@ describe('TopicDetailPage', () => {
     expect(within(hero).getByText('管仲')).toBeInTheDocument()
     expect(within(hero).getByText('金银花')).toBeInTheDocument()
   })
+
+  it('uses topic-specific search copy and a generic constellation outside Huaihe', async () => {
+    getTopic.mockResolvedValue({
+      ...topic,
+      slug: 'huizhou-culture',
+      title: '徽州文化',
+      summary: '从徽商与传统技艺中阅读徽州文化。',
+    })
+    renderTopic('/topics/huizhou-culture')
+
+    expect(await screen.findByRole('searchbox', { name: '检索徽州文化专题' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '专题知识星图：徽州文化' })).toBeInTheDocument()
+    expect(screen.queryByText('淮河文脉图谱')).not.toBeInTheDocument()
+    expect(screen.queryByText('寿县')).not.toBeInTheDocument()
+    expect(screen.queryByText('千里淮河')).not.toBeInTheDocument()
+  })
 })

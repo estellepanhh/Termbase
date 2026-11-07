@@ -6,7 +6,7 @@ import { useChildMode } from '../../context/ChildModeContext'
 import { getTopic } from '../../services/knowledgeApi'
 import type { PublicTopicDetail, TopicEntry } from '../../types/knowledge'
 import { entrySearchText, labelForEntryType } from './topicPresentation'
-import CulturalKnowledgeMap from './CulturalKnowledgeMap'
+import TopicConstellation from './TopicConstellation'
 import TopicEntrySection from './TopicEntrySection'
 import './topics.css'
 
@@ -126,6 +126,8 @@ export default function TopicDetailPage() {
   const topicDescription = isHuaihe
     ? (language === 'zh' ? '沿水而生的词语、人物与地方记忆' : 'Words, people, and local memories born along the water.')
     : (topic?.summary || copy.missingSummary)
+  const topicSearchLabel = language === 'zh' ? `检索${topic?.title ?? ''}专题` : `Search ${topic?.title ?? ''} topic`
+  const topicSearchPlaceholder = language === 'zh' ? `搜索${topic?.title ?? '专题'}中的术语或关键词` : `Search terms or keywords in ${topic?.title ?? 'this topic'}`
 
   if (status === 'loading') {
     return <div aria-busy="true" className="topic-detail"><p className="topics-status">{copy.loading}</p></div>
@@ -203,13 +205,13 @@ export default function TopicDetailPage() {
       </section> : null}
 
       {topic.items.length && !isHuaihe ? (
-        <section className="topic-detail__search" aria-label={copy.searchLabel}>
-          <label htmlFor="topic-search">{copy.searchLabel}</label>
+        <section className="topic-detail__search" aria-label={topicSearchLabel}>
+          <label htmlFor="topic-search">{topicSearchLabel}</label>
           <div>
             <input
               id="topic-search"
               onChange={(event) => setTopicSearch(event.target.value)}
-              placeholder={copy.searchPlaceholder}
+              placeholder={topicSearchPlaceholder}
               type="search"
               value={topicSearch}
             />
@@ -219,7 +221,7 @@ export default function TopicDetailPage() {
         </section>
       ) : null}
 
-      {filteredEntries.length && !isHuaihe ? <CulturalKnowledgeMap childMode={isChildMode} entries={filteredEntries} language={language} /> : null}
+      {filteredEntries.length && !isHuaihe ? <TopicConstellation childMode={isChildMode} entries={filteredEntries} language={language} topicTitle={topic.title} /> : null}
 
       {isHuaihe ? <div className="huaihe-stream-intro"><h2>{language === 'zh' ? <>沿着水脉，<br />阅读地方文化</> : <>Read local culture<br />along the river</>}</h2><p>{language === 'zh' ? '从人物、物产、技艺与地方记忆出发，顺着一条条知识支流认识淮河文化的丰富面貌。' : 'Begin with people, produce, crafts, and local memory, then follow each branch of knowledge.'}</p></div> : null}
 
