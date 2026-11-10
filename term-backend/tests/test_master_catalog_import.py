@@ -106,6 +106,14 @@ class MasterCatalogReaderTests(unittest.TestCase):
         self.assertEqual(row.scenes, ("文化传播", "节庆活动"))
         self.assertEqual(row.tags, ("民俗", "舞蹈"))
 
+    def test_preserves_reviewed_display_punctuation(self):
+        self.write_workbook(rows=[catalog_row(topic="长江文化（安徽段）")])
+
+        row = load_catalog(self.path).rows[0]
+
+        self.assertEqual(row.topic_name, "长江文化（安徽段）")
+        self.assertEqual(row.source_text, "国家级非物质文化遗产名录；地方文化志")
+
     def test_reports_literal_topic_counts_and_normalized_duplicate_names(self):
         self.write_workbook(
             rows=[
@@ -178,10 +186,10 @@ class MasterCatalogImportTests(unittest.TestCase):
             {topic.title: topic.slug for topic in db.session.scalars(db.select(Topic))},
             {
                 "徽州文化": "huizhou-culture",
-                "长江文化(安徽段)": "yangtze-culture-anhui",
+                "长江文化（安徽段）": "yangtze-culture-anhui",
                 "淮河文化": "huaihe-culture",
                 "黄梅戏文化": "huangmei-opera-culture",
-                "大运河文化(安徽段)": "grand-canal-culture-anhui",
+                "大运河文化（安徽段）": "grand-canal-culture-anhui",
                 "黄河文化": "yellow-river-culture",
                 "社会主义先进文化": "advanced-socialist-culture",
                 "革命文化": "revolutionary-culture",
@@ -229,7 +237,7 @@ class MasterCatalogImportTests(unittest.TestCase):
         source = db.session.scalar(db.select(Source))
         contexts = list(db.session.scalars(db.select(Context).order_by(Context.name_zh)))
         self.assertEqual(source.title, "国家级非物质文化遗产名录")
-        self.assertEqual(source.citation, "国家级非物质文化遗产名录;地方文化志")
+        self.assertEqual(source.citation, "国家级非物质文化遗产名录；地方文化志")
         self.assertEqual(source.authority_level, "reviewed")
         self.assertEqual([item.name_zh for item in contexts], ["文化传播", "节庆活动"])
 
@@ -287,6 +295,18 @@ class MasterCatalogImportTests(unittest.TestCase):
 
         run_catalog_import(catalog, apply=True)
         self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 1)
+
+    def test_report_excludes_unrelated_existing_sources_and_contexts(self):
+        db.session.add_all([
+            Source(title="旧来源", citation="不属于本次总表", source_type="legacy"),
+            Context(code="legacy-scene", name_zh="旧场景"),
+        ])
+        db.session.flush()
+
+        report = import_master_catalog(db.session, self.catalog([catalog_row()]))
+
+        self.assertEqual(report.sources, 1)
+        self.assertEqual(report.contexts, 2)
 
 
 if __name__ == "__main__":

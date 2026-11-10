@@ -65,10 +65,10 @@ MASTER_CATALOG_KEY = "master_catalog_2026_11_07"
 
 TOPIC_DEFINITIONS = {
     "徽州文化": ("huizhou-culture", "从徽商、徽州村落与传统技艺中阅读徽州文化。"),
-    "长江文化(安徽段)": ("yangtze-culture-anhui", "呈现长江安徽段的地域记忆、物产与文化表达。"),
+    "长江文化（安徽段）": ("yangtze-culture-anhui", "呈现长江安徽段的地域记忆、物产与文化表达。"),
     "淮河文化": ("huaihe-culture", "沿淮河水系，连接民俗、本草、历史人物与地域表达。"),
     "黄梅戏文化": ("huangmei-opera-culture", "从唱腔、剧目与舞台传统认识黄梅戏文化。"),
-    "大运河文化(安徽段)": ("grand-canal-culture-anhui", "追寻大运河安徽段的城镇、交通与文化遗产。"),
+    "大运河文化（安徽段）": ("grand-canal-culture-anhui", "追寻大运河安徽段的城镇、交通与文化遗产。"),
     "黄河文化": ("yellow-river-culture", "汇集黄河文明的历史记忆与当代表达。"),
     "社会主义先进文化": ("advanced-socialist-culture", "梳理社会主义先进文化的核心概念与传播表达。"),
     "革命文化": ("revolutionary-culture", "记录革命历史、精神谱系与红色文化表达。"),
@@ -122,11 +122,11 @@ class CatalogImportReport:
 def normalize_text(value: Any) -> str:
     if value is None:
         return ""
-    return WHITESPACE.sub(" ", unicodedata.normalize("NFKC", str(value))).strip()
+    return WHITESPACE.sub(" ", unicodedata.normalize("NFC", str(value))).strip()
 
 
 def normalize_name(value: Any) -> str:
-    return normalize_text(value)
+    return WHITESPACE.sub(" ", unicodedata.normalize("NFKC", str(value or ""))).strip()
 
 
 def split_labels(value: Any) -> tuple[str, ...]:
@@ -161,9 +161,9 @@ def load_catalog(path: Path) -> CatalogData:
             raise CatalogValidationError("工作簿缺少“术语总表”工作表")
         sheet = workbook["术语总表"]
         header_values = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), ())
-        headers = [normalize_text(value) for value in header_values]
+        headers = [normalize_name(value) for value in header_values]
         normalized_headers = {
-            normalize_text(header): header for header in REQUIRED_HEADERS
+            normalize_name(header): header for header in REQUIRED_HEADERS
         }
         missing = [
             header
@@ -350,9 +350,12 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
         if item.citation
     }
     contexts_by_code = {item.code: item for item in session.scalars(select(Context))}
+    catalog_source_citations: set[str] = set()
+    catalog_context_codes: set[str] = set()
     for row in catalog.rows:
         term = terms_by_name[row.term_name]
         citation = row.source_text
+        catalog_source_citations.add(citation)
         source = sources_by_citation.get(citation)
         if source is None:
             source = Source(
@@ -369,6 +372,7 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
 
         for scene in row.scenes:
             code = _context_code(scene)
+            catalog_context_codes.add(code)
             context = contexts_by_code.get(code)
             if context is None:
                 context = Context(
@@ -427,6 +431,6 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
             Translation.term_id.in_([term.id for term in terms_by_name.values()])
         ).count(),
         topic_items=len(desired_item_ids),
-        sources=len(sources_by_citation),
-        contexts=len(contexts_by_code),
+        sources=len(catalog_source_citations),
+        contexts=len(catalog_context_codes),
     )

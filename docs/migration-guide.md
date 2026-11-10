@@ -53,3 +53,79 @@ npm run lint
 ```
 
 再按 README 的公共路由和浏览器清单进行人工验收。
+
+## 2026-11-07 已审核术语总表
+
+`term-backend/data/术语库总表（741条·2026-11-07已审核）.xlsx` 是文化专题与多语译文的已审核数据源。导入时按规范化中文名称合并词条：同一个词可以属于多个专题，但不会生成重复的术语档案；同一语言存在不同译法时，首条作为推荐译法，其余保留为可接受译法。
+
+当前总表的验收基线为：
+
+- 741 条专题关联；
+- 734 个规范化术语；
+- 10 个已发布专题；
+- 英、法、俄、西、阿、日 6 个语种全部覆盖；
+- 4410 条去重后的译文（包含冲突译法的保留项）。
+
+### 本地或服务器预演
+
+导入命令默认只预演并回滚，不会修改数据库：
+
+```powershell
+cd D:\Termbase\term-backend
+.\venv\Scripts\python.exe scripts\import_master_catalog.py
+```
+
+报告中的 `mode` 应为 `preview_rolled_back`，并符合上述基线。确认数据库完整备份可恢复后，才显式执行：
+
+```powershell
+.\venv\Scripts\python.exe scripts\import_master_catalog.py --apply
+```
+
+Linux 服务器对应命令：
+
+```bash
+cd /var/www/termbase/term-backend
+source venv/bin/activate
+python scripts/import_master_catalog.py
+python scripts/import_master_catalog.py --apply
+```
+
+脚本可重复运行；第二次执行不会重复创建术语、译文、来源、场景或专题关联。
+
+### 公网发布
+
+先完成数据库备份，再更新代码、导入总表和构建前端：
+
+```bash
+set -e
+cd /var/www/termbase
+git pull --ff-only origin main
+cd term-backend
+source venv/bin/activate
+pip install -r requirements.txt
+flask db upgrade
+python scripts/import_master_catalog.py
+python scripts/import_master_catalog.py --apply
+cd ../term-frontend
+npm ci
+npm run build
+sudo nginx -t
+sudo systemctl reload nginx
+curl -fsS https://terms.estellepan.top/api/v1/health
+curl -fsS https://terms.estellepan.top/api/topics
+```
+
+如果部署环境的后端进程不会自动重载，在服务器上先用 `systemctl list-units --type=service | grep -Ei 'term|gunicorn'` 确认现有服务名，再重启该服务；不要猜测或新建第二套服务。
+
+浏览器验收至少包括：文化专题目录能检索 10 个专题；`/topics/huaihe-culture` 保留淮河河流与气泡导览；`/topics/huizhou-culture` 等其他专题显示当前专题自己的知识星图；同名跨专题术语只有一个详情档案。
+
+### 回滚
+
+总表导入会复用并更新已存在词条，不能靠删除 `master_catalog_2026_11_07` 标记完整还原。因此上线前的数据库备份是正式回滚点。若验收失败：
+
+1. 将代码切回上一已知可用提交并重新构建前端；
+2. 从上线前备份恢复数据库；
+3. 重启原后端服务并重载 Nginx；
+4. 再次检查健康接口、专题列表和至少一个术语详情。
+
+预演模式已经回滚事务，不需要执行任何清理。
