@@ -320,7 +320,8 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
         translations_by_language: dict[int, list[Translation]] = {}
         for translation in term.translations:
             translations_by_language.setdefault(translation.language_id, []).append(translation)
-        for code, language in languages.items():
+        for code in LANGUAGE_DEFINITIONS:
+            language = languages[code]
             values = list(
                 dict.fromkeys(
                     normalize_text(row.translations[code])

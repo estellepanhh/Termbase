@@ -308,6 +308,18 @@ class MasterCatalogImportTests(unittest.TestCase):
         self.assertEqual(report.sources, 1)
         self.assertEqual(report.contexts, 2)
 
+    def test_ignores_existing_languages_that_are_not_catalog_columns(self):
+        db.session.add(Language(code="und", name_zh="未指定语言", name_en="Undetermined"))
+        db.session.flush()
+
+        report = import_master_catalog(db.session, self.catalog([catalog_row()]))
+
+        self.assertEqual(report.translations, 6)
+        self.assertEqual(
+            {item.code for item in db.session.scalars(db.select(Language))},
+            {"und", "en", "fr", "ru", "es", "ar", "ja"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
