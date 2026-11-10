@@ -14,6 +14,7 @@ const pageLabels = {
     childDescription: '和孩子一起看专题，从熟悉的词语、人物和事物认识中国文化。', childNote: '和孩子一起看专题',
     overview: '文化专题数据概览', published: '个已发布专题', items: '条专题内容', terms: '个关联术语',
     sectionTitle: '从专题进入文化语境', sectionDescription: '每个专题都连接术语档案与相关文化材料。',
+    searchLabel: '检索文化专题', searchPlaceholder: '输入专题名称或文化关键词', searchAll: '共 {{count}} 个专题', searchResult: '找到 {{count}} 个专题', clearSearch: '清空专题检索', searchEmpty: '没有找到匹配的文化专题。',
     loading: '正在整理专题资料…', error: '专题暂时无法加载，请检查网络后重试。', retry: '重新加载专题',
     emptyTitle: '暂时没有已发布的文化专题。', emptyDescription: '专题资料完成整理与审核后会在这里呈现。',
   },
@@ -22,6 +23,7 @@ const pageLabels = {
     childDescription: 'Explore Chinese culture with children through familiar words, people, and objects.', childNote: 'Explore topics with children',
     overview: 'Cultural topic overview', published: 'published topics', items: 'topic records', terms: 'linked terms',
     sectionTitle: 'Enter cultural contexts through topics', sectionDescription: 'Each topic connects term records with related cultural materials.',
+    searchLabel: 'Search cultural topics', searchPlaceholder: 'Enter a topic name or cultural keyword', searchAll: '{{count}} topics', searchResult: '{{count}} topics found', clearSearch: 'Clear topic search', searchEmpty: 'No cultural topics match this search.',
     loading: 'Loading topic materials…', error: 'Topics are temporarily unavailable. Check your connection and try again.', retry: 'Reload topics',
     emptyTitle: 'No cultural topics are currently published.', emptyDescription: 'Reviewed topic materials will appear here when ready.',
   },
@@ -35,6 +37,7 @@ export default function TopicsPage() {
   const [topics, setTopics] = useState<TopicSummary[] | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [retryKey, setRetryKey] = useState(0)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     let active = true
@@ -55,6 +58,11 @@ export default function TopicsPage() {
     items: topics?.reduce((sum, topic) => sum + topic.item_count, 0) ?? 0,
     terms: topics?.reduce((sum, topic) => sum + topic.term_count, 0) ?? 0,
   }), [topics])
+  const normalizedQuery = query.trim().toLocaleLowerCase()
+  const filteredTopics = useMemo(() => {
+    if (!topics || !normalizedQuery) return topics ?? []
+    return topics.filter((topic) => `${topic.title} ${topic.summary ?? ''} ${topic.slug}`.toLocaleLowerCase().includes(normalizedQuery))
+  }, [normalizedQuery, topics])
 
   return (
     <div className="topics-page">
@@ -82,6 +90,17 @@ export default function TopicsPage() {
           title={copy.sectionTitle}
           description={copy.sectionDescription}
         />
+        {status === 'ready' && topics?.length ? (
+          <div className="topics-catalog-search">
+            <label htmlFor="topic-catalog-search">{copy.searchLabel}</label>
+            <div>
+              <span aria-hidden="true">⌕</span>
+              <input id="topic-catalog-search" onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} type="search" value={query} />
+              {query ? <button aria-label={copy.clearSearch} onClick={() => setQuery('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}
+            </div>
+            <p>{(normalizedQuery ? copy.searchResult : copy.searchAll).replace('{{count}}', String(filteredTopics.length))}</p>
+          </div>
+        ) : null}
         {status === 'loading' ? <p className="topics-status">{copy.loading}</p> : null}
         {status === 'error' ? (
           <div className="topics-status" role="alert">
@@ -95,11 +114,12 @@ export default function TopicsPage() {
             <p>{copy.emptyDescription}</p>
           </div>
         ) : null}
-        {topics?.length ? (
+        {topics?.length && filteredTopics.length ? (
           <nav aria-label={language === 'zh' ? '文化专题图志' : 'Cultural topic atlas'} className="topics-grid topics-atlas">
-            {topics.map((topic, index) => <TopicCard index={index} key={topic.slug} topic={topic} />)}
+            {filteredTopics.map((topic, index) => <TopicCard index={index} key={topic.slug} topic={topic} />)}
           </nav>
         ) : null}
+        {status === 'ready' && topics?.length && normalizedQuery && filteredTopics.length === 0 ? <p className="topics-status">{copy.searchEmpty}</p> : null}
       </section>
     </div>
   )
