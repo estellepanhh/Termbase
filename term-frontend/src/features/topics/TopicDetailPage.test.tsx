@@ -187,12 +187,69 @@ describe('TopicDetailPage', () => {
       title: '徽州文化',
       summary: '从徽商与传统技艺中阅读徽州文化。',
     })
-    renderTopic('/topics/huizhou-culture')
+    const { container } = renderTopic('/topics/huizhou-culture')
 
     expect(await screen.findByRole('searchbox', { name: '检索徽州文化专题' })).toBeInTheDocument()
+    expect(container.querySelector('.topic-detail--generic')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '专题知识星图：徽州文化' })).toBeInTheDocument()
     expect(screen.queryByText('淮河文脉图谱')).not.toBeInTheDocument()
     expect(screen.queryByText('寿县')).not.toBeInTheDocument()
     expect(screen.queryByText('千里淮河')).not.toBeInTheDocument()
+  })
+
+  it('paginates long topic collections instead of rendering every entry at once', async () => {
+    const user = userEvent.setup()
+    const items = Array.from({ length: 13 }, (_, index) => ({
+      ...topic.items[0],
+      entry_type: 'term' as const,
+      fields: {},
+      id: 200 + index,
+      title: `分页术语${index + 1}`,
+      term: { ...topic.items[0].term!, id: 300 + index, preferred_name_zh: `分页术语${index + 1}` },
+    }))
+    getTopic.mockResolvedValue({
+      ...topic,
+      slug: 'huizhou-culture',
+      title: '徽州文化',
+      item_count: 13,
+      term_count: 13,
+      entry_type_counts: { term: 13 },
+      items,
+    })
+    renderTopic('/topics/huizhou-culture')
+
+    expect(await screen.findByRole('heading', { name: '分页术语1' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '分页术语12' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '分页术语13' })).not.toBeInTheDocument()
+    const pagination = screen.getByRole('navigation', { name: '专题条目分页' })
+    expect(within(pagination).getByText('第 1 / 2 页')).toBeInTheDocument()
+    expect(within(pagination).getByRole('button', { name: '上一页' })).toBeDisabled()
+
+    await user.click(within(pagination).getByRole('button', { name: '下一页' }))
+
+    expect(screen.getByRole('heading', { name: '分页术语13' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '分页术语1' })).not.toBeInTheDocument()
+    expect(within(pagination).getByText('第 2 / 2 页')).toBeInTheDocument()
+  })
+
+  it('returns to the first page when a topic search changes', async () => {
+    const user = userEvent.setup()
+    const items = Array.from({ length: 25 }, (_, index) => ({
+      ...topic.items[0],
+      entry_type: 'term' as const,
+      fields: {},
+      id: 400 + index,
+      title: `馆藏词条${index + 1}`,
+      term: { ...topic.items[0].term!, id: 500 + index, preferred_name_zh: `馆藏词条${index + 1}` },
+    }))
+    getTopic.mockResolvedValue({ ...topic, slug: 'huizhou-culture', title: '徽州文化', item_count: 25, term_count: 25, entry_type_counts: { term: 25 }, items })
+    renderTopic('/topics/huizhou-culture')
+
+    await screen.findByRole('heading', { name: '馆藏词条1' })
+    await user.click(screen.getByRole('button', { name: '第 2 页' }))
+    await user.type(screen.getByRole('searchbox', { name: '检索徽州文化专题' }), '馆藏词条25')
+
+    expect(screen.getByRole('heading', { name: '馆藏词条25' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '专题条目分页' })).not.toBeInTheDocument()
   })
 })

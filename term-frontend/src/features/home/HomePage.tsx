@@ -1,18 +1,35 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { listTopics } from '../../services/knowledgeApi'
+import type { TopicSummary } from '../../types/knowledge'
 import './home.css'
 
 const entrances = [
   ['术语检索', '检索已发布术语、定义、文化说明与多语表达。', '/discover', '进入术语检索'],
   ['术语共建', '提交新的术语资料，等待管理员审核后进入术语库。', '/co-construction', '参与术语共建'],
-  ['文化专题', '以淮河文化等专题组织区域文化术语与知识线索。', '/topics', '浏览文化专题'],
+  ['文化专题', '按文化脉络组织术语、人物与地方知识线索。', '/topics', '浏览文化专题'],
 ] as const
 
 export default function HomePage() {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const [topics, setTopics] = useState<TopicSummary[] | null>(null)
+  const [topicLoadFailed, setTopicLoadFailed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    listTopics()
+      .then((loadedTopics) => {
+        if (active) setTopics(loadedTopics)
+      })
+      .catch(() => {
+        if (active) setTopicLoadFailed(true)
+      })
+    return () => { active = false }
+  }, [])
+
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const normalized = query.trim()
@@ -67,13 +84,31 @@ export default function HomePage() {
         </nav>
       </section>
 
-      <section className="home-topic-preview" aria-labelledby="home-topic-title">
-        <div>
-          <p className="home-eyebrow">DEMONSTRATION TOPIC</p>
-          <h2 id="home-topic-title">淮河文化示范专题</h2>
-          <p>以地域文化为入口，呈现“区域文化实践 → 核心术语 → 推荐译法 → 传播场景”的知识路径。</p>
-          <Link className="home-primary-link" to="/topics/huaihe-culture">查看淮河文化专题</Link>
-        </div>
+      <section className="home-topic-directory" aria-labelledby="home-topic-title">
+        <header className="home-topic-directory__header">
+          <div>
+            <p className="home-eyebrow">CULTURAL COLLECTIONS</p>
+            <h2 id="home-topic-title">文化专题总览</h2>
+            <p>从地域文化到时代话语，沿不同知识脉络进入术语档案。</p>
+          </div>
+          <Link className="home-topic-directory__all" to="/topics">查看全部文化专题</Link>
+        </header>
+        {topics ? (
+          <nav aria-label="首页文化专题目录" className="home-topic-directory__list">
+            {topics.map((topic, index) => (
+              <Link aria-label={`进入${topic.title}专题`} key={topic.slug} to={`/topics/${topic.slug}`}>
+                <span className="home-topic-directory__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <strong>{topic.title}</strong>
+                <span>{topic.term_count} 个术语</span>
+                <span className="home-topic-directory__arrow" aria-hidden="true">↗</span>
+              </Link>
+            ))}
+          </nav>
+        ) : topicLoadFailed ? (
+          <p className="home-topic-directory__status" role="status">专题目录暂时无法加载，可进入完整专题页查看。</p>
+        ) : (
+          <p className="home-topic-directory__status" role="status">正在加载文化专题…</p>
+        )}
       </section>
     </div>
   )

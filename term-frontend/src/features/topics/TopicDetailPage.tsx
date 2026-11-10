@@ -11,6 +11,7 @@ import TopicEntrySection from './TopicEntrySection'
 import './topics.css'
 
 const entryTypeOrder = ['term', 'person', 'place', 'culture', 'herb']
+const PAGE_SIZE = 12
 
 const detailLabels = {
   zh: {
@@ -19,7 +20,7 @@ const detailLabels = {
     errorEyebrow: 'CONNECTION INTERRUPTED', error: '专题暂时无法加载', errorDescription: '请检查网络连接后重新尝试。', retry: '重新加载专题',
     missingSummary: '该专题的研究导语正在整理中。', overview: '专题数据概览', items: '条专题内容', terms: '个核心术语', types: '类研究材料',
     empty: '该专题目前没有可公开展示的条目。', emptyDescription: '内容完成整理和审核后会在此呈现。', navigation: '专题内容导航',
-    childTerms: '先认识这些词', childMore: '再看看相关人物和事物', searchLabel: '检索淮河文化专区', searchPlaceholder: '搜索术语、人物、本草或关键词', searchAll: '当前展示全部专题内容', searchResult: '已筛选出 {{count}} 条专题内容', searchEmpty: '没有找到匹配的专题内容。',
+    childTerms: '先认识这些词', childMore: '再看看相关人物和事物', searchLabel: '检索淮河文化专区', searchPlaceholder: '搜索术语、人物、本草或关键词', searchAll: '当前展示全部专题内容', searchResult: '已筛选出 {{count}} 条专题内容', searchEmpty: '没有找到匹配的专题内容。', pagination: '专题条目分页', previous: '上一页', next: '下一页', pageStatus: '第 {{current}} / {{total}} 页',
   },
   en: {
     loading: 'Opening topic materials…', notFoundEyebrow: 'TOPIC NOT FOUND', notFound: 'This topic does not exist or is not published',
@@ -27,7 +28,7 @@ const detailLabels = {
     errorEyebrow: 'CONNECTION INTERRUPTED', error: 'This topic is temporarily unavailable', errorDescription: 'Check your connection and try again.', retry: 'Reload topic',
     missingSummary: 'The research introduction for this topic is being prepared.', overview: 'Topic data overview', items: 'topic records', terms: 'core terms', types: 'material types',
     empty: 'This topic has no public records yet.', emptyDescription: 'Reviewed materials will appear here when ready.', navigation: 'Topic contents',
-    childTerms: 'Start with these words', childMore: 'Then explore related people and objects', searchLabel: 'Search Huaihe cultural topic', searchPlaceholder: 'Search terms, people, herbs, or keywords', searchAll: 'Showing all topic records', searchResult: '{{count}} topic records matched', searchEmpty: 'No topic records match this search.',
+    childTerms: 'Start with these words', childMore: 'Then explore related people and objects', searchLabel: 'Search Huaihe cultural topic', searchPlaceholder: 'Search terms, people, herbs, or keywords', searchAll: 'Showing all topic records', searchResult: '{{count}} topic records matched', searchEmpty: 'No topic records match this search.', pagination: 'Topic entry pagination', previous: 'Previous page', next: 'Next page', pageStatus: 'Page {{current}} of {{total}}',
   },
 } as const
 
@@ -57,6 +58,13 @@ function bubbleEntries(items: TopicEntry[]) {
   return selected.slice(0, 7)
 }
 
+function paginationPages(current: number, total: number) {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1)
+  return [...new Set([1, current - 1, current, current + 1, total])]
+    .filter((page) => page >= 1 && page <= total)
+    .sort((left, right) => left - right)
+}
+
 const bubbleLayouts = [
   { left: '48%', delay: '-2s', duration: '13s', size: '5.5rem', staticTop: '20%' },
   { left: '64%', delay: '-8s', duration: '15s', size: '6.5rem', staticTop: '38%' },
@@ -76,6 +84,7 @@ export default function TopicDetailPage() {
   const { isChildMode } = useChildMode()
   const [retryKey, setRetryKey] = useState(0)
   const [topicSearch, setTopicSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const requestKey = `${slug}:${retryKey}`
   const [result, setResult] = useState<{
     key: string
@@ -89,6 +98,8 @@ export default function TopicDetailPage() {
       .then((nextTopic) => {
         if (active) {
           setResult({ key: requestKey, status: 'ready', topic: nextTopic })
+          setCurrentPage(1)
+          setTopicSearch('')
         }
       })
       .catch((error: unknown) => {
@@ -111,7 +122,13 @@ export default function TopicDetailPage() {
     if (!normalizedTopicSearch) return entries
     return entries.filter((item) => entrySearchText(item).includes(normalizedTopicSearch))
   }, [normalizedTopicSearch, topic])
-  const groups = useMemo(() => groupEntries(filteredEntries), [filteredEntries])
+  const pageCount = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE))
+  const visiblePage = Math.min(currentPage, pageCount)
+  const pagedEntries = useMemo(
+    () => filteredEntries.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE),
+    [filteredEntries, visiblePage],
+  )
+  const groups = useMemo(() => groupEntries(pagedEntries), [pagedEntries])
   const hasNonTermEntries = groups.some(([type]) => type !== 'term')
   const materialTypeCount = topic ? Object.keys(topic.entry_type_counts).length : 0
   const itemLabel = language === 'en' && topic ? `topic ${topic.item_count === 1 ? 'record' : 'records'}` : copy.items
@@ -128,6 +145,11 @@ export default function TopicDetailPage() {
     : (topic?.summary || copy.missingSummary)
   const topicSearchLabel = language === 'zh' ? `检索${topic?.title ?? ''}专题` : `Search ${topic?.title ?? ''} topic`
   const topicSearchPlaceholder = language === 'zh' ? `搜索${topic?.title ?? '专题'}中的术语或关键词` : `Search terms or keywords in ${topic?.title ?? 'this topic'}`
+
+  const updateTopicSearch = (value: string) => {
+    setTopicSearch(value)
+    setCurrentPage(1)
+  }
 
   if (status === 'loading') {
     return <div aria-busy="true" className="topic-detail"><p className="topics-status">{copy.loading}</p></div>
@@ -157,7 +179,7 @@ export default function TopicDetailPage() {
   }
 
   return (
-    <div className={`topic-detail${isHuaihe ? ' topic-detail--huaihe' : ''}`}>
+    <div className={`topic-detail ${isHuaihe ? 'topic-detail--huaihe' : 'topic-detail--generic'}`}>
       <Link className="topic-detail__back" to="/topics">← {copy.back}</Link>
       {isHuaihe ? (
         <section aria-label={language === 'zh' ? '淮河文脉导览' : 'Huaihe cultural guide'} className="huaihe-hero">
@@ -173,7 +195,7 @@ export default function TopicDetailPage() {
             </div>
             <div className="huaihe-hero__search">
               <label htmlFor="topic-search">{copy.searchLabel}</label>
-              <div><span aria-hidden="true">⌕</span><input id="topic-search" onChange={(event) => setTopicSearch(event.target.value)} placeholder={copy.searchPlaceholder} type="search" value={topicSearch} />{topicSearch ? <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}</div>
+              <div><span aria-hidden="true">⌕</span><input id="topic-search" onChange={(event) => updateTopicSearch(event.target.value)} placeholder={copy.searchPlaceholder} type="search" value={topicSearch} />{topicSearch ? <button onClick={() => updateTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}</div>
               <p>{normalizedTopicSearch ? copy.searchResult.replace('{{count}}', String(filteredEntries.length)) : copy.searchAll}</p>
             </div>
           </div>
@@ -210,18 +232,18 @@ export default function TopicDetailPage() {
           <div>
             <input
               id="topic-search"
-              onChange={(event) => setTopicSearch(event.target.value)}
+              onChange={(event) => updateTopicSearch(event.target.value)}
               placeholder={topicSearchPlaceholder}
               type="search"
               value={topicSearch}
             />
-            {topicSearch ? <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}
+            {topicSearch ? <button onClick={() => updateTopicSearch('')} type="button">{language === 'zh' ? '清空' : 'Clear'}</button> : null}
           </div>
           <p>{normalizedTopicSearch ? copy.searchResult.replace('{{count}}', String(filteredEntries.length)) : copy.searchAll}</p>
         </section>
       ) : null}
 
-      {filteredEntries.length && !isHuaihe ? <TopicConstellation childMode={isChildMode} entries={filteredEntries} language={language} topicTitle={topic.title} /> : null}
+      {filteredEntries.length && !isHuaihe ? <TopicConstellation childMode={isChildMode} entries={filteredEntries.slice(0, 10)} language={language} topicTitle={topic.title} /> : null}
 
       {isHuaihe ? <div className="huaihe-stream-intro"><h2>{language === 'zh' ? <>沿着水脉，<br />阅读地方文化</> : <>Read local culture<br />along the river</>}</h2><p>{language === 'zh' ? '从人物、物产、技艺与地方记忆出发，顺着一条条知识支流认识淮河文化的丰富面貌。' : 'Begin with people, produce, crafts, and local memory, then follow each branch of knowledge.'}</p></div> : null}
 
@@ -234,7 +256,7 @@ export default function TopicDetailPage() {
       ) : filteredEntries.length === 0 ? (
         <section className="topics-status">
           <h2>{copy.searchEmpty}</h2>
-          <button onClick={() => setTopicSearch('')} type="button">{language === 'zh' ? '清空检索' : 'Clear search'}</button>
+          <button onClick={() => updateTopicSearch('')} type="button">{language === 'zh' ? '清空检索' : 'Clear search'}</button>
         </section>
       ) : (
         <>
@@ -259,6 +281,26 @@ export default function TopicDetailPage() {
               />
             ))}
           </div>
+          {pageCount > 1 ? (
+            <nav aria-label={copy.pagination} className="topic-detail__pagination">
+              <button disabled={visiblePage === 1} onClick={() => setCurrentPage(Math.max(1, visiblePage - 1))} type="button">{copy.previous}</button>
+              <div className="topic-detail__pagination-pages">
+                {paginationPages(visiblePage, pageCount).map((page, index, pages) => (
+                  <span className="topic-detail__pagination-page" key={page}>
+                    {index > 0 && page - pages[index - 1] > 1 ? <i aria-hidden="true">…</i> : null}
+                    <button
+                      aria-current={page === visiblePage ? 'page' : undefined}
+                      aria-label={language === 'zh' ? `第 ${page} 页` : `Page ${page}`}
+                      onClick={() => setCurrentPage(page)}
+                      type="button"
+                    >{page}</button>
+                  </span>
+                ))}
+              </div>
+              <span aria-live="polite">{copy.pageStatus.replace('{{current}}', String(visiblePage)).replace('{{total}}', String(pageCount))}</span>
+              <button disabled={visiblePage === pageCount} onClick={() => setCurrentPage(Math.min(pageCount, visiblePage + 1))} type="button">{copy.next}</button>
+            </nav>
+          ) : null}
         </>
       )}
     </div>
