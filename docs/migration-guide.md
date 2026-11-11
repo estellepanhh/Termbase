@@ -54,17 +54,18 @@ npm run lint
 
 再按 README 的公共路由和浏览器清单进行人工验收。
 
-## 2026-11-07 已审核术语总表
+## 2026-11-11 术语与淮河专题数据发布
 
-`term-backend/data/术语库总表（741条·2026-11-07已审核）.xlsx` 是文化专题与多语译文的已审核数据源。导入时按规范化中文名称合并词条：同一个词可以属于多个专题，但不会生成重复的术语档案；同一语言存在不同译法时，首条作为推荐译法，其余保留为可接受译法。
+`term-backend/data/术语库总表（835条·2026-11-11）.xlsx` 是文化专题与多语译文的当前数据源；`term-backend/data/淮河文化人物与本草（网站专题条目·41条备.xlsx` 独立保存 21 位文化人物和 20 味淮河本草。发布时使用 `scripts/import_catalog_release.py` 在同一事务内导入两份数据：任一部分失败都会整体回滚。
 
 当前总表的验收基线为：
 
-- 741 条专题关联；
-- 734 个规范化术语；
+- 835 条术语专题关联；
+- 828 个规范化术语；
 - 10 个已发布专题；
 - 英、法、俄、西、阿、日 6 个语种全部覆盖；
-- 4410 条去重后的译文（包含冲突译法的保留项）。
+- 4974 条去重后的译文；
+- 淮河专题另含 21 位人物和 20 味本草，最终共 179 条专题内容。
 
 ### 本地或服务器预演
 
@@ -72,13 +73,13 @@ npm run lint
 
 ```powershell
 cd D:\Termbase\term-backend
-.\venv\Scripts\python.exe scripts\import_master_catalog.py
+.\venv\Scripts\python.exe scripts\import_catalog_release.py
 ```
 
 报告中的 `mode` 应为 `preview_rolled_back`，并符合上述基线。确认数据库完整备份可恢复后，才显式执行：
 
 ```powershell
-.\venv\Scripts\python.exe scripts\import_master_catalog.py --apply
+.\venv\Scripts\python.exe scripts\import_catalog_release.py --apply
 ```
 
 Linux 服务器对应命令：
@@ -86,8 +87,8 @@ Linux 服务器对应命令：
 ```bash
 cd /var/www/termbase/term-backend
 source venv/bin/activate
-python scripts/import_master_catalog.py
-python scripts/import_master_catalog.py --apply
+python scripts/import_catalog_release.py
+python scripts/import_catalog_release.py --apply
 ```
 
 脚本可重复运行；第二次执行不会重复创建术语、译文、来源、场景或专题关联。
@@ -104,8 +105,8 @@ cd term-backend
 source venv/bin/activate
 pip install -r requirements.txt
 flask db upgrade
-python scripts/import_master_catalog.py
-python scripts/import_master_catalog.py --apply
+python scripts/import_catalog_release.py
+python scripts/import_catalog_release.py --apply
 cd ../term-frontend
 npm ci
 npm run build
@@ -121,7 +122,7 @@ curl -fsS https://terms.estellepan.top/api/topics
 
 ### 回滚
 
-总表导入会复用并更新已存在词条，不能靠删除 `master_catalog_2026_11_07` 标记完整还原。因此上线前的数据库备份是正式回滚点。若验收失败：
+总表导入会复用并更新已存在词条，不能靠删除 `master_catalog_2026_11_11` 标记完整还原。因此上线前的数据库备份是正式回滚点。若验收失败：
 
 1. 将代码切回上一已知可用提交并重新构建前端；
 2. 从上线前备份恢复数据库；
