@@ -116,6 +116,16 @@ curl -fsS https://terms.estellepan.top/api/v1/health
 curl -fsS https://terms.estellepan.top/api/topics
 ```
 
+如果阿里云网页终端容易断开，可在拉取代码后让发布脚本在后台继续运行：
+
+```bash
+cd /var/www/termbase && git pull --ff-only origin main
+nohup bash term-backend/scripts/publish_catalog_release.sh > "$HOME/catalog-release.log" 2>&1 &
+tail -f "$HOME/catalog-release.log"
+```
+
+看到 `CATALOG_RELEASE_SUCCESS` 即表示备份、预演、正式导入和公网数量核验均已完成。即使网页终端中途断开，重新登录后再次执行最后一行即可查看进度。
+
 如果部署环境的后端进程不会自动重载，在服务器上先用 `systemctl list-units --type=service | grep -Ei 'term|gunicorn'` 确认现有服务名，再重启该服务；不要猜测或新建第二套服务。
 
 浏览器验收至少包括：文化专题目录能检索 10 个专题；`/topics/huaihe-culture` 保留淮河河流与气泡导览；`/topics/huizhou-culture` 等其他专题显示当前专题自己的知识星图；同名跨专题术语只有一个详情档案。
