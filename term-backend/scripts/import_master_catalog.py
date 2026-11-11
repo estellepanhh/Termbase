@@ -20,7 +20,7 @@ from termbase_app.services.master_catalog_import import (
 DEFAULT_WORKBOOK = (
     Path(__file__).parent.parent
     / "data"
-    / "术语库总表（741条·2026-11-07已审核）.xlsx"
+    / "术语库总表（835条·2026-11-11）.xlsx"
 )
 
 

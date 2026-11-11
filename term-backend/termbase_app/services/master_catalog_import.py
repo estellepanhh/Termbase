@@ -61,7 +61,9 @@ LANGUAGE_DEFINITIONS = {
     "ja": ("日语", "Japanese"),
 }
 
-MASTER_CATALOG_KEY = "master_catalog_2026_11_07"
+MASTER_CATALOG_KEY = "master_catalog_2026_11_11"
+PREVIOUS_MASTER_CATALOG_KEYS = ("master_catalog_2026_11_07",)
+MANAGED_MASTER_CATALOG_KEYS = (MASTER_CATALOG_KEY, *PREVIOUS_MASTER_CATALOG_KEYS)
 
 TOPIC_DEFINITIONS = {
     "徽州文化": ("huizhou-culture", "从徽商、徽州村落与传统技艺中阅读徽州文化。"),
@@ -241,6 +243,25 @@ def _group_rows(catalog: CatalogData) -> dict[str, list[CatalogRow]]:
     return grouped
 
 
+def _prior_catalog_values(term: Term) -> tuple[dict[str, set[str]], set[str], set[str]]:
+    translations = {code: set() for code in LANGUAGE_DEFINITIONS}
+    sources: set[str] = set()
+    scenes: set[str] = set()
+    payload = term.legacy_payload or {}
+    for key in MANAGED_MASTER_CATALOG_KEYS:
+        archive = payload.get(key) or {}
+        for row in archive.get("rows") or []:
+            for column, code in LANGUAGE_COLUMNS.items():
+                value = normalize_text(row.get(column))
+                if value:
+                    translations[code].add(value)
+            source = normalize_text(row.get("来源"))
+            if source:
+                sources.add(source)
+            scenes.update(split_labels(row.get("场景分类")))
+    return translations, sources, scenes
+
+
 def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
     """Upsert the reviewed catalog into the normalized knowledge model.
 
@@ -285,6 +306,7 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
         existing_terms.setdefault(normalize_name(term.preferred_name_zh), term)
 
     terms_by_name: dict[str, Term] = {}
+    prior_values_by_name: dict[str, tuple[dict[str, set[str]], set[str], set[str]]] = {}
     grouped_rows = _group_rows(catalog)
     for term_name, rows in grouped_rows.items():
         primary = rows[0]
@@ -297,6 +319,7 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
             )
             session.add(term)
             existing_terms[term_name] = term
+        prior_values_by_name[term_name] = _prior_catalog_values(term)
         term.preferred_name_zh = term_name
         term.definition_zh = _first_clause(primary.cultural_connotation)
         term.cultural_connotation = primary.cultural_connotation
@@ -305,12 +328,16 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
         term.status = "published"
         term.data_quality = "curated"
         payload = dict(term.legacy_payload or {})
+        for previous_key in PREVIOUS_MASTER_CATALOG_KEYS:
+            payload.pop(previous_key, None)
         payload[MASTER_CATALOG_KEY] = {
             "rows": [row.raw for row in rows],
             "topics": list(dict.fromkeys(row.topic_name for row in rows)),
             "tags": list(dict.fromkeys(tag for row in rows for tag in row.tags)),
         }
         term.legacy_payload = payload
+        if term.legacy_table in MANAGED_MASTER_CATALOG_KEYS:
+            term.legacy_table = MASTER_CATALOG_KEY
         terms_by_name[term_name] = term
 
     session.flush()
@@ -330,6 +357,12 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
                 )
             )
             existing = translations_by_language.setdefault(language.id, [])
+            desired_values = set(values)
+            prior_values = prior_values_by_name[term_name][0][code]
+            for item in list(existing):
+                if normalize_text(item.text) in prior_values - desired_values:
+                    session.delete(item)
+                    existing.remove(item)
             by_text = {normalize_text(item.text): item for item in existing}
             for item in existing:
                 if item.translation_type == "recommended":
@@ -388,6 +421,19 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
             if not any(link.context is context for link in term.contexts):
                 session.add(TermContext(term=term, context=context))
 
+    for term_name, rows in grouped_rows.items():
+        term = terms_by_name[term_name]
+        _, prior_sources, prior_scenes = prior_values_by_name[term_name]
+        desired_sources = {row.source_text for row in rows}
+        desired_scenes = {scene for row in rows for scene in row.scenes}
+        term.sources[:] = [
+            source for source in term.sources
+            if normalize_text(source.citation) not in prior_sources - desired_sources
+        ]
+        for link in list(term.contexts):
+            if link.context and link.context.name_zh in prior_scenes - desired_scenes:
+                session.delete(link)
+
     session.flush()
 
     existing_items: dict[tuple[int, int], list[TopicItem]] = {}
@@ -418,7 +464,7 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
         desired_item_ids.add(item.id)
 
     for item in session.scalars(
-        select(TopicItem).where(TopicItem.legacy_table == MASTER_CATALOG_KEY)
+        select(TopicItem).where(TopicItem.legacy_table.in_(MANAGED_MASTER_CATALOG_KEYS))
     ):
         if item.id not in desired_item_ids:
             session.delete(item)

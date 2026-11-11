@@ -6,10 +6,11 @@ from openpyxl import Workbook
 
 from termbase_app import create_app
 from termbase_app.extensions import db
-from termbase_app.models import Context, Language, Source, Term, Topic, TopicItem, Translation
+from termbase_app.models import Context, Language, Source, Term, TermContext, Topic, TopicItem, Translation
 from termbase_app.services.master_catalog_import import (
     CatalogValidationError,
     MASTER_CATALOG_KEY,
+    PREVIOUS_MASTER_CATALOG_KEYS,
     TOPIC_DEFINITIONS,
     import_master_catalog,
     load_catalog,
@@ -287,7 +288,7 @@ class MasterCatalogImportTests(unittest.TestCase):
     def test_cli_defaults_to_preview_and_only_apply_commits(self):
         args = build_parser().parse_args([])
         self.assertFalse(args.apply)
-        self.assertEqual(args.workbook.name, "术语库总表（741条·2026-11-07已审核）.xlsx")
+        self.assertEqual(args.workbook.name, "术语库总表（835条·2026-11-11）.xlsx")
         catalog = self.catalog([catalog_row()])
 
         run_catalog_import(catalog, apply=False)
@@ -319,6 +320,46 @@ class MasterCatalogImportTests(unittest.TestCase):
             {item.code for item in db.session.scalars(db.select(Language))},
             {"und", "en", "fr", "ru", "es", "ar", "ja"},
         )
+
+    def test_replaces_values_and_links_managed_by_the_previous_catalog(self):
+        old_key = PREVIOUS_MASTER_CATALOG_KEYS[0]
+        english = Language(code="en", name_zh="英语", name_en="English")
+        old_source = Source(title="旧来源", citation="旧来源")
+        old_context = Context(code="old-scene", name_zh="旧场景")
+        term = Term(
+            preferred_name_zh="花鼓灯",
+            status="published",
+            legacy_table=old_key,
+            legacy_id="花鼓灯",
+            legacy_payload={old_key: {"rows": [{"英文": "old translation", "来源": "旧来源", "场景分类": "旧场景"}]}},
+        )
+        term.sources.append(old_source)
+        term.translations.append(Translation(language=english, text="old translation", translation_type="recommended", review_status="reviewed"))
+        term.contexts.append(TermContext(context=old_context))
+        topic = Topic(slug="huaihe-culture", title="淮河文化", status="published")
+        stale_item = TopicItem(topic=topic, term=term, entry_type="term", title="花鼓灯", legacy_table=old_key, legacy_id="1")
+        db.session.add_all([english, term, topic, stale_item])
+        db.session.flush()
+
+        import_master_catalog(db.session, self.catalog([catalog_row()]))
+        db.session.flush()
+
+        self.assertEqual(term.legacy_table, MASTER_CATALOG_KEY)
+        self.assertNotIn(old_key, term.legacy_payload)
+        translations = list(db.session.scalars(
+            db.select(Translation).where(Translation.term_id == term.id)
+        ))
+        contexts = list(db.session.scalars(
+            db.select(TermContext).where(TermContext.term_id == term.id)
+        ))
+        self.assertEqual(len(translations), 6)
+        self.assertEqual(
+            [item.text for item in translations if item.language.code == "en"],
+            ["flower-drum lantern dance"],
+        )
+        self.assertEqual([source.citation for source in term.sources], ["国家级非物质文化遗产名录；地方文化志"])
+        self.assertEqual({link.context.name_zh for link in contexts}, {"文化传播", "节庆活动"})
+        self.assertEqual(stale_item.legacy_table, MASTER_CATALOG_KEY)
 
 
 if __name__ == "__main__":
