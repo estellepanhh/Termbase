@@ -16,7 +16,10 @@ export default function ResearchAvatar({ thinking = false, className = '', stage
           <path d="M77 188c0-81 28-132 76-132 51 0 78 48 72 135-12-18-17-40-15-61-25 18-72 31-129 23" fill="#163f43" />
           <ellipse cx="151" cy="174" rx="65" ry="77" fill="#f2cfae" />
           <path d="M88 157c8-70 30-100 69-100 44 0 70 35 68 97-24-4-40-25-46-48-17 30-48 47-91 51" fill="#173f43" />
-          <g className="research-avatar__eyes" fill="#18383b"><ellipse cx="128" cy="177" rx="5" ry="7" /><ellipse cx="177" cy="177" rx="5" ry="7" /></g>
+          <g className="research-avatar__eyes">
+            <path d="M117 179q11-12 22 0" />
+            <path d="M166 179q11-12 22 0" />
+          </g>
           <path d="M138 211q14 12 30 0" fill="none" stroke="#a65f51" strokeLinecap="round" strokeWidth="4" />
           <path d="M91 291q59 48 119 0" fill="none" opacity=".8" stroke="#d0a85f" strokeWidth="5" />
           <circle cx="151" cy="327" r="20" fill="#f5e7c6" stroke="#d0a85f" strokeWidth="3" /><text x="151" y="335" textAnchor="middle" fontSize="21" fill="#245e60">文</text>
@@ -42,7 +45,8 @@ export default function ResearchAvatar({ thinking = false, className = '', stage
         <path className="research-avatar__hair" d="M20 29c0-9.3 4.4-15 12.2-15 7.4 0 12 4.8 12 13.2-2.6-.6-5.3-2.7-7-5.4-3.5 3.6-8.8 5.6-17.2 5.7V29Z" />
         <path className="research-avatar__hairpin" d="M25 14.6h14M32 10.5v6" />
         <g className="research-avatar__eyes">
-          <path d="M25.4 30.2h3.2M35.4 30.2h3.2" />
+          <path d="M24.5 30.8q2.1-2 4.2 0" />
+          <path d="M35.3 30.8q2.1-2 4.2 0" />
         </g>
         <path className="research-avatar__smile" d="M29 35.2c1.8 1.5 4.2 1.5 6 0" />
         <path className="research-avatar__collar" d="m26 44 6 6 6-6" />
