@@ -98,6 +98,28 @@ describe('ChatAI', () => {
     expect(await screen.findByText('淮河文脉')).toBeInTheDocument()
   })
 
+  it('keeps automatic scrolling inside the message history so the avatar stage stays fixed', async () => {
+    const user = userEvent.setup()
+    const scrollTo = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: scrollTo })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(streamResponse([
+      'data: {"content":"回答内容"}\n\ndata: [DONE]\n\n',
+    ]))
+    render(<ChatAI />)
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    const history = document.querySelector<HTMLElement>('.culture-assistant__messages')
+    expect(history).not.toBeNull()
+    Object.defineProperty(history, 'scrollHeight', { configurable: true, value: 900 })
+    scrollTo.mockClear()
+
+    await user.type(screen.getByRole('textbox'), '解释术语')
+    await user.click(screen.getByRole('button', { name: '发送问题' }))
+    expect(await screen.findByText('回答内容')).toBeInTheDocument()
+
+    await waitFor(() => expect(scrollTo).toHaveBeenLastCalledWith({ behavior: 'smooth', top: 900 }))
+    expect(document.querySelector('.culture-assistant__avatar-stage')).not.toContainElement(history)
+  })
+
   it.each([
     [401, '登录状态已失效，请重新登录。', false],
     [413, '问题太长，请控制在 500 字以内。', false],

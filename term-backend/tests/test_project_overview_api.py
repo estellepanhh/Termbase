@@ -72,6 +72,19 @@ class ProjectOverviewApiTests(unittest.TestCase):
         self.assertEqual(overview["language_count"], 2)
         self.assertEqual(overview["published_topic_count"], 1)
 
+    def test_overview_counts_only_the_six_languages_under_active_construction(self):
+        term = Term(preferred_name_zh="示例术语", status="published")
+        db.session.add(term)
+        for code in ("en", "fr", "ru", "es", "ar", "ja", "und"):
+            language = Language(code=code, name_zh=code, name_en=code)
+            db.session.add(language)
+            db.session.add(Translation(term=term, language=language, text=f"translation-{code}"))
+        db.session.commit()
+
+        overview = self.client.get("/api/project/overview").get_json()["data"]
+
+        self.assertEqual(overview["language_count"], 6)
+
     def test_overview_returns_zero_counts_for_empty_database(self):
         response = self.client.get("/api/project/overview")
 

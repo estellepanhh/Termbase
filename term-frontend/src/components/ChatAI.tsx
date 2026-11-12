@@ -42,7 +42,7 @@ export default function ChatAI() {
   const [error, setError] = useState('')
   const [lastQuestion, setLastQuestion] = useState('')
   const [canRetry, setCanRetry] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -51,8 +51,9 @@ export default function ChatAI() {
   const nextMessageId = useRef(2)
 
   useEffect(() => {
-    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    const history = messagesRef.current
+    if (history && typeof history.scrollTo === 'function') {
+      history.scrollTo({ behavior: 'smooth', top: history.scrollHeight })
     }
   }, [messages, error, loading])
 
@@ -175,11 +176,10 @@ export default function ChatAI() {
                   <a href="/login">前往登录</a>
                 </div>
               ) : <>
-                <div aria-live="polite" className="culture-assistant__messages">
+                <div aria-live="polite" className="culture-assistant__messages" ref={messagesRef}>
                   {messages.map((message) => <p className={`culture-assistant__message culture-assistant__message--${message.role}`} key={message.id}>{message.content}</p>)}
                   {error ? <div className="culture-assistant__error" role="alert"><span>{error}</span>{canRetry ? <button onClick={() => void sendMessage(lastQuestion)} type="button">重新发送</button> : null}</div> : null}
                   {loading ? <p className="culture-assistant__thinking"><ResearchAvatar thinking /><span>正在梳理文脉…</span></p> : null}
-                  <div ref={messagesEndRef} />
                 </div>
                 <div aria-label="推荐提问" className="culture-assistant__suggestions">
                   {['比较六种译法', '带我游淮河', '儿童版解释'].map((suggestion) => <button key={suggestion} onClick={() => { setInputValue(suggestion); inputRef.current?.focus() }} type="button">{suggestion}</button>)}
