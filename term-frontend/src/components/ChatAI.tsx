@@ -5,6 +5,17 @@ import ResearchAvatar from './ResearchAvatar'
 import { ChatServiceError, consumeChatStream } from './chat/streamParser'
 
 type ChatMessage = { id: number; role: 'assistant' | 'user'; content: string }
+type LauncherPosition = { left: number; top: number }
+type LauncherDrag = {
+  pointerId: number
+  startX: number
+  startY: number
+  startLeft: number
+  startTop: number
+  width: number
+  height: number
+  moved: boolean
+}
 
 const welcomeMessage: ChatMessage = {
   id: 1,
@@ -42,6 +53,7 @@ export default function ChatAI() {
   const [error, setError] = useState('')
   const [lastQuestion, setLastQuestion] = useState('')
   const [canRetry, setCanRetry] = useState(false)
+  const [launcherPosition, setLauncherPosition] = useState<LauncherPosition | null>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -49,6 +61,55 @@ export default function ChatAI() {
   const wasOpenRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   const nextMessageId = useRef(2)
+  const launcherDragRef = useRef<LauncherDrag | null>(null)
+  const suppressLauncherClickRef = useRef(false)
+
+  const startLauncherDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return
+    const rect = event.currentTarget.parentElement?.getBoundingClientRect()
+    if (!rect) return
+    launcherDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      width: rect.width,
+      height: rect.height,
+      moved: false,
+    }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const moveLauncher = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = launcherDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const deltaX = event.clientX - drag.startX
+    const deltaY = event.clientY - drag.startY
+    if (!drag.moved && Math.hypot(deltaX, deltaY) < 5) return
+    drag.moved = true
+    const edgeGap = 8
+    setLauncherPosition({
+      left: Math.min(Math.max(edgeGap, drag.startLeft + deltaX), Math.max(edgeGap, window.innerWidth - drag.width - edgeGap)),
+      top: Math.min(Math.max(edgeGap, drag.startTop + deltaY), Math.max(edgeGap, window.innerHeight - drag.height - edgeGap)),
+    })
+  }
+
+  const finishLauncherDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = launcherDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    suppressLauncherClickRef.current = drag.moved
+    launcherDragRef.current = null
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+  }
+
+  const activateLauncher = () => {
+    if (suppressLauncherClickRef.current) {
+      suppressLauncherClickRef.current = false
+      return
+    }
+    setVisible(true)
+  }
 
   useEffect(() => {
     const history = messagesRef.current
@@ -134,9 +195,22 @@ export default function ChatAI() {
   }
 
   return (
-    <div className="culture-assistant">
+    <div
+      className="culture-assistant"
+      style={launcherPosition ? { bottom: 'auto', left: launcherPosition.left, right: 'auto', top: launcherPosition.top } : undefined}
+    >
       {!visible ? (
-        <button aria-label="打开文脉 AI 助手" className="culture-assistant__trigger" onClick={() => setVisible(true)} ref={triggerRef} type="button">
+        <button
+          aria-label="打开文脉 AI 助手"
+          className="culture-assistant__trigger"
+          onClick={activateLauncher}
+          onPointerCancel={finishLauncherDrag}
+          onPointerDown={startLauncherDrag}
+          onPointerMove={moveLauncher}
+          onPointerUp={finishLauncherDrag}
+          ref={triggerRef}
+          type="button"
+        >
           <span className="culture-assistant__avatar"><ResearchAvatar /></span>
           <span className="culture-assistant__trigger-copy"><small>文脉 AI</small><strong>数字研究员</strong></span>
         </button>

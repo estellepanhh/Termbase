@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChatAI from './ChatAI'
@@ -47,6 +47,24 @@ describe('ChatAI', () => {
     expect(screen.getByRole('dialog', { name: '文脉 AI 助手' })).toHaveAttribute('aria-modal', 'true')
     expect(screen.getByText(/你好，我可以帮你解释术语/)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
+  })
+
+  it('lets the launcher be dragged without opening the dialog', () => {
+    render(<ChatAI />)
+    const trigger = screen.getByRole('button', { name: '打开文脉 AI 助手' })
+    const launcher = trigger.parentElement as HTMLDivElement
+    vi.spyOn(launcher, 'getBoundingClientRect').mockReturnValue({
+      bottom: 660, height: 60, left: 800, right: 940, top: 600, width: 140,
+      x: 800, y: 600, toJSON: () => ({}),
+    })
+
+    fireEvent.pointerDown(trigger, { button: 0, clientX: 870, clientY: 630, pointerId: 1 })
+    fireEvent.pointerMove(trigger, { clientX: 470, clientY: 330, pointerId: 1 })
+    fireEvent.pointerUp(trigger, { clientX: 470, clientY: 330, pointerId: 1 })
+    fireEvent.click(trigger)
+
+    expect(launcher).toHaveStyle({ left: '400px', top: '300px' })
+    expect(screen.queryByRole('dialog', { name: '文脉 AI 助手' })).not.toBeInTheDocument()
   })
 
   it('uses the confirmed two-part digital researcher stage and prompt routes', async () => {
