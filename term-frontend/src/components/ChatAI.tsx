@@ -121,6 +121,13 @@ export default function ChatAI() {
   useEffect(() => () => abortRef.current?.abort(), [])
 
   useEffect(() => {
+    if (!visible) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [visible])
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       if (visible) {
         wasOpenRef.current = true

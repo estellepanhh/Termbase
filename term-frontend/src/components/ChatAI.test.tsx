@@ -37,6 +37,7 @@ describe('ChatAI', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    document.body.style.overflow = ''
   })
 
   it('opens an accessible modal with the digital researcher', async () => {
@@ -87,6 +88,18 @@ describe('ChatAI', () => {
     await user.keyboard('{Escape}')
     const launcher = screen.getByRole('button', { name: '打开文脉 AI 助手' })
     await waitFor(() => expect(launcher).toHaveFocus())
+  })
+
+  it('keeps page scrolling locked while the conversation is open', async () => {
+    const user = userEvent.setup()
+    document.body.style.overflow = 'scroll'
+    render(<ChatAI />)
+
+    await user.click(screen.getByRole('button', { name: '打开文脉 AI 助手' }))
+    expect(document.body).toHaveStyle({ overflow: 'hidden' })
+
+    await user.click(screen.getByRole('button', { name: '关闭文脉 AI 助手' }))
+    expect(document.body).toHaveStyle({ overflow: 'scroll' })
   })
 
   it('shows a login path without sending a request when signed out', async () => {

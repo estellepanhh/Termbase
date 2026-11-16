@@ -123,19 +123,19 @@
 
 /* Confirmed digital researcher prototype: avatar stage + live conversation. */
 .culture-assistant__backdrop{background:rgba(7,28,33,.52);backdrop-filter:blur(18px)}
-.culture-assistant__panel{display:grid;grid-template-columns:.9fr 1.1fr;width:min(67.5rem,96vw);height:min(40.625rem,90vh);min-height:34rem;overflow:hidden;border-radius:4rem 1.75rem 4.5rem 2.1rem;background:linear-gradient(135deg,rgba(253,250,242,.98),rgba(243,246,238,.96));box-shadow:0 48px 150px rgba(0,0,0,.28)}
+.culture-assistant__panel{display:grid;grid-template-columns:.9fr 1.1fr;grid-template-rows:minmax(0,1fr);width:min(67.5rem,96vw);height:min(40.625rem,90vh);min-height:min(34rem,90vh);overflow:hidden;border-radius:4rem 1.75rem 4.5rem 2.1rem;background:linear-gradient(135deg,rgba(253,250,242,.98),rgba(243,246,238,.96));box-shadow:0 48px 150px rgba(0,0,0,.28)}
 .culture-assistant__panel::before{display:none}
 .culture-assistant__close{position:absolute;right:1.1rem;top:1.1rem;z-index:6;display:grid;place-items:center;width:2.5rem;height:2.5rem;border:0;border-radius:50%;background:rgba(20,45,48,.08);color:#173d42;cursor:pointer}
-.culture-assistant__avatar-stage{position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 36%,#dceee4,#8abcb5 55%,#23616a)}
+.culture-assistant__avatar-stage{position:relative;display:grid;place-items:center;min-height:0;overflow:hidden;background:radial-gradient(circle at 50% 36%,#dceee4,#8abcb5 55%,#23616a)}
 .culture-assistant__avatar-stage::before,.culture-assistant__avatar-stage::after{position:absolute;width:18rem;aspect-ratio:1;border:1px solid rgba(255,255,255,.35);border-radius:50%;content:"";animation:assistant-halo 4s ease-in-out infinite}.culture-assistant__avatar-stage::after{width:22.5rem;animation-delay:-2s}
 @keyframes assistant-halo{50%{transform:scale(1.06);opacity:.35}}
 .research-avatar--stage{position:relative;z-index:2;width:min(18rem,82%);height:auto;overflow:visible;filter:drop-shadow(0 28px 28px rgba(4,34,40,.25));animation:assistant-breathe 4s ease-in-out infinite}
 @keyframes assistant-breathe{50%{transform:translateY(-.45rem) scale(1.012)}}
 .research-avatar--stage .research-avatar__eyes{transform-origin:center}
 .culture-assistant__avatar-label{position:absolute;z-index:3;bottom:2.1rem;display:grid;gap:.2rem;text-align:center}.culture-assistant__avatar-label strong{color:#fff;font:500 1.3rem Georgia,'Noto Serif SC',serif}.culture-assistant__avatar-label small{color:#d3e7e2;font-size:.72rem;letter-spacing:.12em}
-.culture-assistant__conversation{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;min-width:0;padding:4.25rem 3.35rem 2.6rem;color:var(--color-ink)}
+.culture-assistant__conversation{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;min-width:0;min-height:0;overflow:hidden;padding:4.25rem 3.35rem 2.6rem;color:var(--color-ink)}
 .culture-assistant__conversation-header h2{margin:0;font:500 1.95rem/1.25 Georgia,'Noto Serif SC',serif}.culture-assistant__conversation-header p{margin:.5rem 0 0;color:var(--color-muted)}
-.culture-assistant__messages{min-height:0;overflow:auto;padding:1.75rem 0 1rem;background:transparent}
+.culture-assistant__messages{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:1.75rem 0 1rem;background:transparent}
 .culture-assistant__message{max-width:92%;margin:0 0 .8rem;padding:.8rem 1rem;border:0;border-radius:1.25rem 1.25rem 1.25rem .3rem;background:rgba(36,115,108,.09);box-shadow:none;line-height:1.7}.culture-assistant__message--user{margin-left:auto;border-radius:1.25rem .3rem 1.25rem 1.25rem;background:#397461;color:#fff}
 .culture-assistant__suggestions{display:flex;flex-wrap:wrap;gap:.5rem;padding:0 0 .8rem}.culture-assistant__suggestions button{padding:.5rem .75rem;border:1px solid rgba(20,45,48,.14);border-radius:999px;background:transparent;color:var(--jade-600);cursor:pointer}.culture-assistant__suggestions button:hover{background:rgba(36,115,108,.08)}
 .culture-assistant__composer{display:flex;gap:.55rem;padding:.45rem;border:0;border-radius:999px;background:rgba(20,45,48,.07)}.culture-assistant__composer textarea{min-height:2.65rem;max-height:5.2rem;padding:.65rem .8rem;border:0;border-radius:1.2rem;background:transparent}.culture-assistant__composer textarea:focus{border:0;box-shadow:none}.culture-assistant__composer button{align-self:center}
