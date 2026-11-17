@@ -318,6 +318,27 @@ class PublicTermsApiTests(unittest.TestCase):
         self.assertEqual(detail["interpretation_count"], 1)
         self.assertEqual(len(detail["interpretations"]), 1)
 
+    def test_detail_returns_all_imported_definition_details(self):
+        term = db.session.get(Term, self.term_id)
+        term.legacy_payload = {
+            "master_catalog_2026_11_17": {
+                "definition_details": [
+                    {"第几条": 1, "释义内容": "第一条完整释义", "来源分类": "思想"},
+                    {"第几条": 2, "释义内容": "第二条补充释义", "来源分类": "传播"},
+                ]
+            }
+        }
+        db.session.commit()
+
+        response = self.client.get(f"/api/v1/terms/{self.term_id}")
+
+        self.assertEqual(response.status_code, 200)
+        interpretations = response.get_json()["data"]["interpretations"]
+        self.assertEqual(
+            [(item["title"], item["explanation"]) for item in interpretations],
+            [("思想", "第一条完整释义"), ("传播", "第二条补充释义")],
+        )
+
     def test_detail_falls_back_to_definition_when_cultural_content_is_empty(self):
         term = Term(
             preferred_name_zh="淮河水利",

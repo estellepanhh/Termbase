@@ -214,6 +214,33 @@ def serialize_interpretations(records):
     interpretations = []
     seen = set()
     for record in sorted(records, key=lambda item: item.id):
+        payload = record.legacy_payload if isinstance(record.legacy_payload, dict) else {}
+        archived_details = []
+        for key, archive in payload.items():
+            if not str(key).startswith("master_catalog_") or not isinstance(archive, dict):
+                continue
+            details = archive.get("definition_details")
+            if isinstance(details, list):
+                archived_details.extend(item for item in details if isinstance(item, dict))
+        if archived_details:
+            for detail in archived_details:
+                explanation = str(detail.get("释义内容") or "").strip()
+                key = _normalized_text(explanation)
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                interpretations.append({
+                    "index": len(interpretations) + 1,
+                    "title": str(detail.get("来源分类") or "").strip()
+                    or f"文化内涵 {len(interpretations) + 1}",
+                    "explanation": explanation,
+                    "definition_zh": record.definition_zh,
+                    "cultural_connotation": explanation,
+                    "term_level": record.term_level,
+                    "culture_category": record.culture_category,
+                    "record_id": record.id,
+                })
+            continue
         explanation = record.cultural_connotation.strip() or record.definition_zh.strip()
         key = _normalized_text(explanation)
         if not key or key in seen:

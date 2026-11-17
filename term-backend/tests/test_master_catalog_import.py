@@ -6,12 +6,16 @@ from openpyxl import Workbook
 
 from termbase_app import create_app
 from termbase_app.extensions import db
-from termbase_app.models import Context, Language, Source, Term, TermContext, Topic, TopicItem, Translation
+from termbase_app.models import (
+    Context, Language, ReviewCase, ReviewCaseTerm, Source, Term, TermContext,
+    TermRelation, Topic, TopicItem, Translation,
+)
 from termbase_app.services.master_catalog_import import (
     CatalogValidationError,
     MASTER_CATALOG_KEY,
     PREVIOUS_MASTER_CATALOG_KEYS,
     TOPIC_DEFINITIONS,
+    clear_term_catalog,
     import_master_catalog,
     load_catalog,
 )
@@ -283,7 +287,75 @@ class MasterCatalogImportTests(unittest.TestCase):
         )
         self.assertEqual(len(TOPIC_DEFINITIONS), 10)
 
-    def test_merges_cross_topic_term_and_preserves_translation_conflict(self):
+    def test_clear_term_catalog_removes_term_data_but_preserves_topics_materials_and_review_cases(self):
+        topic = Topic(slug="huaihe-culture", title="淮河文化", status="published")
+        first = Term(preferred_name_zh="旧术语一", status="published")
+        second = Term(preferred_name_zh="旧术语二", status="published")
+        language = Language(code="en", name_zh="英语", name_en="English")
+        source = Source(title="旧来源", citation="旧来源")
+        context = Context(code="old-scene", name_zh="旧场景")
+        first.translations.append(Translation(language=language, text="old term"))
+        first.sources.append(source)
+        first.contexts.append(TermContext(context=context, explanation="旧解释"))
+        db.session.add_all([
+            topic, first, second,
+            TopicItem(topic=topic, term=first, entry_type="term", title="旧术语一"),
+            TopicItem(topic=topic, entry_type="person", title="刘安", payload={"分类": "人物"}),
+            TopicItem(topic=topic, entry_type="herb", title="亳菊", payload={"中文品名": "亳菊"}),
+            TermRelation(source_term=first, target_term=second, relation_type="related"),
+        ])
+        review = ReviewCase(
+            source_request_id="request-1", title="保留案例", source_text="旧术语一",
+            audience="general", scenario="web", style="plain", locale="global",
+            ai_snapshot={},
+        )
+        review.term_links.append(ReviewCaseTerm(term=first, position=1))
+        db.session.add(review)
+        db.session.flush()
+
+        report = clear_term_catalog(db.session)
+        db.session.flush()
+
+        self.assertEqual(report.terms, 2)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Translation.id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Source.id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Context.id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(ReviewCase.id))), 1)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(ReviewCaseTerm.case_id))), 0)
+        remaining = list(db.session.scalars(db.select(TopicItem).order_by(TopicItem.entry_type)))
+        self.assertEqual([(item.entry_type, item.title) for item in remaining], [("herb", "亳菊"), ("person", "刘安")])
+
+    def test_real_release_import_creates_one_record_per_sequence_with_all_details(self):
+        release = Path(__file__).parent.parent / "data" / "副本术语库导入版.xlsx"
+        catalog = load_catalog(release)
+
+        clear_term_catalog(db.session)
+        report = import_master_catalog(db.session, catalog)
+        db.session.flush()
+
+        self.assertEqual(report.source_rows, 835)
+        self.assertEqual(report.term_records, 835)
+        self.assertEqual(report.canonical_terms, 828)
+        self.assertEqual(report.definitions, 987)
+        self.assertEqual(report.scene_details, 2387)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 835)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Translation.id))), 5010)
+        self.assertEqual(
+            db.session.scalar(db.select(db.func.count(TopicItem.id)).where(TopicItem.entry_type == "term")),
+            835,
+        )
+        child = db.session.scalar(db.select(Context).where(Context.code == "children"))
+        self.assertIsNotNone(child)
+        self.assertEqual(
+            db.session.scalar(db.select(db.func.count(TermContext.term_id)).where(TermContext.context_id == child.id)),
+            835,
+        )
+        first = db.session.scalar(db.select(Term).where(Term.legacy_id == "1"))
+        self.assertEqual(len(first.legacy_payload[MASTER_CATALOG_KEY]["definition_details"]), 1)
+        self.assertEqual(len(first.legacy_payload[MASTER_CATALOG_KEY]["scene_details"]), 3)
+
+    def test_preserves_duplicate_name_rows_as_separate_sequence_records(self):
         first = catalog_row(1, "淮河文化", "泗州戏")
         second = catalog_row(2, "中华优秀传统文化", "泗州戏")
         second[7] = "Sizhou Opera"
@@ -291,9 +363,11 @@ class MasterCatalogImportTests(unittest.TestCase):
         report = import_master_catalog(db.session, self.catalog([first, second]))
         db.session.flush()
 
-        term = db.session.scalar(db.select(Term))
-        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 1)
-        self.assertEqual(term.preferred_name_zh, "泗州戏")
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 2)
+        self.assertEqual(
+            [item.preferred_name_zh for item in db.session.scalars(db.select(Term).order_by(Term.id))],
+            ["泗州戏", "泗州戏"],
+        )
         self.assertEqual(db.session.scalar(db.select(db.func.count(TopicItem.id))), 2)
         self.assertEqual(db.session.scalar(db.select(db.func.count(Language.id))), 6)
         english = list(
@@ -308,10 +382,11 @@ class MasterCatalogImportTests(unittest.TestCase):
             [(item.text, item.translation_type, item.review_status) for item in english],
             [
                 ("flower-drum lantern dance", "recommended", "reviewed"),
-                ("Sizhou Opera", "acceptable", "reviewed"),
+                ("Sizhou Opera", "recommended", "reviewed"),
             ],
         )
         self.assertEqual(report.source_rows, 2)
+        self.assertEqual(report.term_records, 2)
         self.assertEqual(report.canonical_terms, 1)
 
     def test_imports_user_facing_sources_and_scene_contexts(self):
@@ -325,7 +400,7 @@ class MasterCatalogImportTests(unittest.TestCase):
         self.assertEqual(source.authority_level, "reviewed")
         self.assertEqual([item.name_zh for item in contexts], ["儿童", "文化传播", "节庆活动"])
 
-    def test_reuses_existing_term_removes_stale_master_link_and_is_idempotent(self):
+    def test_does_not_reuse_unmanaged_term_and_managed_import_is_idempotent(self):
         existing = Term(
             preferred_name_zh="花鼓灯",
             definition_zh="旧定义",
@@ -342,7 +417,6 @@ class MasterCatalogImportTests(unittest.TestCase):
         )
         db.session.add_all([existing, topic, stale])
         db.session.flush()
-        existing_id = existing.id
         catalog = self.catalog([catalog_row()])
 
         import_master_catalog(db.session, catalog)
@@ -362,10 +436,12 @@ class MasterCatalogImportTests(unittest.TestCase):
             db.session.scalar(db.select(db.func.count(Source.id))),
         )
 
-        self.assertEqual(first_counts, (1, 6, 1, 1))
+        self.assertEqual(first_counts, (2, 6, 1, 1))
         self.assertEqual(second_counts, first_counts)
-        self.assertEqual(db.session.scalar(db.select(Term)).id, existing_id)
-        self.assertTrue(db.session.scalar(db.select(Term)).legacy_payload["preserve"])
+        unmanaged = db.session.scalar(db.select(Term).where(Term.legacy_table.is_(None)))
+        managed = db.session.scalar(db.select(Term).where(Term.legacy_table == MASTER_CATALOG_KEY))
+        self.assertTrue(unmanaged.legacy_payload["preserve"])
+        self.assertEqual(managed.legacy_id, "1")
         self.assertEqual(db.session.scalar(db.select(TopicItem)).title, "花鼓灯")
 
     def test_cli_defaults_to_preview_and_only_apply_commits(self):
@@ -413,7 +489,7 @@ class MasterCatalogImportTests(unittest.TestCase):
             preferred_name_zh="花鼓灯",
             status="published",
             legacy_table=old_key,
-            legacy_id="花鼓灯",
+            legacy_id="1",
             legacy_payload={old_key: {"rows": [{"英文": "old translation", "来源": "旧来源", "场景分类": "旧场景"}]}},
         )
         term.sources.append(old_source)

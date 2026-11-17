@@ -19,9 +19,11 @@ from ..models import (
     Source,
     Term,
     TermContext,
+    TermRelation,
     Topic,
     TopicItem,
     Translation,
+    ReviewCaseTerm,
 )
 
 
@@ -71,8 +73,11 @@ LANGUAGE_DEFINITIONS = {
     "ja": ("日语", "Japanese"),
 }
 
-MASTER_CATALOG_KEY = "master_catalog_2026_11_11"
-PREVIOUS_MASTER_CATALOG_KEYS = ("master_catalog_2026_11_07",)
+MASTER_CATALOG_KEY = "master_catalog_2026_11_17"
+PREVIOUS_MASTER_CATALOG_KEYS = (
+    "master_catalog_2026_11_11",
+    "master_catalog_2026_11_07",
+)
 MANAGED_MASTER_CATALOG_KEYS = (MASTER_CATALOG_KEY, *PREVIOUS_MASTER_CATALOG_KEYS)
 
 TOPIC_DEFINITIONS = {
@@ -151,10 +156,23 @@ class CatalogData:
 @dataclass(frozen=True)
 class CatalogImportReport:
     source_rows: int
+    term_records: int
     canonical_terms: int
+    definitions: int
+    scene_details: int
     topics: int
     translations: int
     topic_items: int
+    sources: int
+    contexts: int
+
+
+@dataclass(frozen=True)
+class TermClearReport:
+    terms: int
+    topic_items: int
+    review_links: int
+    relations: int
     sources: int
     contexts: int
 
@@ -412,7 +430,7 @@ def _prior_catalog_values(term: Term) -> tuple[dict[str, set[str]], set[str], se
     return translations, sources, scenes
 
 
-def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
+def _legacy_import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
     """Upsert the reviewed catalog into the normalized knowledge model.
 
     The caller owns the transaction. This function flushes so its report is
@@ -622,12 +640,278 @@ def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
     session.flush()
     return CatalogImportReport(
         source_rows=len(catalog.rows),
+        term_records=len(terms_by_name),
         canonical_terms=len(terms_by_name),
+        definitions=catalog.definition_count,
+        scene_details=catalog.scene_detail_count,
         topics=len(topics_by_name),
         translations=session.query(Translation).filter(
             Translation.term_id.in_([term.id for term in terms_by_name.values()])
         ).count(),
         topic_items=len(desired_item_ids),
+        sources=len(catalog_source_citations),
+        contexts=len(catalog_context_codes),
+    )
+
+
+def clear_term_catalog(session) -> TermClearReport:
+    """Remove every term-owned record while preserving topics and materials."""
+
+    terms = list(session.scalars(select(Term)))
+    topic_item_count = session.query(TopicItem).filter(
+        (TopicItem.term_id.is_not(None)) | (TopicItem.entry_type == "term")
+    ).count()
+    review_link_count = session.query(ReviewCaseTerm).count()
+    relation_count = session.query(TermRelation).count()
+    sources = list(session.scalars(select(Source)))
+    contexts = list(session.scalars(select(Context)))
+
+    # These association rows use composite primary keys and their Term-side
+    # relationships do not own them. Delete them in bulk before ORM-deleting
+    # Term objects so SQLAlchemy never tries to null a primary-key foreign key.
+    session.query(ReviewCaseTerm).delete(synchronize_session=False)
+    session.query(TermRelation).delete(synchronize_session=False)
+    session.query(TopicItem).filter(
+        (TopicItem.term_id.is_not(None)) | (TopicItem.entry_type == "term")
+    ).delete(synchronize_session=False)
+    session.flush()
+    session.expire_all()
+    for term in terms:
+        session.delete(term)
+    session.flush()
+    for source in sources:
+        session.delete(source)
+    for context in contexts:
+        session.delete(context)
+    session.flush()
+
+    return TermClearReport(
+        terms=len(terms),
+        topic_items=topic_item_count,
+        review_links=review_link_count,
+        relations=relation_count,
+        sources=len(sources),
+        contexts=len(contexts),
+    )
+
+
+def _scene_detail_for_label(row: CatalogRow, label: str) -> SceneDetail | None:
+    matches = [item for item in row.scene_details if item.name == label]
+    if not matches:
+        return None
+    return next(
+        (
+            item for item in matches
+            if item.audience or item.description or item.example
+            or item.extended_explanation or item.kind
+        ),
+        matches[0],
+    )
+
+
+def import_master_catalog(session, catalog: CatalogData) -> CatalogImportReport:
+    """Reconcile one database term and topic item for every workbook sequence."""
+
+    unknown_topics = sorted(set(catalog.topic_counts) - set(TOPIC_DEFINITIONS))
+    if unknown_topics:
+        raise CatalogValidationError(f"尚未配置专题：{'、'.join(unknown_topics)}")
+
+    languages = {item.code: item for item in session.scalars(select(Language))}
+    for code, (name_zh, name_en) in LANGUAGE_DEFINITIONS.items():
+        language = languages.get(code)
+        if language is None:
+            language = Language(code=code, name_zh=name_zh, name_en=name_en, enabled=True)
+            session.add(language)
+            languages[code] = language
+        else:
+            language.name_zh = name_zh
+            language.name_en = name_en
+            language.enabled = True
+
+    topics_by_slug = {item.slug: item for item in session.scalars(select(Topic))}
+    topics_by_name: dict[str, Topic] = {}
+    for topic_name in catalog.topic_counts:
+        slug, summary = TOPIC_DEFINITIONS[topic_name]
+        topic = topics_by_slug.get(slug)
+        if topic is None:
+            topic = Topic(slug=slug)
+            session.add(topic)
+            topics_by_slug[slug] = topic
+        topic.title = topic_name
+        topic.summary = summary
+        topic.status = "published"
+        topics_by_name[topic_name] = topic
+    session.flush()
+
+    existing_terms = {
+        str(item.legacy_id): item
+        for item in session.scalars(
+            select(Term).where(Term.legacy_table.in_(MANAGED_MASTER_CATALOG_KEYS))
+        )
+        if item.legacy_id is not None
+    }
+    existing_items = {
+        str(item.legacy_id): item
+        for item in session.scalars(
+            select(TopicItem).where(
+                TopicItem.legacy_table.in_(MANAGED_MASTER_CATALOG_KEYS),
+                TopicItem.entry_type == "term",
+            )
+        )
+        if item.legacy_id is not None
+    }
+    sources_by_citation = {
+        normalize_text(item.citation): item
+        for item in session.scalars(select(Source))
+        if item.citation
+    }
+    contexts_by_code = {item.code: item for item in session.scalars(select(Context))}
+    selected_terms: list[Term] = []
+    selected_term_ids: set[int] = set()
+    selected_item_ids: set[int] = set()
+    catalog_source_citations: set[str] = set()
+    catalog_context_codes: set[str] = set()
+
+    for row in catalog.rows:
+        legacy_id = str(row.sequence)
+        term = existing_terms.get(legacy_id)
+        if term is None:
+            term = Term(
+                preferred_name_zh=row.term_name,
+                legacy_table=MASTER_CATALOG_KEY,
+                legacy_id=legacy_id,
+            )
+            session.add(term)
+            session.flush()
+            existing_terms[legacy_id] = term
+        else:
+            for translation in list(term.translations):
+                session.delete(translation)
+            for link in list(term.contexts):
+                session.delete(link)
+            term.sources.clear()
+            session.flush()
+
+        primary_definition = row.definitions[0].content
+        term.preferred_name_zh = row.term_name
+        term.definition_zh = _first_clause(primary_definition)
+        term.cultural_connotation = primary_definition
+        term.term_level = row.term_level
+        term.culture_category = row.culture_category
+        term.status = "published"
+        term.data_quality = "curated"
+        term.legacy_table = MASTER_CATALOG_KEY
+        term.legacy_id = legacy_id
+        term.legacy_payload = {
+            MASTER_CATALOG_KEY: {
+                "catalog_row": row.raw,
+                "definition_details": [item.raw for item in row.definitions],
+                "scene_details": [item.raw for item in row.scene_details],
+                "tags": list(row.tags),
+            }
+        }
+
+        for code, language in languages.items():
+            if code not in LANGUAGE_DEFINITIONS:
+                continue
+            session.add(Translation(
+                term=term,
+                language=language,
+                text=row.translations[code],
+                translation_type="recommended",
+                authority_level="reviewed",
+                review_status="reviewed",
+            ))
+
+        citation = row.source_text
+        catalog_source_citations.add(citation)
+        source = sources_by_citation.get(citation)
+        if source is None:
+            source = Source(
+                title=_first_clause(citation)[:255],
+                source_type="curated_reference",
+                citation=citation,
+                authority_level="reviewed",
+                legacy_value=citation[:255],
+            )
+            session.add(source)
+            sources_by_citation[citation] = source
+        term.sources.append(source)
+
+        scene_labels = list(row.scenes)
+        if "儿童" not in scene_labels:
+            scene_labels.append("儿童")
+        for label in scene_labels:
+            detail = _scene_detail_for_label(row, label)
+            code = "children" if label == "儿童" else _context_code(label)
+            catalog_context_codes.add(code)
+            context = contexts_by_code.get(code)
+            if context is None:
+                context = Context(
+                    code=code,
+                    name_zh=label,
+                    audience=(detail.audience if detail else "") or ("children" if code == "children" else "公众"),
+                    style=(detail.kind if detail else "") or ("通俗" if code == "children" else "专题场景"),
+                    description=(detail.description if detail else "") or f"适用于{label}相关表达。",
+                )
+                session.add(context)
+                contexts_by_code[code] = context
+            session.add(TermContext(
+                term=term,
+                context=context,
+                explanation=(
+                    row.child_explanation if code == "children"
+                    else ((detail.extended_explanation or detail.description) if detail else "")
+                ),
+                example=(detail.example if detail else ""),
+                note=(detail.kind if detail and detail.kind else None),
+            ))
+
+        topic = topics_by_name[row.topic_name]
+        item = existing_items.get(legacy_id)
+        if item is None:
+            item = TopicItem(topic=topic)
+            session.add(item)
+            session.flush()
+            existing_items[legacy_id] = item
+        item.topic = topic
+        item.term = term
+        item.entry_type = "term"
+        item.title = row.term_name
+        item.payload = {"catalog_row": row.raw, "tags": list(row.tags)}
+        item.legacy_table = MASTER_CATALOG_KEY
+        item.legacy_id = legacy_id
+        session.flush()
+        selected_terms.append(term)
+        selected_term_ids.add(term.id)
+        selected_item_ids.add(item.id)
+
+    for item in list(session.scalars(
+        select(TopicItem).where(
+            TopicItem.legacy_table.in_(MANAGED_MASTER_CATALOG_KEYS),
+            TopicItem.entry_type == "term",
+        )
+    )):
+        if item.id not in selected_item_ids:
+            session.delete(item)
+    for term in list(session.scalars(
+        select(Term).where(Term.legacy_table.in_(MANAGED_MASTER_CATALOG_KEYS))
+    )):
+        if term.id not in selected_term_ids:
+            session.delete(term)
+    session.flush()
+
+    return CatalogImportReport(
+        source_rows=len(catalog.rows),
+        term_records=len(selected_terms),
+        canonical_terms=catalog.canonical_term_count,
+        definitions=catalog.definition_count,
+        scene_details=catalog.scene_detail_count,
+        topics=len(topics_by_name),
+        translations=session.query(Translation).filter(
+            Translation.term_id.in_([term.id for term in selected_terms])
+        ).count(),
+        topic_items=len(selected_item_ids),
         sources=len(catalog_source_citations),
         contexts=len(catalog_context_codes),
     )
