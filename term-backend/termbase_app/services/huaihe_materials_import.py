@@ -12,7 +12,7 @@ from ..models import Topic, TopicItem
 from .master_catalog_import import normalize_name, normalize_text
 
 
-MATERIALS_CATALOG_KEY = "huaihe_materials_2026_11_11"
+MATERIALS_CATALOG_KEY = "huaihe_materials_2026_11_17"
 PERSON_SHEET = "文化人物（21位）"
 HERB_SHEET = "淮河本草（20味）"
 
@@ -69,6 +69,8 @@ def _read_sheet(sheet, required_headers: tuple[str, ...], entry_type: str):
             payload = {
                 "分类": normalize_text(raw["分类"]),
                 "百度链接": normalize_text(raw["百度百科链接"]),
+                "英文（参考）": normalize_text(raw["英文（参考）"]),
+                "法文（参考）": normalize_text(raw["法文（参考）"]),
             }
         else:
             title = normalize_name(raw["条目名"])
@@ -99,7 +101,10 @@ def load_huaihe_materials(path: Path) -> HuaiheMaterialsData:
         rows = [
             *_read_sheet(
                 workbook[PERSON_SHEET],
-                ("姓名", "分类", "百度百科链接", "原站条目ID"),
+                (
+                    "姓名", "分类", "百度百科链接", "原站条目ID",
+                    "英文（参考）", "法文（参考）",
+                ),
                 "person",
             ),
             *_read_sheet(
@@ -138,37 +143,42 @@ def import_huaihe_materials(session, materials: HuaiheMaterialsData):
         )
     ))
     by_database_id = {(item.entry_type, str(item.id)): item for item in existing}
+    by_original_id = {
+        (item.entry_type, normalize_text((item.payload or {}).get("原站条目ID"))): item
+        for item in existing
+        if normalize_text((item.payload or {}).get("原站条目ID"))
+    }
     by_title = {(item.entry_type, normalize_name(item.title)): item for item in existing}
-    selected: set[int] = set()
     created = updated = 0
     for row in materials.rows:
-        item = by_database_id.get((row.entry_type, row.original_item_id))
+        item = by_original_id.get((row.entry_type, row.original_item_id))
+        if item is None:
+            item = by_database_id.get((row.entry_type, row.original_item_id))
         if item is None:
             item = by_title.get((row.entry_type, normalize_name(row.title)))
         if item is None:
-            item = TopicItem(topic=topic, entry_type=row.entry_type)
+            item = TopicItem(topic=topic, entry_type=row.entry_type, title=row.title)
             session.add(item)
             session.flush()
             created += 1
         else:
             updated += 1
         item.term = None
-        item.title = row.title
-        item.payload = {
+        if not normalize_text(item.title):
+            item.title = row.title
+        payload = dict(item.payload or {})
+        additions = {
             **row.payload,
             "原站条目ID": row.original_item_id,
             "数据批次": MATERIALS_CATALOG_KEY,
         }
+        for key, value in additions.items():
+            if not normalize_text(payload.get(key)):
+                payload[key] = value
+        item.payload = payload
         if not item.legacy_table:
             item.legacy_table = MATERIALS_CATALOG_KEY
             item.legacy_id = f"{row.entry_type}:{row.original_item_id}"
-        selected.add(item.id)
-
-    removed = 0
-    for item in existing:
-        if item.id not in selected:
-            session.delete(item)
-            removed += 1
     session.flush()
     return HuaiheMaterialsImportReport(
         source_rows=len(materials.rows),
@@ -176,5 +186,5 @@ def import_huaihe_materials(session, materials: HuaiheMaterialsData):
         herbs=sum(row.entry_type == "herb" for row in materials.rows),
         created=created,
         updated=updated,
-        removed=removed,
+        removed=0,
     )
