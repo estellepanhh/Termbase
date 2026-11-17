@@ -34,6 +34,9 @@ HEADERS = [
     "日语",
     "文化内涵",
     "来源",
+    "儿童版解释",
+    "场景标签",
+    "释义条数",
 ]
 
 
@@ -54,6 +57,9 @@ def catalog_row(sequence=1, topic="淮河文化", term="花鼓灯"):
         "花鼓灯",
         "淮河流域代表性民间舞蹈；体现沿淮生活记忆。",
         "国家级非物质文化遗产名录；地方文化志",
+        "小朋友也能听懂的花鼓灯解释。",
+        "文化传播、节庆活动、儿童",
+        1,
     ]
 
 
@@ -65,13 +71,32 @@ class MasterCatalogReaderTests(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def write_workbook(self, headers=HEADERS, rows=None):
+    def write_workbook(self, headers=HEADERS, rows=None, *, definition_rows=None, scene_rows=None):
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "术语总表"
         sheet.append(headers)
-        for row in rows or [catalog_row()]:
+        source_rows = rows or [catalog_row()]
+        for row in source_rows:
             sheet.append(row)
+        definitions = workbook.create_sheet("释义明细")
+        definitions.append(["说明"])
+        definitions.append(["来源"])
+        definitions.append(["序号", "专题（专区）", "术语名称", "第几条", "释义内容", "来源记录ID", "来源分类"])
+        for row in definition_rows or [
+            [item[0], item[1], item[2], 1, item[13], f"source-{item[0]}", item[4]]
+            for item in source_rows
+        ]:
+            definitions.append(row)
+        scenes = workbook.create_sheet("场景明细")
+        scenes.append(["说明"])
+        scenes.append(["来源"])
+        scenes.append(["序号", "专题（专区）", "术语名称", "场景名称", "受众", "场景说明", "例句", "扩展解释", "类型"])
+        for row in scene_rows or [
+            [item[0], item[1], item[2], "文化传播", "公众", "传播说明", "示例", None, "专题场景"]
+            for item in source_rows
+        ]:
+            scenes.append(row)
         workbook.save(self.path)
 
     def test_missing_required_header_is_rejected(self):
@@ -104,8 +129,55 @@ class MasterCatalogReaderTests(unittest.TestCase):
                 "ja": "花鼓灯",
             },
         )
-        self.assertEqual(row.scenes, ("文化传播", "节庆活动"))
+        self.assertEqual(row.scenes, ("文化传播", "节庆活动", "儿童"))
         self.assertEqual(row.tags, ("民俗", "舞蹈"))
+
+    def test_loads_definition_and_scene_details_by_sequence_without_using_scene_category(self):
+        row = catalog_row()
+        row[5] = "不得导入的场景分类"
+        row[16] = "国际传播、儿童"
+        row[17] = 2
+        self.write_workbook(
+            rows=[row],
+            definition_rows=[
+                [1, "淮河文化", "花鼓灯", 1, "第一条释义", 101, "民俗"],
+                [1, "淮河文化", "花鼓灯", 2, "第二条释义", 102, "舞蹈"],
+            ],
+            scene_rows=[
+                [1, "淮河文化", "花鼓灯", "国际传播", "海外公众", "用于介绍", "例句", "扩展", "专题场景"],
+                [1, "淮河文化", "花鼓灯", "儿童", None, None, None, "儿童扩展", None],
+            ],
+        )
+
+        loaded = load_catalog(self.path).rows[0]
+
+        self.assertEqual(loaded.scenes, ("国际传播", "儿童"))
+        self.assertNotIn("不得导入的场景分类", loaded.scenes)
+        self.assertEqual([item.content for item in loaded.definitions], ["第一条释义", "第二条释义"])
+        self.assertEqual(loaded.definitions[1].source_record_id, "102")
+        self.assertEqual(loaded.scene_details[0].audience, "海外公众")
+        self.assertEqual(loaded.scene_details[1].extended_explanation, "儿童扩展")
+        self.assertEqual(loaded.child_explanation, "小朋友也能听懂的花鼓灯解释。")
+
+    def test_rejects_definition_count_mismatch(self):
+        row = catalog_row()
+        row[17] = 2
+        self.write_workbook(rows=[row])
+
+        with self.assertRaisesRegex(CatalogValidationError, "释义条数"):
+            load_catalog(self.path)
+
+    def test_real_release_workbook_has_complete_related_rows(self):
+        release = Path(__file__).parent.parent / "data" / "副本术语库导入版.xlsx"
+
+        catalog = load_catalog(release)
+
+        self.assertEqual(len(catalog.rows), 835)
+        self.assertEqual(catalog.canonical_term_count, 828)
+        self.assertEqual(sum(len(row.definitions) for row in catalog.rows), 987)
+        self.assertEqual(sum(len(row.scene_details) for row in catalog.rows), 2387)
+        self.assertEqual(catalog.rows[741].translations["ru"], "Линьцюаньская акробатика")
+        self.assertTrue(all(row.child_explanation for row in catalog.rows))
 
     def test_preserves_reviewed_display_punctuation(self):
         self.write_workbook(rows=[catalog_row(topic="长江文化（安徽段）")])
@@ -162,6 +234,17 @@ class MasterCatalogImportTests(unittest.TestCase):
         sheet.append(HEADERS)
         for row in rows:
             sheet.append(row)
+        definitions = workbook.create_sheet("释义明细")
+        definitions.append(["说明"])
+        definitions.append(["来源"])
+        definitions.append(["序号", "专题（专区）", "术语名称", "第几条", "释义内容", "来源记录ID", "来源分类"])
+        scenes = workbook.create_sheet("场景明细")
+        scenes.append(["说明"])
+        scenes.append(["来源"])
+        scenes.append(["序号", "专题（专区）", "术语名称", "场景名称", "受众", "场景说明", "例句", "扩展解释", "类型"])
+        for row in rows:
+            definitions.append([row[0], row[1], row[2], 1, row[13], f"source-{row[0]}", row[4]])
+            scenes.append([row[0], row[1], row[2], "文化传播", "公众", "传播说明", "示例", None, "专题场景"])
         workbook.save(self.path)
         return load_catalog(self.path)
 
@@ -240,7 +323,7 @@ class MasterCatalogImportTests(unittest.TestCase):
         self.assertEqual(source.title, "国家级非物质文化遗产名录")
         self.assertEqual(source.citation, "国家级非物质文化遗产名录；地方文化志")
         self.assertEqual(source.authority_level, "reviewed")
-        self.assertEqual([item.name_zh for item in contexts], ["文化传播", "节庆活动"])
+        self.assertEqual([item.name_zh for item in contexts], ["儿童", "文化传播", "节庆活动"])
 
     def test_reuses_existing_term_removes_stale_master_link_and_is_idempotent(self):
         existing = Term(
@@ -307,7 +390,7 @@ class MasterCatalogImportTests(unittest.TestCase):
         report = import_master_catalog(db.session, self.catalog([catalog_row()]))
 
         self.assertEqual(report.sources, 1)
-        self.assertEqual(report.contexts, 2)
+        self.assertEqual(report.contexts, 3)
 
     def test_ignores_existing_languages_that_are_not_catalog_columns(self):
         db.session.add(Language(code="und", name_zh="未指定语言", name_en="Undetermined"))
@@ -358,7 +441,7 @@ class MasterCatalogImportTests(unittest.TestCase):
             ["flower-drum lantern dance"],
         )
         self.assertEqual([source.citation for source in term.sources], ["国家级非物质文化遗产名录；地方文化志"])
-        self.assertEqual({link.context.name_zh for link in contexts}, {"文化传播", "节庆活动"})
+        self.assertEqual({link.context.name_zh for link in contexts}, {"儿童", "文化传播", "节庆活动"})
         self.assertEqual(stale_item.legacy_table, MASTER_CATALOG_KEY)
 
 

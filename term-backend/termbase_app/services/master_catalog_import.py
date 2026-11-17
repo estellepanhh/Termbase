@@ -6,7 +6,7 @@ import re
 import hashlib
 import unicodedata
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +31,6 @@ REQUIRED_HEADERS = (
     "术语名称",
     "术语层级",
     "文化分类",
-    "场景分类",
     "筛选标签",
     "英文",
     "法语",
@@ -41,6 +40,17 @@ REQUIRED_HEADERS = (
     "日语",
     "文化内涵",
     "来源",
+    "儿童版解释",
+    "场景标签",
+    "释义条数",
+)
+
+DEFINITION_HEADERS = (
+    "序号", "专题（专区）", "术语名称", "第几条", "释义内容", "来源记录ID", "来源分类",
+)
+
+SCENE_DETAIL_HEADERS = (
+    "序号", "专题（专区）", "术语名称", "场景名称", "受众", "场景说明", "例句", "扩展解释", "类型",
 )
 
 LANGUAGE_COLUMNS = {
@@ -99,6 +109,32 @@ class CatalogRow:
     translations: dict[str, str]
     cultural_connotation: str
     source_text: str
+    child_explanation: str
+    definition_count: int
+    definitions: tuple["DefinitionDetail", ...]
+    scene_details: tuple["SceneDetail", ...]
+    raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class DefinitionDetail:
+    row_number: int
+    position: int
+    content: str
+    source_record_id: str
+    source_category: str
+    raw: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class SceneDetail:
+    row_number: int
+    name: str
+    audience: str
+    description: str
+    example: str
+    extended_explanation: str
+    kind: str
     raw: dict[str, Any]
 
 
@@ -108,6 +144,8 @@ class CatalogData:
     topic_counts: dict[str, int]
     canonical_term_count: int
     duplicate_names: tuple[str, ...]
+    definition_count: int
+    scene_detail_count: int
 
 
 @dataclass(frozen=True)
@@ -150,8 +188,31 @@ def _sequence(value: Any, row_number: int) -> int:
     return number
 
 
+def _required_indices(sheet, *, header_row: int, required_headers: tuple[str, ...]):
+    header_values = next(
+        sheet.iter_rows(min_row=header_row, max_row=header_row, values_only=True), ()
+    )
+    headers = [normalize_name(value) for value in header_values]
+    missing = [header for header in required_headers if normalize_name(header) not in headers]
+    if missing:
+        raise CatalogValidationError(
+            f"工作表“{sheet.title}”缺少必需列：{'、'.join(missing)}"
+        )
+    return headers, {
+        header: headers.index(normalize_name(header)) for header in required_headers
+    }
+
+
+def _raw_row(headers: list[str], values: tuple[Any, ...]) -> dict[str, Any]:
+    return {
+        header: values[index] if index < len(values) else None
+        for index, header in enumerate(headers)
+        if header
+    }
+
+
 def load_catalog(path: Path) -> CatalogData:
-    """Load the ``术语总表`` worksheet without modifying the workbook."""
+    """Load and cross-check all three worksheets without modifying them."""
 
     workbook_path = Path(path)
     if not workbook_path.is_file():
@@ -159,60 +220,147 @@ def load_catalog(path: Path) -> CatalogData:
 
     workbook = load_workbook(workbook_path, read_only=True, data_only=True)
     try:
-        if "术语总表" not in workbook.sheetnames:
-            raise CatalogValidationError("工作簿缺少“术语总表”工作表")
+        for sheet_name in ("术语总表", "释义明细", "场景明细"):
+            if sheet_name not in workbook.sheetnames:
+                raise CatalogValidationError(f"工作簿缺少“{sheet_name}”工作表")
         sheet = workbook["术语总表"]
-        header_values = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), ())
-        headers = [normalize_name(value) for value in header_values]
-        normalized_headers = {
-            normalize_name(header): header for header in REQUIRED_HEADERS
-        }
-        missing = [
-            header
-            for normalized, header in normalized_headers.items()
-            if normalized not in headers
-        ]
-        if missing:
-            raise CatalogValidationError(f"术语总表缺少必需列：{'、'.join(missing)}")
-        indices = {
-            header: headers.index(normalized)
-            for normalized, header in normalized_headers.items()
-        }
+        headers, indices = _required_indices(
+            sheet, header_row=1, required_headers=REQUIRED_HEADERS
+        )
 
         rows: list[CatalogRow] = []
+        rows_by_sequence: dict[int, CatalogRow] = {}
         for row_number, values in enumerate(
             sheet.iter_rows(min_row=2, values_only=True), start=2
         ):
             if not any(normalize_text(value) for value in values):
                 continue
-            raw = {
+            required = {
                 header: values[index] if index < len(values) else None
                 for header, index in indices.items()
             }
             for header in REQUIRED_HEADERS:
-                if not normalize_text(raw[header]):
+                if not normalize_text(required[header]):
                     raise CatalogValidationError(f"第 {row_number} 行的“{header}”不能为空")
 
             translations = {
-                language_code: normalize_text(raw[column])
+                language_code: normalize_text(required[column])
                 for column, language_code in LANGUAGE_COLUMNS.items()
             }
-            rows.append(
-                CatalogRow(
-                    row_number=row_number,
-                    sequence=_sequence(raw["序号"], row_number),
-                    topic_name=normalize_text(raw["专题（专区）"]),
-                    term_name=normalize_name(raw["术语名称"]),
-                    term_level=normalize_text(raw["术语层级"]),
-                    culture_category=normalize_text(raw["文化分类"]),
-                    scenes=split_labels(raw["场景分类"]),
-                    tags=split_labels(raw["筛选标签"]),
-                    translations=translations,
-                    cultural_connotation=normalize_text(raw["文化内涵"]),
-                    source_text=normalize_text(raw["来源"]),
-                    raw={key: normalize_text(value) for key, value in raw.items()},
-                )
+            sequence = _sequence(required["序号"], row_number)
+            if sequence in rows_by_sequence:
+                raise CatalogValidationError(f"术语总表存在重复序号：{sequence}")
+            row = CatalogRow(
+                row_number=row_number,
+                sequence=sequence,
+                topic_name=normalize_text(required["专题（专区）"]),
+                term_name=normalize_name(required["术语名称"]),
+                term_level=normalize_text(required["术语层级"]),
+                culture_category=normalize_text(required["文化分类"]),
+                scenes=split_labels(required["场景标签"]),
+                tags=split_labels(required["筛选标签"]),
+                translations=translations,
+                cultural_connotation=normalize_text(required["文化内涵"]),
+                source_text=normalize_text(required["来源"]),
+                child_explanation=normalize_text(required["儿童版解释"]),
+                definition_count=_sequence(required["释义条数"], row_number),
+                definitions=(),
+                scene_details=(),
+                raw=_raw_row(headers, values),
             )
+            rows.append(row)
+            rows_by_sequence[sequence] = row
+
+        definitions_by_sequence: dict[int, list[DefinitionDetail]] = {
+            sequence: [] for sequence in rows_by_sequence
+        }
+        definition_sheet = workbook["释义明细"]
+        definition_headers, definition_indices = _required_indices(
+            definition_sheet, header_row=3, required_headers=DEFINITION_HEADERS
+        )
+        seen_definition_positions: set[tuple[int, int]] = set()
+        for row_number, values in enumerate(
+            definition_sheet.iter_rows(min_row=4, values_only=True), start=4
+        ):
+            if not any(normalize_text(value) for value in values):
+                continue
+            raw = _raw_row(definition_headers, values)
+            sequence = _sequence(values[definition_indices["序号"]], row_number)
+            main_row = rows_by_sequence.get(sequence)
+            if main_row is None:
+                raise CatalogValidationError(f"释义明细第 {row_number} 行引用未知序号：{sequence}")
+            position = _sequence(values[definition_indices["第几条"]], row_number)
+            key = (sequence, position)
+            if key in seen_definition_positions:
+                raise CatalogValidationError(f"释义明细存在重复序号和条次：{sequence}/{position}")
+            seen_definition_positions.add(key)
+            topic_name = normalize_text(values[definition_indices["专题（专区）"]])
+            term_name = normalize_name(values[definition_indices["术语名称"]])
+            content = normalize_text(values[definition_indices["释义内容"]])
+            if (topic_name, term_name) != (main_row.topic_name, main_row.term_name):
+                raise CatalogValidationError(f"释义明细第 {row_number} 行与术语总表不一致")
+            if not content:
+                raise CatalogValidationError(f"释义明细第 {row_number} 行的“释义内容”不能为空")
+            definitions_by_sequence[sequence].append(DefinitionDetail(
+                row_number=row_number,
+                position=position,
+                content=content,
+                source_record_id=normalize_text(values[definition_indices["来源记录ID"]]),
+                source_category=normalize_text(values[definition_indices["来源分类"]]),
+                raw=raw,
+            ))
+
+        scenes_by_sequence: dict[int, list[SceneDetail]] = {
+            sequence: [] for sequence in rows_by_sequence
+        }
+        scene_sheet = workbook["场景明细"]
+        scene_headers, scene_indices = _required_indices(
+            scene_sheet, header_row=3, required_headers=SCENE_DETAIL_HEADERS
+        )
+        for row_number, values in enumerate(
+            scene_sheet.iter_rows(min_row=4, values_only=True), start=4
+        ):
+            if not any(normalize_text(value) for value in values):
+                continue
+            raw = _raw_row(scene_headers, values)
+            sequence = _sequence(values[scene_indices["序号"]], row_number)
+            main_row = rows_by_sequence.get(sequence)
+            if main_row is None:
+                raise CatalogValidationError(f"场景明细第 {row_number} 行引用未知序号：{sequence}")
+            topic_name = normalize_text(values[scene_indices["专题（专区）"]])
+            term_name = normalize_name(values[scene_indices["术语名称"]])
+            name = normalize_text(values[scene_indices["场景名称"]])
+            if (topic_name, term_name) != (main_row.topic_name, main_row.term_name):
+                raise CatalogValidationError(f"场景明细第 {row_number} 行与术语总表不一致")
+            if not name:
+                raise CatalogValidationError(f"场景明细第 {row_number} 行的“场景名称”不能为空")
+            scenes_by_sequence[sequence].append(SceneDetail(
+                row_number=row_number,
+                name=name,
+                audience=normalize_text(values[scene_indices["受众"]]),
+                description=normalize_text(values[scene_indices["场景说明"]]),
+                example=normalize_text(values[scene_indices["例句"]]),
+                extended_explanation=normalize_text(values[scene_indices["扩展解释"]]),
+                kind=normalize_text(values[scene_indices["类型"]]),
+                raw=raw,
+            ))
+
+        completed_rows = []
+        for row in rows:
+            definitions = tuple(sorted(
+                definitions_by_sequence[row.sequence], key=lambda item: item.position
+            ))
+            if len(definitions) != row.definition_count:
+                raise CatalogValidationError(
+                    f"序号 {row.sequence} 的释义条数声明为 {row.definition_count}，实际为 {len(definitions)}"
+                )
+            scene_details = tuple(scenes_by_sequence[row.sequence])
+            if not scene_details:
+                raise CatalogValidationError(f"序号 {row.sequence} 缺少场景明细")
+            completed_rows.append(replace(
+                row, definitions=definitions, scene_details=scene_details
+            ))
+        rows = completed_rows
     finally:
         workbook.close()
 
@@ -224,6 +372,8 @@ def load_catalog(path: Path) -> CatalogData:
         topic_counts=topic_counts,
         canonical_term_count=len(name_counts),
         duplicate_names=duplicates,
+        definition_count=sum(len(row.definitions) for row in rows),
+        scene_detail_count=sum(len(row.scene_details) for row in rows),
     )
 
 
