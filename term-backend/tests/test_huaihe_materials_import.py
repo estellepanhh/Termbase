@@ -175,6 +175,14 @@ class HuaiheMaterialsImportTests(unittest.TestCase):
         self.assertEqual(args.catalog.name, "副本术语库导入版.xlsx")
         self.assertEqual(args.materials.name, "副本淮河文化人物与本草（网站专题条目·41条备.xlsx")
 
+    def test_publish_script_parses_dotenv_without_sourcing_it_as_shell(self):
+        script = (
+            Path(__file__).parent.parent / "scripts" / "publish_catalog_release.sh"
+        ).read_text(encoding="utf-8")
+
+        self.assertNotIn('source "${backend_dir}/.env"', script)
+        self.assertIn("dotenv_values", script)
+
 
 if __name__ == "__main__":
     unittest.main()

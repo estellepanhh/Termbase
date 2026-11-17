@@ -14,10 +14,21 @@ cd "${repo_dir}"
 export GIT_PAGER=cat
 echo "release_commit=$(git rev-parse --short HEAD)"
 
-set -a
-# shellcheck disable=SC1091
-source "${backend_dir}/.env"
-set +a
+test -f "${backend_dir}/.env"
+dotenv_exports="$("${backend_dir}/venv/bin/python" - "${backend_dir}/.env" <<'PY'
+import shlex
+import sys
+
+from dotenv import dotenv_values
+
+allowed = {"DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"}
+for key, value in dotenv_values(sys.argv[1]).items():
+    if key in allowed and value is not None:
+        print(f"export {key}={shlex.quote(value)}")
+PY
+)"
+eval "${dotenv_exports}"
+unset dotenv_exports
 
 mkdir -p "${backup_dir}"
 echo "backup=${backup_file}"
