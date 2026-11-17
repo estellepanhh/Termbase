@@ -14,12 +14,16 @@ from termbase_app.services.huaihe_materials_import import (
     import_huaihe_materials,
     load_huaihe_materials,
 )
-from termbase_app.services.master_catalog_import import import_master_catalog, load_catalog
+from termbase_app.services.master_catalog_import import (
+    clear_term_catalog,
+    import_master_catalog,
+    load_catalog,
+)
 
 
 DATA_DIR = Path(__file__).parent.parent / "data"
-DEFAULT_CATALOG = DATA_DIR / "术语库总表（835条·2026-11-11）.xlsx"
-DEFAULT_MATERIALS = DATA_DIR / "淮河文化人物与本草（网站专题条目·41条备.xlsx"
+DEFAULT_CATALOG = DATA_DIR / "副本术语库导入版.xlsx"
+DEFAULT_MATERIALS = DATA_DIR / "副本淮河文化人物与本草（网站专题条目·41条备.xlsx"
 
 
 def build_parser():
@@ -32,6 +36,7 @@ def build_parser():
 
 def run_release_import(catalog, materials, *, apply):
     try:
+        clear_term_catalog(db.session)
         catalog_report = import_master_catalog(db.session, catalog)
         materials_report = import_huaihe_materials(db.session, materials)
         db.session.commit() if apply else db.session.rollback()

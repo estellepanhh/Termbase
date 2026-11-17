@@ -6,14 +6,14 @@ from openpyxl import Workbook
 
 from termbase_app import create_app
 from termbase_app.extensions import db
-from termbase_app.models import Topic, TopicItem
+from termbase_app.models import Term, Topic, TopicItem
 from termbase_app.services.huaihe_materials_import import (
     HuaiheMaterialsValidationError,
     import_huaihe_materials,
     load_huaihe_materials,
 )
 from scripts.import_huaihe_materials import build_parser, run_materials_import
-from scripts.import_catalog_release import run_release_import
+from scripts.import_catalog_release import build_parser as build_release_parser, run_release_import
 from termbase_app.services.master_catalog_import import load_catalog
 
 
@@ -128,10 +128,52 @@ class HuaiheMaterialsImportTests(unittest.TestCase):
         materials = load_huaihe_materials(self.path)
         catalog_path = Path(__file__).parent.parent / "data" / "副本术语库导入版.xlsx"
         catalog = load_catalog(catalog_path)
+        topic = Topic(slug="huaihe-culture", title="淮河文化", status="published")
+        old_term = Term(preferred_name_zh="旧术语", status="published")
+        person = TopicItem(topic=topic, entry_type="person", title="保留人物", payload={})
+        db.session.add_all([topic, old_term, person])
+        db.session.commit()
 
         run_release_import(catalog, materials, apply=False)
 
-        self.assertEqual(db.session.scalar(db.select(db.func.count(TopicItem.id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 1)
+        self.assertEqual(db.session.scalar(db.select(Term)).preferred_name_zh, "旧术语")
+        self.assertEqual(db.session.scalar(db.select(db.func.count(TopicItem.id))), 1)
+        self.assertEqual(db.session.scalar(db.select(TopicItem)).title, "保留人物")
+
+    def test_real_release_apply_replaces_terms_and_reports_all_required_counts(self):
+        data_dir = Path(__file__).parent.parent / "data"
+        catalog = load_catalog(data_dir / "副本术语库导入版.xlsx")
+        materials = load_huaihe_materials(
+            data_dir / "副本淮河文化人物与本草（网站专题条目·41条备.xlsx"
+        )
+
+        db.session.add(Term(preferred_name_zh="必须被清除的旧术语", status="published"))
+        db.session.commit()
+
+        catalog_report, materials_report = run_release_import(catalog, materials, apply=True)
+
+        self.assertEqual(
+            (
+                catalog_report.source_rows,
+                catalog_report.term_records,
+                catalog_report.definitions,
+                catalog_report.scene_details,
+                materials_report.people,
+                materials_report.herbs,
+            ),
+            (835, 835, 987, 2387, 21, 20),
+        )
+        self.assertEqual(db.session.scalar(db.select(db.func.count(Term.id))), 835)
+        self.assertIsNone(
+            db.session.scalar(db.select(Term).where(Term.preferred_name_zh == "必须被清除的旧术语"))
+        )
+
+    def test_release_cli_defaults_to_new_workbooks(self):
+        args = build_release_parser().parse_args([])
+
+        self.assertEqual(args.catalog.name, "副本术语库导入版.xlsx")
+        self.assertEqual(args.materials.name, "副本淮河文化人物与本草（网站专题条目·41条备.xlsx")
 
 
 if __name__ == "__main__":

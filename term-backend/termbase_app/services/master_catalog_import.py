@@ -20,6 +20,7 @@ from ..models import (
     Term,
     TermContext,
     TermRelation,
+    TermSubmission,
     Topic,
     TopicItem,
     Translation,
@@ -173,6 +174,7 @@ class TermClearReport:
     topic_items: int
     review_links: int
     relations: int
+    submissions_unlinked: int
     sources: int
     contexts: int
 
@@ -663,6 +665,9 @@ def clear_term_catalog(session) -> TermClearReport:
     ).count()
     review_link_count = session.query(ReviewCaseTerm).count()
     relation_count = session.query(TermRelation).count()
+    submission_count = session.query(TermSubmission).filter(
+        TermSubmission.term_id.is_not(None)
+    ).count()
     sources = list(session.scalars(select(Source)))
     contexts = list(session.scalars(select(Context)))
 
@@ -671,6 +676,9 @@ def clear_term_catalog(session) -> TermClearReport:
     # Term objects so SQLAlchemy never tries to null a primary-key foreign key.
     session.query(ReviewCaseTerm).delete(synchronize_session=False)
     session.query(TermRelation).delete(synchronize_session=False)
+    session.query(TermSubmission).filter(
+        TermSubmission.term_id.is_not(None)
+    ).update({TermSubmission.term_id: None}, synchronize_session=False)
     session.query(TopicItem).filter(
         (TopicItem.term_id.is_not(None)) | (TopicItem.entry_type == "term")
     ).delete(synchronize_session=False)
@@ -690,6 +698,7 @@ def clear_term_catalog(session) -> TermClearReport:
         topic_items=topic_item_count,
         review_links=review_link_count,
         relations=relation_count,
+        submissions_unlinked=submission_count,
         sources=len(sources),
         contexts=len(contexts),
     )

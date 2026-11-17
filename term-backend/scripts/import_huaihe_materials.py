@@ -19,7 +19,7 @@ from termbase_app.services.huaihe_materials_import import (
 DEFAULT_WORKBOOK = (
     Path(__file__).parent.parent
     / "data"
-    / "淮河文化人物与本草（网站专题条目·41条备.xlsx"
+    / "副本淮河文化人物与本草（网站专题条目·41条备.xlsx"
 )
 
 

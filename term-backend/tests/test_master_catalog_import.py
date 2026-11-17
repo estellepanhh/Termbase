@@ -8,7 +8,7 @@ from termbase_app import create_app
 from termbase_app.extensions import db
 from termbase_app.models import (
     Context, Language, ReviewCase, ReviewCaseTerm, Source, Term, TermContext,
-    TermRelation, Topic, TopicItem, Translation,
+    TermRelation, TermSubmission, Topic, TopicItem, Translation, User,
 )
 from termbase_app.services.master_catalog_import import (
     CatalogValidationError,
@@ -310,7 +310,12 @@ class MasterCatalogImportTests(unittest.TestCase):
             ai_snapshot={},
         )
         review.term_links.append(ReviewCaseTerm(term=first, position=1))
-        db.session.add(review)
+        user = User(username="contributor", password_hash="hash", display_name="贡献者")
+        submission = TermSubmission(
+            public_id="submission-1", created_by=user, term=first,
+            preferred_name_zh="用户提交", definition_zh="待审内容",
+        )
+        db.session.add_all([review, user, submission])
         db.session.flush()
 
         report = clear_term_catalog(db.session)
@@ -323,6 +328,8 @@ class MasterCatalogImportTests(unittest.TestCase):
         self.assertEqual(db.session.scalar(db.select(db.func.count(Context.id))), 0)
         self.assertEqual(db.session.scalar(db.select(db.func.count(ReviewCase.id))), 1)
         self.assertEqual(db.session.scalar(db.select(db.func.count(ReviewCaseTerm.case_id))), 0)
+        self.assertEqual(db.session.scalar(db.select(db.func.count(TermSubmission.id))), 1)
+        self.assertIsNone(db.session.scalar(db.select(TermSubmission)).term_id)
         remaining = list(db.session.scalars(db.select(TopicItem).order_by(TopicItem.entry_type)))
         self.assertEqual([(item.entry_type, item.title) for item in remaining], [("herb", "亳菊"), ("person", "刘安")])
 
@@ -447,7 +454,7 @@ class MasterCatalogImportTests(unittest.TestCase):
     def test_cli_defaults_to_preview_and_only_apply_commits(self):
         args = build_parser().parse_args([])
         self.assertFalse(args.apply)
-        self.assertEqual(args.workbook.name, "术语库总表（835条·2026-11-11）.xlsx")
+        self.assertEqual(args.workbook.name, "副本术语库导入版.xlsx")
         catalog = self.catalog([catalog_row()])
 
         run_catalog_import(catalog, apply=False)

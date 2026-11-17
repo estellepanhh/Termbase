@@ -54,17 +54,17 @@ npm run lint
 
 再按 README 的公共路由和浏览器清单进行人工验收。
 
-## 2026-11-11 术语与淮河专题数据发布
+## 2026-11-17 术语与淮河专题数据全量重导
 
-`term-backend/data/术语库总表（835条·2026-11-11）.xlsx` 是文化专题与多语译文的当前数据源；`term-backend/data/淮河文化人物与本草（网站专题条目·41条备.xlsx` 独立保存 21 位文化人物和 20 味淮河本草。发布时使用 `scripts/import_catalog_release.py` 在同一事务内导入两份数据：任一部分失败都会整体回滚。
+`term-backend/data/副本术语库导入版.xlsx` 是文化专题与多语译文的当前数据源；`term-backend/data/副本淮河文化人物与本草（网站专题条目·41条备.xlsx` 保存 21 位文化人物和 20 味淮河本草。发布时使用 `scripts/import_catalog_release.py`：它会先清空旧术语及其译法、释义、场景和关联，再在同一事务内导入两份数据。任一部分失败都会整体回滚；人物和本草只补缺，不删除或覆盖已有非空内容。
 
 当前总表的验收基线为：
 
-- 835 条术语专题关联；
-- 828 个规范化术语；
+- 835 个按序号保存的术语记录和 835 条术语专题关联；
+- 公共检索按同名聚合为 828 个规范化术语；
 - 10 个已发布专题；
 - 英、法、俄、西、阿、日 6 个语种全部覆盖；
-- 4974 条去重后的译文；
+- 5010 条译文、987 条释义明细、2387 条场景明细和 835 条儿童版解释；
 - 淮河专题另含 21 位人物和 20 味本草，最终共 179 条专题内容。
 
 ### 本地或服务器预演
@@ -76,7 +76,7 @@ cd D:\Termbase\term-backend
 .\venv\Scripts\python.exe scripts\import_catalog_release.py
 ```
 
-报告中的 `mode` 应为 `preview_rolled_back`，并符合上述基线。确认数据库完整备份可恢复后，才显式执行：
+报告中的 `mode` 应为 `preview_rolled_back`，并符合上述基线。预演也会执行清库逻辑，但事务最后回滚，不会改变数据库。确认数据库完整备份可恢复后，才显式执行：
 
 ```powershell
 .\venv\Scripts\python.exe scripts\import_catalog_release.py --apply
@@ -91,29 +91,16 @@ python scripts/import_catalog_release.py
 python scripts/import_catalog_release.py --apply
 ```
 
-脚本可重复运行；第二次执行不会重复创建术语、译文、来源、场景或专题关联。
+脚本可重复运行；每次都会在一个事务内重新清空和重建术语数据，不会重复创建术语、译文、来源、场景或专题关联。
 
 ### 公网发布
 
-先完成数据库备份，再更新代码、导入总表和构建前端：
+推荐直接执行发布脚本。它会先用 `mysqldump` 生成非空全库 SQL 备份并校验文件头，然后依次预演、正式导入、检查数据库精确数量和公网数量：
 
 ```bash
-set -e
 cd /var/www/termbase
 git pull --ff-only origin main
-cd term-backend
-source venv/bin/activate
-pip install -r requirements.txt
-flask db upgrade
-python scripts/import_catalog_release.py
-python scripts/import_catalog_release.py --apply
-cd ../term-frontend
-npm ci
-npm run build
-sudo nginx -t
-sudo systemctl reload nginx
-curl -fsS https://terms.estellepan.top/api/v1/health
-curl -fsS https://terms.estellepan.top/api/topics
+bash term-backend/scripts/publish_catalog_release.sh
 ```
 
 如果阿里云网页终端容易断开，可在拉取代码后让发布脚本在后台继续运行：
@@ -124,7 +111,7 @@ nohup bash term-backend/scripts/publish_catalog_release.sh > "$HOME/catalog-rele
 tail -f "$HOME/catalog-release.log"
 ```
 
-看到 `CATALOG_RELEASE_SUCCESS` 即表示备份、预演、正式导入和公网数量核验均已完成。即使网页终端中途断开，重新登录后再次执行最后一行即可查看进度。
+看到 `CATALOG_RELEASE_SUCCESS` 才表示备份、预演、正式导入、数据库数量和公网数量核验均已完成。输出的 `backup=...` 是本次恢复点；即使网页终端中途断开，重新登录后再次执行最后一行即可查看进度。
 
 如果部署环境的后端进程不会自动重载，在服务器上先用 `systemctl list-units --type=service | grep -Ei 'term|gunicorn'` 确认现有服务名，再重启该服务；不要猜测或新建第二套服务。
 
@@ -132,7 +119,7 @@ tail -f "$HOME/catalog-release.log"
 
 ### 回滚
 
-总表导入会复用并更新已存在词条，不能靠删除 `master_catalog_2026_11_11` 标记完整还原。因此上线前的数据库备份是正式回滚点。若验收失败：
+总表导入会清除旧术语数据，不能靠删除批次标记完整还原。因此上线前的 SQL 全库备份是正式回滚点。若验收失败：
 
 1. 将代码切回上一已知可用提交并重新构建前端；
 2. 从上线前备份恢复数据库；

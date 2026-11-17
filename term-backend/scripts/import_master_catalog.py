@@ -12,6 +12,7 @@ from termbase_app import create_app
 from termbase_app.extensions import db
 from termbase_app.services.master_catalog_import import (
     CatalogData,
+    clear_term_catalog,
     import_master_catalog,
     load_catalog,
 )
@@ -20,7 +21,7 @@ from termbase_app.services.master_catalog_import import (
 DEFAULT_WORKBOOK = (
     Path(__file__).parent.parent
     / "data"
-    / "术语库总表（835条·2026-11-11）.xlsx"
+    / "副本术语库导入版.xlsx"
 )
 
 
@@ -42,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def run_catalog_import(catalog: CatalogData, *, apply: bool):
     try:
+        clear_term_catalog(db.session)
         report = import_master_catalog(db.session, catalog)
         if apply:
             db.session.commit()
